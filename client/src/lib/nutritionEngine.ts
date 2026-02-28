@@ -1175,3 +1175,260 @@ export function computeWeeklyNutritionSummary(
     nextWeekAdjustment: adjustment,
   };
 }
+
+// ============================================================
+// RÉÉQUILIBRAGE AUTOMATIQUE DES REPAS
+// Quand un repas est validé ou modifié, les repas suivants
+// de la journée s'ajustent pour compenser l'écart calorique.
+// ============================================================
+
+export interface MealValidation {
+  meal: 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'before_sleep';
+  validated: boolean; // true = mangé comme prévu, false = modifié
+  actualEntries?: FoodEntry[]; // si modifié, les vrais aliments consommés
+}
+
+export interface DayMealStatus {
+  date: string;
+  mealValidations: Record<string, MealValidation>;
+  // Repas restants ajustés automatiquement
+  adjustedMeals: Record<string, { calorieBudget: number; proteinTarget: number; carbTarget: number; fatTarget: number; message: string }>;
+}
+
+const MEAL_ORDER_LIST = ['breakfast', 'lunch', 'snack', 'dinner', 'before_sleep'] as const;
+
+/**
+ * Calcule les ajustements des repas restants de la journée
+ * en fonction de ce qui a déjà été consommé.
+ */
+export function computeMealAdjustments(
+  consumedSoFar: DayMacros,
+  completedMeals: string[],
+  isTrainingDay: boolean,
+  weeklyCarryover: number = 0 // surplus/déficit des jours précédents de la semaine
+): Record<string, { calorieBudget: number; proteinTarget: number; carbTarget: number; fatTarget: number; message: string }> {
+  const dailyTarget = isTrainingDay ? MACRO_TARGETS.training : MACRO_TARGETS.rest;
+
+  // Ajustement si surplus/déficit hebdomadaire
+  const adjustedDailyCalories = dailyTarget.calories - Math.round(weeklyCarryover / 6); // étale sur 6 jours restants
+  const adjustedDailyProteins = dailyTarget.proteins;
+  const adjustedDailyCarbs = dailyTarget.carbs - Math.round(weeklyCarryover / 6 / 4); // glucides = 4 kcal/g
+  const adjustedDailyFats = dailyTarget.fats;
+
+  const remainingMeals = MEAL_ORDER_LIST.filter(m => !completedMeals.includes(m));
+  if (remainingMeals.length === 0) return {};
+
+  // Calcul des macros restantes à consommer
+  const remainingCalories = Math.max(0, adjustedDailyCalories - consumedSoFar.calories);
+  const remainingProteins = Math.max(0, adjustedDailyProteins - consumedSoFar.proteins);
+  const remainingCarbs = Math.max(0, adjustedDailyCarbs - consumedSoFar.carbs);
+  const remainingFats = Math.max(0, adjustedDailyFats - consumedSoFar.fats);
+
+  // Distribution des macros restantes selon le poids de chaque repas
+  const MEAL_WEIGHTS: Record<string, number> = {
+    breakfast: 0.25,
+    lunch: 0.30,
+    snack: 0.10,
+    dinner: 0.25,
+    before_sleep: 0.10,
+  };
+
+  const totalRemainingWeight = remainingMeals.reduce((acc, m) => acc + (MEAL_WEIGHTS[m] ?? 0.15), 0);
+
+  const adjustments: Record<string, { calorieBudget: number; proteinTarget: number; carbTarget: number; fatTarget: number; message: string }> = {};
+
+  remainingMeals.forEach(meal => {
+    const weight = (MEAL_WEIGHTS[meal] ?? 0.15) / totalRemainingWeight;
+    const calBudget = Math.round(remainingCalories * weight);
+    const protTarget = Math.round(remainingProteins * weight);
+    const carbTarget = Math.round(remainingCarbs * weight);
+    const fatTarget = Math.round(remainingFats * weight);
+
+    let message = '';
+    const originalCalBudget = Math.round(adjustedDailyCalories * (MEAL_WEIGHTS[meal] ?? 0.15));
+    const diff = calBudget - originalCalBudget;
+
+    if (diff < -100) {
+      message = `⬇️ Réduis de ~${Math.abs(diff)} kcal (surplus du matin)`;
+    } else if (diff > 100) {
+      message = `⬆️ Ajoute ~${diff} kcal (déficit à compenser)`;
+    } else {
+      message = `✅ Budget normal`;
+    }
+
+    adjustments[meal] = { calorieBudget: calBudget, proteinTarget: protTarget, carbTarget: carbTarget, fatTarget: fatTarget, message };
+  });
+
+  return adjustments;
+}
+
+/**
+ * Calcule le surplus/déficit cumulé des jours précédents de la semaine courante.
+ * Utilisé pour étaler la compensation sur les jours restants.
+ */
+export function computeWeeklyCarryover(
+  dayLogs: DayLog[],
+  currentDateKey: string
+): number {
+  const currentDate = new Date(currentDateKey + 'T12:00:00');
+  const dayOfWeek = currentDate.getDay();
+  const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(currentDate);
+  weekStart.setDate(currentDate.getDate() + daysToMonday);
+
+  let totalSurplus = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const key = d.toISOString().split('T')[0];
+    if (key >= currentDateKey) break; // ne compte que les jours passés
+    const log = dayLogs.find(l => l.date === key);
+    if (log) {
+      const balance = computeDayBalance(log);
+      totalSurplus += balance.surplus.calories;
+    }
+  }
+  return totalSurplus;
+}
+
+/**
+ * Récapitulatif hebdomadaire détaillé : réalité vs objectif
+ */
+export interface WeeklyRecap {
+  weekLabel: string;
+  days: Array<{
+    date: string;
+    dayName: string;
+    isTrainingDay: boolean;
+    consumed: DayMacros;
+    target: DayMacros;
+    status: 'optimal' | 'surplus' | 'deficit' | 'protein_low' | 'no_data';
+    surplusCalories: number;
+  }>;
+  totals: {
+    consumed: DayMacros;
+    target: DayMacros;
+    surplusCalories: number;
+    proteinAdequacy: number;
+  };
+  verdict: 'excellent' | 'good' | 'average' | 'poor';
+  verdictMessage: string;
+  nextWeekRecommendation: string;
+}
+
+export function computeWeeklyRecap(
+  dayLogs: DayLog[],
+  weekStartMonday: Date
+): WeeklyRecap {
+  const DAY_NAMES = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  const days = [];
+  let totalConsumed: DayMacros = { proteins: 0, carbs: 0, fats: 0, calories: 0 };
+  let totalTarget: DayMacros = { proteins: 0, carbs: 0, fats: 0, calories: 0 };
+  let daysWithData = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(weekStartMonday);
+    date.setDate(weekStartMonday.getDate() + i);
+    const dateKey = date.toISOString().split('T')[0];
+    const dayOfWeek = date.getDay();
+    const isTrainingDay = [1, 2, 4, 5].includes(dayOfWeek);
+    const target = isTrainingDay ? MACRO_TARGETS.training : MACRO_TARGETS.rest;
+
+    const log = dayLogs.find(l => l.date === dateKey);
+    if (!log || log.entries.length === 0) {
+      days.push({
+        date: dateKey,
+        dayName: DAY_NAMES[dayOfWeek],
+        isTrainingDay,
+        consumed: { proteins: 0, carbs: 0, fats: 0, calories: 0 },
+        target,
+        status: 'no_data' as const,
+        surplusCalories: 0,
+      });
+      totalTarget = {
+        proteins: totalTarget.proteins + target.proteins,
+        carbs: totalTarget.carbs + target.carbs,
+        fats: totalTarget.fats + target.fats,
+        calories: totalTarget.calories + target.calories,
+      };
+      continue;
+    }
+
+    const balance = computeDayBalance(log);
+    daysWithData++;
+    days.push({
+      date: dateKey,
+      dayName: DAY_NAMES[dayOfWeek],
+      isTrainingDay,
+      consumed: balance.consumed,
+      target: balance.target,
+      status: balance.status,
+      surplusCalories: balance.surplus.calories,
+    });
+
+    totalConsumed = {
+      proteins: totalConsumed.proteins + balance.consumed.proteins,
+      carbs: totalConsumed.carbs + balance.consumed.carbs,
+      fats: totalConsumed.fats + balance.consumed.fats,
+      calories: totalConsumed.calories + balance.consumed.calories,
+    };
+    totalTarget = {
+      proteins: totalTarget.proteins + target.proteins,
+      carbs: totalTarget.carbs + target.carbs,
+      fats: totalTarget.fats + target.fats,
+      calories: totalTarget.calories + target.calories,
+    };
+  }
+
+  const totalSurplus = totalConsumed.calories - totalTarget.calories;
+  const proteinAdequacy = totalTarget.proteins > 0
+    ? Math.round((totalConsumed.proteins / totalTarget.proteins) * 100)
+    : 0;
+
+  // Verdict global
+  let verdict: WeeklyRecap['verdict'] = 'excellent';
+  let verdictMessage = '';
+  let nextWeekRecommendation = '';
+
+  if (daysWithData === 0) {
+    verdict = 'poor';
+    verdictMessage = 'Aucune donnée cette semaine.';
+    nextWeekRecommendation = 'Commence à enregistrer tes repas pour voir ta progression.';
+  } else if (proteinAdequacy < 80) {
+    verdict = 'poor';
+    verdictMessage = `Protéines insuffisantes — ${Math.round(totalConsumed.proteins / daysWithData)}g/j en moyenne (objectif : ${MACRO_TARGETS.training.proteins}g).`;
+    nextWeekRecommendation = `Ajoute une source de protéines à chaque repas. Priorité : poulet, œufs, fromage blanc.`;
+  } else if (Math.abs(totalSurplus) > 2000) {
+    verdict = totalSurplus > 0 ? 'average' : 'average';
+    verdictMessage = totalSurplus > 0
+      ? `Surplus de ${totalSurplus} kcal sur la semaine — risque de prise de gras.`
+      : `Déficit de ${Math.abs(totalSurplus)} kcal — risque de freiner la prise de muscle.`;
+    nextWeekRecommendation = totalSurplus > 0
+      ? `Réduis les glucides de 30-40g/jour la semaine prochaine.`
+      : `Augmente les glucides de 30-40g/jour (riz, patate douce, avoine).`;
+  } else if (proteinAdequacy >= 90 && Math.abs(totalSurplus) <= 1000) {
+    verdict = 'excellent';
+    verdictMessage = `Semaine parfaite ! ${Math.round(totalConsumed.proteins / daysWithData)}g de protéines/j, bilan calorique équilibré.`;
+    nextWeekRecommendation = `Continue exactement comme ça. Légère augmentation possible si tu veux accélérer la prise de masse.`;
+  } else {
+    verdict = 'good';
+    verdictMessage = `Bonne semaine. Quelques ajustements mineurs à faire.`;
+    nextWeekRecommendation = `Maintiens les protéines et ajuste les glucides selon tes séances.`;
+  }
+
+  const weekLabel = weekStartMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+  return {
+    weekLabel,
+    days,
+    totals: {
+      consumed: totalConsumed,
+      target: totalTarget,
+      surplusCalories: totalSurplus,
+      proteinAdequacy,
+    },
+    verdict,
+    verdictMessage,
+    nextWeekRecommendation,
+  };
+}

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { SessionLog, ProgressEntry } from '../lib/programData';
+import { programData } from '../lib/programData';
 import {
   computeAdaptation,
   computeFatigueScore,
@@ -16,6 +17,9 @@ import {
 import {
   computeDayBalance,
   computeWeeklyNutritionSummary,
+  computeWeeklyRecap,
+  computeMealAdjustments,
+  computeWeeklyCarryover,
   generateWeeklyMealPlan,
   generateShoppingList,
   type DayLog,
@@ -123,13 +127,21 @@ export function useFitnessTracker() {
       // Calculer les nouvelles adaptations pour chaque exercice
       const newAdaptations = { ...prev.exerciseAdaptations };
 
+      // Construire un index de tous les exercices du programme pour récupérer les cibles
+      const exerciseIndex: Record<string, { sets: number; repsMin: number; repsMax: number | null }> = {};
+      programData.sessions.forEach(session => {
+        session.exercises.forEach(ex => {
+          exerciseIndex[ex.id] = { sets: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax };
+        });
+      });
+
       log.exercises.forEach(exLog => {
-        // Trouver les infos de l'exercice dans le programme
+        const programEx = exerciseIndex[exLog.exerciseId];
         const perf: ExercisePerformance = {
           exerciseId: exLog.exerciseId,
-          targetSets: exLog.sets.length,
-          targetRepsMin: exLog.sets[0]?.reps ?? 8,
-          targetRepsMax: null,
+          targetSets: programEx?.sets ?? exLog.sets.length,
+          targetRepsMin: programEx?.repsMin ?? (exLog.sets[0]?.reps ?? 8),
+          targetRepsMax: programEx?.repsMax ?? null,
           sets: exLog.sets.map(s => ({
             weight: s.weight,
             reps: s.reps,
@@ -432,7 +444,32 @@ export function useFitnessTracker() {
   }, []);
 
   // ============================================================
-  // PLANNING PERSONNALISÉ (override par date)
+  // RÉCAP HEBDOMADAIRE & AJUSTEMENTS REPAS
+  // ============================================================
+
+  const getWeeklyRecap = useCallback((weekStartMonday: Date) => {
+    const allLogs = Object.values(data.nutritionLogs);
+    return computeWeeklyRecap(allLogs, weekStartMonday);
+  }, [data.nutritionLogs]);
+
+  const getMealAdjustments = useCallback((dateKey: string, completedMeals: string[]) => {
+    const log = getDayLog(dateKey);
+    const consumed = log.entries.reduce(
+      (acc, e) => ({
+        proteins: acc.proteins + e.proteins,
+        carbs: acc.carbs + e.carbs,
+        fats: acc.fats + e.fats,
+        calories: acc.calories + e.calories,
+      }),
+      { proteins: 0, carbs: 0, fats: 0, calories: 0 }
+    );
+    const allLogs = Object.values(data.nutritionLogs);
+    const weeklyCarryover = computeWeeklyCarryover(allLogs, dateKey);
+    return computeMealAdjustments(consumed, completedMeals, log.isTrainingDay, weeklyCarryover);
+  }, [data.nutritionLogs, getDayLog]);
+
+  // ============================================================
+  // Planning personnalisé (override par date)
   // ============================================================
 
   const setScheduleOverride = useCallback((dateKey: string, sessionId: string | null) => {
@@ -485,5 +522,8 @@ export function useFitnessTracker() {
     // Planning personnalisé
     setScheduleOverride,
     getScheduleOverride,
+    // Récap hebdomadaire
+    getWeeklyRecap,
+    getMealAdjustments,
   };
 }

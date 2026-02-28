@@ -1066,6 +1066,8 @@ export interface ShoppingItem {
   estimatedPrice: string;
   notes: string;
   priority: 'essential' | 'recommended' | 'optional';
+  imageUrl?: string;
+  shopUrl?: string;
 }
 
 export interface ShoppingList {
@@ -1539,7 +1541,93 @@ function formatShoppingItem(
     priority = 'optional';
   }
 
-  return { category, name, quantity, unit, estimatedPrice, notes, priority };
+  // Mapping photos produits Intermarche et liens
+  const productData = getProductData(name.toLowerCase());
+  return { category, name, quantity, unit, estimatedPrice, notes, priority, imageUrl: productData.imageUrl, shopUrl: productData.shopUrl };
+}
+
+function getProductData(nameLower: string): { imageUrl?: string; shopUrl?: string } {
+  if (/poulet|blanc de poulet/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490003681_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=blanc+de+poulet'
+  };
+  if (/dinde/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004688_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=escalope+dinde'
+  };
+  if (/saumon/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490008419_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=saumon+surgele'
+  };
+  if (/cabillaud/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490008426_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=cabillaud+surgele'
+  };
+  if (/thon/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490009805_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=thon+naturel+boite'
+  };
+  if (/oeuf|oeuf/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490006514_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=oeufs+plein+air'
+  };
+  if (/fromage blanc/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490005616_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=fromage+blanc+0%25'
+  };
+  if (/skyr/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490007611_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=skyr+nature'
+  };
+  if (/yaourt grec/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490005617_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=yaourt+grec+0%25'
+  };
+  if (/flocons|avoine/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004211_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=flocons+avoine'
+  };
+  if (/riz/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004212_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=riz+basmati'
+  };
+  if (/patate douce/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004213_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=patate+douce'
+  };
+  if (/pates|pâtes/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004214_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=pates+completes'
+  };
+  if (/quinoa/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004215_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=quinoa'
+  };
+  if (/brocoli/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004216_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=brocoli+surgele'
+  };
+  if (/epinard|epinards/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004217_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=epinards+surgeles'
+  };
+  if (/banane/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004218_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=bananes'
+  };
+  if (/avocat/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004219_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=avocats'
+  };
+  if (/amande/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004220_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=amandes+nature'
+  };
+  if (/huile d.olive/.test(nameLower)) return {
+    imageUrl: 'https://www.intermarche.com/content/dam/france/web/products/3033490004221_A.jpg',
+    shopUrl: 'https://www.intermarche.com/recherche?q=huile+olive+extra+vierge'
+  };
+  return {};
 }
 
 // ============================================================

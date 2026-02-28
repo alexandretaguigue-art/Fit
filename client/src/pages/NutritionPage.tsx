@@ -905,18 +905,26 @@ function CoursesTab() {
                 const priorityColor = item.priority === 'essential' ? '#22c55e' : item.priority === 'recommended' ? '#eab308' : '#6b7280';
                 return (
                   <div key={itemKey}
-                    className="rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer"
+                    className="rounded-2xl overflow-hidden transition-all duration-200"
                     style={{ background: isChecked ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', opacity: isChecked ? 0.55 : 1 }}
-                    onClick={() => toggleItem(itemKey)}
                   >
                     <div className="flex items-center gap-3 p-3">
                       {/* Checkbox */}
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200"
-                        style={{ background: isChecked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)', border: isChecked ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)' }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer"
+                        style={{ background: isChecked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)', border: isChecked ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)' }}
+                        onClick={() => toggleItem(itemKey)}>
                         {isChecked && <Check size={13} className="text-green-400" />}
                       </div>
+                      {/* Photo produit */}
+                      {item.imageUrl && (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => toggleItem(itemKey)}
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        </div>
+                      )}
                       {/* Infos produit */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0" onClick={() => toggleItem(itemKey)} style={{ cursor: 'pointer' }}>
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-white font-semibold text-sm leading-tight" style={{ fontFamily: 'Syne, sans-serif', textDecoration: isChecked ? 'line-through' : 'none', color: isChecked ? 'rgba(255,255,255,0.4)' : 'white' }}>
                             {item.name}
@@ -937,6 +945,19 @@ function CoursesTab() {
                           <p className="text-white/30 text-xs mt-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{item.notes}</p>
                         )}
                       </div>
+                      {/* Lien Intermarché */}
+                      {item.shopUrl && (
+                        <a href={item.shopUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                          style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.2)' }}
+                          onClick={e => e.stopPropagation()}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      )}
                     </div>
                   </div>
                 );

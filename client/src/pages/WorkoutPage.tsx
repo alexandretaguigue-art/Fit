@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target } from 'lucide-react';
-import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
+import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import ScoreRing from '../components/ScoreRing';
 import type { SessionLog, WorkoutSession, Exercise, FootballDrill } from '../lib/programData';
@@ -879,10 +879,16 @@ export default function WorkoutPage() {
 
   const today = new Date();
   const programStart = data.startDate ? new Date(data.startDate) : today;
+  // Calcul de la semaine courante pour la variation des exercices par phase
+  const weekNumberForPhase = data.startDate
+    ? Math.max(1, Math.ceil((today.getTime() - programStart.getTime()) / (7 * 24 * 3600 * 1000)))
+    : 1;
 
   // Séance du jour selon le cycle
   const cycleDayToday = data.startDate ? getCycleDayForDate(today, programStart) : 1;
-  const todaySession = data.startDate ? getSessionForCycleDay(cycleDayToday) : null;
+  const rawTodaySession = data.startDate ? getSessionForCycleDay(cycleDayToday) : null;
+  // Applique la variation d'exercices selon la phase (sem. 1-4 = P1, 5-8 = P2, 9-12 = P3)
+  const todaySession = rawTodaySession ? (getSessionForPhase(rawTodaySession.id, weekNumberForPhase) || rawTodaySession) : null;
 
   if (selectedSession) {
     const colors = SESSION_TYPE_COLORS[selectedSession.type];

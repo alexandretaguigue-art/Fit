@@ -802,6 +802,514 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
 };
 
+
+// ============================================================
+// EXERCICES SUPPLEMENTAIRES -- Variations Phase 2 & 3
+// ============================================================
+
+const exerciseDatabasePhase2: Record<string, Exercise> = {
+  // --- HAUT A Phase 2 (Pectoraux, Epaules, Triceps) ---
+  developpe_halteres_incline: {
+    id: "developpe_halteres_incline",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-bench-press-front.mp4",
+    name: "Developpe incline halteres",
+    sets: 4, repsMin: 8, repsMax: 10, restSeconds: 120,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: "Activation", note: "Echauffement -- amplitude complete, coudes a 75 degres" },
+      { reps: 10, weightMultiplier: 0.85, label: "Travail", note: "Charge principale -- pectoraux superieurs" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- contraction en haut 1 seconde" },
+      { reps: 10, weightMultiplier: 0.85, label: "Decharge", note: "Va chercher l'echec -- drop set si possible" },
+    ],
+    relevanceScore: 94,
+    relevanceReason: "Cible les pectoraux superieurs avec une amplitude plus grande. Variation essentielle pour un developpement complet.",
+    alternatives: [{ name: "Developpe couche barre", relevanceScore: 95 }, { name: "Pompes inclinees lestees", relevanceScore: 78 }],
+    tips: ["Banc a 30-45 degres. Coudes a 75 degres du corps.", "Descends les halteres jusqu'a l'etirement maximal.", "Pousse vers le haut ET legerement vers l'interieur."],
+    muscleGroups: ["Pectoraux superieurs", "Deltoides anterieurs", "Triceps"],
+    defaultWeight: 18, weightProgression: "Augmente de 2kg quand tu completes 4x10.",
+  },
+  developpe_arnold: {
+    id: "developpe_arnold",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-arnold-press-front.mp4",
+    name: "Developpe Arnold",
+    sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.75, label: "Activation", note: "Rotation complete -- sens les 3 faisceaux des deltoides" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "Charge principale -- rotation lente et controlee" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "Maintiens la forme -- ne compense pas avec le dos" },
+    ],
+    relevanceScore: 91,
+    relevanceReason: "Sollicite les 3 faisceaux des deltoides grace a la rotation. Developpe des epaules plus completes que le developpe militaire classique.",
+    alternatives: [{ name: "Developpe militaire halteres", relevanceScore: 93 }, { name: "Developpe militaire barre", relevanceScore: 88 }],
+    tips: ["Pars paumes vers toi, fais pivoter pendant la montee.", "Mouvement lent et controle -- pas de momentum.", "Amplitude complete : descends jusqu'aux epaules."],
+    muscleGroups: ["Deltoides anterieurs", "Deltoides lateraux", "Triceps"],
+    defaultWeight: 12, weightProgression: "Augmente de 2kg quand tu completes 3x12.",
+  },
+  skull_crusher: {
+    id: "skull_crusher",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/87.gif",
+    name: "Skull Crusher (barre EZ)",
+    sets: 3, repsMin: 10, repsMax: 12, restSeconds: 75,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.75, label: "Activation", note: "Coudes fixes -- ne les laisse pas s'ecarter" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "Descente lente 3 secondes -- etirement maximal" },
+      { reps: 8,  weightMultiplier: 1.15, label: "Intensif", note: "Charge lourde -- si la forme reste parfaite" },
+    ],
+    relevanceScore: 92,
+    relevanceReason: "Etirement maximal des triceps en position allongee. Recrute le chef long du triceps souvent sous-developpe.",
+    alternatives: [{ name: "Extension triceps au-dessus de la tete", relevanceScore: 88 }, { name: "Extension poulie haute", relevanceScore: 87 }],
+    tips: ["Allonge sur un banc, barre EZ tenue au-dessus du front.", "Descends la barre vers le front (pas derriere la tete).", "Coudes fixes -- seuls les avant-bras bougent."],
+    muscleGroups: ["Triceps (chef long)"],
+    defaultWeight: 20, weightProgression: "Augmente de 2.5kg quand tu completes 3x12.",
+  },
+  cable_fly: {
+    id: "cable_fly",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/41.gif",
+    name: "Ecarte poulie croisee (cables)",
+    sets: 3, repsMin: 12, repsMax: 15, restSeconds: 60,
+    setScheme: [
+      { reps: 15, weightMultiplier: 0.80, label: "Leger", note: "Sens la contraction des pectoraux a chaque rep" },
+      { reps: 12, weightMultiplier: 1.00, label: "Travail", note: "Tension constante grace aux cables" },
+      { reps: 12, weightMultiplier: 1.00, label: "Pump", note: "Va chercher la brulure -- drop set si possible" },
+    ],
+    relevanceScore: 90,
+    relevanceReason: "Tension constante sur les pectoraux tout au long du mouvement. Ideal pour la finition et la congestion.",
+    alternatives: [{ name: "Ecarte incline halteres", relevanceScore: 86 }, { name: "Pompes diamant", relevanceScore: 72 }],
+    tips: ["Legere inclinaison vers l'avant.", "Croise les mains en fin de mouvement pour maximiser la contraction.", "Poids leger -- la forme prime."],
+    muscleGroups: ["Pectoraux", "Deltoides anterieurs"],
+    defaultWeight: 10, weightProgression: "Augmente de 2.5kg quand tu completes 3x15.",
+  },
+  // --- BAS A Phase 2 (Quadriceps, Fessiers) ---
+  hack_squat: {
+    id: "hack_squat",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/69.gif",
+    name: "Hack Squat (machine)",
+    sets: 4, repsMin: 8, repsMax: 10, restSeconds: 120,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.65, label: "Activation", note: "Descente profonde, genoux dans l'axe des orteils" },
+      { reps: 10, weightMultiplier: 0.80, label: "Travail", note: "Charge principale -- amplitude complete" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- pousse fort sur les talons" },
+      { reps: 10, weightMultiplier: 0.80, label: "Decharge", note: "Retour a 80% -- va a l'echec" },
+    ],
+    relevanceScore: 90,
+    relevanceReason: "Variation du squat qui cible davantage les quadriceps. Moins de stress sur le bas du dos.",
+    alternatives: [{ name: "Squat barre", relevanceScore: 100 }, { name: "Presse a cuisses", relevanceScore: 87 }],
+    tips: ["Pieds legerement plus hauts sur la plateforme pour plus de quadriceps.", "Amplitude complete -- descends jusqu'a 90 degres minimum.", "Ne verrouille pas les genoux en haut."],
+    muscleGroups: ["Quadriceps", "Fessiers"],
+    defaultWeight: 80, weightProgression: "Augmente de 5-10kg quand tu completes 4x10.",
+  },
+  squat_bulgare_p2: {
+    id: "squat_bulgare_p2",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/136.gif",
+    name: "Squat bulgare (halteres)",
+    sets: 3, repsMin: 10, repsMax: 12, restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: "Activation", note: "Equilibre et amplitude -- pied arriere sur banc" },
+      { reps: 10, weightMultiplier: 0.90, label: "Travail", note: "Descends le genou arriere vers le sol" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- pousse sur le talon avant" },
+    ],
+    relevanceScore: 93,
+    relevanceReason: "Exercice unilateral qui corrige les desequilibres et developpe les quadriceps et fessiers avec une amplitude superieure.",
+    alternatives: [{ name: "Fentes avant statiques", relevanceScore: 85 }, { name: "Fentes marchees", relevanceScore: 88 }],
+    tips: ["Pied arriere sur un banc a hauteur du genou.", "Pied avant a 1m du banc.", "Descends verticalement -- ne te penche pas en avant."],
+    muscleGroups: ["Quadriceps", "Fessiers", "Ischio-jambiers"],
+    defaultWeight: 16, weightProgression: "Augmente de 2kg (1kg/haltere) quand tu completes 3x12 par jambe.",
+  },
+  // --- HAUT B Phase 2 (Dos, Epaules, Biceps) ---
+  tirage_vertical_prise_serree: {
+    id: "tirage_vertical_prise_serree",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/5.gif",
+    name: "Tirage vertical prise serree (poulie)",
+    sets: 4, repsMin: 8, repsMax: 10, restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: "Activation", note: "Tire les coudes vers les hanches, pas vers l'arriere" },
+      { reps: 10, weightMultiplier: 0.85, label: "Travail", note: "Contraction maximale en bas -- tiens 1 seconde" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- etirement complet en haut" },
+      { reps: 10, weightMultiplier: 0.85, label: "Decharge", note: "Retour a 85% -- va a l'echec" },
+    ],
+    relevanceScore: 90,
+    relevanceReason: "Prise serree neutre = activation maximale du grand dorsal inferieur. Variation complementaire des tractions.",
+    alternatives: [{ name: "Tractions prise serree", relevanceScore: 92 }, { name: "Tirage vertical prise large", relevanceScore: 88 }],
+    tips: ["Prise neutre (paumes face a face).", "Tire les coudes vers les hanches.", "Etirement complet en haut pour maximiser l'amplitude."],
+    muscleGroups: ["Grand dorsal", "Biceps", "Rhomboides"],
+    defaultWeight: 55, weightProgression: "Augmente de 5kg quand tu completes 4x10.",
+  },
+  rowing_haltere: {
+    id: "rowing_haltere",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-single-arm-row-side.mp4",
+    name: "Rowing haltere unilateral",
+    sets: 4, repsMin: 10, repsMax: 12, restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.75, label: "Activation", note: "Dos plat, coude qui remonte haut" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "Charge principale -- retracte l'omoplate en fin de mouvement" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "Meme charge -- qualite de contraction" },
+      { reps: 12, weightMultiplier: 0.80, label: "Pump", note: "Retour a 80% -- va chercher la brulure" },
+    ],
+    relevanceScore: 93,
+    relevanceReason: "Permet une amplitude et une contraction superieures au rowing barre. Corrige les desequilibres gauche/droite.",
+    alternatives: [{ name: "Rowing barre", relevanceScore: 96 }, { name: "Rowing machine", relevanceScore: 85 }],
+    tips: ["Main et genou du meme cote sur le banc.", "Tire le coude vers le plafond, pas vers l'arriere.", "Amplitude complete -- etirement complet en bas."],
+    muscleGroups: ["Grand dorsal", "Rhomboides", "Trapezes", "Biceps"],
+    defaultWeight: 22, weightProgression: "Augmente de 2kg quand tu completes 4x12.",
+  },
+  curl_barre_ez: {
+    id: "curl_barre_ez",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/32.gif",
+    name: "Curl barre EZ",
+    sets: 3, repsMin: 8, repsMax: 10, restSeconds: 75,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: "Activation", note: "Coudes fixes, amplitude complete" },
+      { reps: 10, weightMultiplier: 0.90, label: "Travail", note: "Charge principale -- contraction maximale en haut" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- descente 3-4 secondes" },
+    ],
+    relevanceScore: 91,
+    relevanceReason: "Permet de charger plus lourd que les halteres. La barre EZ reduit le stress sur les poignets.",
+    alternatives: [{ name: "Curl halteres debout", relevanceScore: 85 }, { name: "Curl incline", relevanceScore: 95 }],
+    tips: ["Coudes colles au corps -- ne les laisse pas partir vers l'avant.", "Descente lente (3-4 secondes) pour maximiser le temps sous tension.", "Contraction maximale en haut -- tiens 1 seconde."],
+    muscleGroups: ["Biceps", "Brachial"],
+    defaultWeight: 25, weightProgression: "Augmente de 2.5kg quand tu completes 3x10.",
+  },
+  // --- BAS B Phase 2 (Ischio-jambiers, Mollets) ---
+  rdl_halteres: {
+    id: "rdl_halteres",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-romanian-deadlift-front.mp4",
+    name: "Souleve de terre roumain (halteres)",
+    sets: 4, repsMin: 10, repsMax: 12, restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: "Activation", note: "Sens l'etirement des ischio-jambiers -- dos plat" },
+      { reps: 10, weightMultiplier: 0.85, label: "Travail", note: "Charge principale -- hanches vers l'arriere" },
+      { reps: 8,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- etirement maximal en bas" },
+      { reps: 12, weightMultiplier: 0.75, label: "Pump", note: "Retour a 75% -- va chercher la brulure dans les ischio" },
+    ],
+    relevanceScore: 92,
+    relevanceReason: "Isole davantage les ischio-jambiers que le souleve de terre classique. Amplitude plus grande avec les halteres.",
+    alternatives: [{ name: "Souleve de terre barre", relevanceScore: 100 }, { name: "Good Mornings", relevanceScore: 80 }],
+    tips: ["Descends les halteres le long des tibias.", "Hanches vers l'arriere, dos plat -- ne flechis pas les genoux.", "Sens l'etirement des ischio avant de remonter."],
+    muscleGroups: ["Ischio-jambiers", "Fessiers", "Lombaires"],
+    defaultWeight: 20, weightProgression: "Augmente de 2kg quand tu completes 4x12.",
+  },
+  nordic_hamstring: {
+    id: "nordic_hamstring",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/68.gif",
+    name: "Nordic Hamstring Curls",
+    sets: 3, repsMin: 6, repsMax: 8, restSeconds: 90,
+    setScheme: [
+      { reps: 6, weightMultiplier: 0.00, label: "Poids de corps", note: "Descente lente 3-5 secondes -- controle maximal" },
+      { reps: 6, weightMultiplier: 0.00, label: "Poids de corps", note: "Si trop difficile, aide-toi des mains pour remonter" },
+      { reps: 6, weightMultiplier: 0.00, label: "Poids de corps", note: "Qualite > quantite -- ne triche pas" },
+    ],
+    relevanceScore: 95,
+    relevanceReason: "L'exercice le plus efficace pour prevenir les blessures aux ischio-jambiers. Reduit de 51% le risque de dechirure (etudes FIFA). Indispensable pour le football.",
+    alternatives: [{ name: "Leg Curl machine", relevanceScore: 85 }, { name: "Leg Curl avec haltere", relevanceScore: 72 }],
+    tips: ["Genoux sur un tapis, pieds bloques sous un banc ou tenus par un partenaire.", "Descente lente et controlee -- c'est la phase la plus importante.", "Aide-toi des mains pour remonter si necessaire."],
+    muscleGroups: ["Ischio-jambiers"],
+    defaultWeight: 0, weightProgression: "Progresse vers des descentes de plus en plus lentes (5-7 secondes).",
+  },
+};
+
+const exerciseDatabasePhase3: Record<string, Exercise> = {
+  // --- HAUT A Phase 3 (Pectoraux, Epaules, Triceps -- Intensification) ---
+  developpe_couche_prise_serree: {
+    id: "developpe_couche_prise_serree",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/26.gif",
+    name: "Developpe couche prise serree",
+    sets: 4, repsMin: 6, repsMax: 8, restSeconds: 120,
+    setScheme: [
+      { reps: 10, weightMultiplier: 0.65, label: "Activation", note: "Prise a largeur d'epaules -- triceps en priorite" },
+      { reps: 8,  weightMultiplier: 0.80, label: "Travail", note: "Charge principale -- coudes proches du corps" },
+      { reps: 6,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- REST-PAUSE si besoin" },
+      { reps: 8,  weightMultiplier: 0.80, label: "Drop Set", note: "Drop set immediat -- descends de 20% et va a l'echec" },
+    ],
+    relevanceScore: 93,
+    relevanceReason: "Cible les triceps et les pectoraux internes. La prise serree permet de surcharger les triceps avec un mouvement polyarticulaire.",
+    alternatives: [{ name: "Developpe couche barre", relevanceScore: 98 }, { name: "Skull Crusher", relevanceScore: 90 }],
+    tips: ["Prise a 30-40cm d'ecart (pas trop serree -- risque poignets).", "Coudes proches du corps pendant la descente.", "Pousse vers le haut et legerement vers les pieds."],
+    muscleGroups: ["Triceps", "Pectoraux internes", "Deltoides anterieurs"],
+    defaultWeight: 45, weightProgression: "Augmente de 2.5kg quand tu completes 4x8.",
+  },
+  dips_lestes_avances: {
+    id: "dips_lestes_avances",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bench-dips-front.mp4",
+    name: "Dips lestes + Rest-Pause",
+    sets: 3, repsMin: 6, repsMax: 8, restSeconds: 120,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.00, label: "Poids de corps", note: "Sans lest -- amplitude maximale, descente 3 secondes" },
+      { reps: 6,  weightMultiplier: 1.00, label: "Leste", note: "Avec lest -- REST-PAUSE : 6 reps, 15s pause, max reps" },
+      { reps: 6,  weightMultiplier: 1.00, label: "Leste", note: "Meme protocole REST-PAUSE" },
+    ],
+    relevanceScore: 96,
+    relevanceReason: "Technique REST-PAUSE pour depasser le plateau. Augmente le volume effectif sans augmenter la duree de la seance.",
+    alternatives: [{ name: "Dips poids de corps", relevanceScore: 95 }, { name: "Extension triceps poulie", relevanceScore: 88 }],
+    tips: ["Lest de 10-20kg si possible.", "REST-PAUSE : fais tes reps, pose 15 secondes, reprends jusqu'a l'echec.", "Amplitude complete -- descends jusqu'a 90 degres."],
+    muscleGroups: ["Triceps", "Pectoraux inferieurs"],
+    defaultWeight: 10, weightProgression: "Augmente le lest de 5kg quand tu completes 3x8+3 en rest-pause.",
+  },
+  // --- BAS A Phase 3 (Quadriceps, Fessiers -- Intensification) ---
+  squat_pause: {
+    id: "squat_pause",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/12.gif",
+    name: "Squat Pause (2 secondes en bas)",
+    sets: 4, repsMin: 5, repsMax: 6, restSeconds: 180,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.60, label: "Activation", note: "Echauffement -- sens la position basse" },
+      { reps: 6,  weightMultiplier: 0.75, label: "Travail", note: "Pause 2 secondes en bas -- elimine le rebond" },
+      { reps: 5,  weightMultiplier: 0.90, label: "Intensif", note: "Charge lourde + pause -- force pure" },
+      { reps: 5,  weightMultiplier: 0.90, label: "Intensif", note: "Maintiens la qualite -- pas de triche" },
+    ],
+    relevanceScore: 98,
+    relevanceReason: "La pause elimine le rebond et force un recrutement maximal des fibres musculaires. Developpe une force explosive superieure.",
+    alternatives: [{ name: "Squat barre classique", relevanceScore: 100 }, { name: "Hack Squat", relevanceScore: 88 }],
+    tips: ["Pause complete en bas -- aucun rebond.", "Garde la tension dans tout le corps pendant la pause.", "Poids legerement reduit par rapport au squat classique (normal)."],
+    muscleGroups: ["Quadriceps", "Fessiers", "Ischio-jambiers"],
+    defaultWeight: 55, weightProgression: "Augmente de 2.5kg quand tu completes 4x6 avec pause complete.",
+  },
+  // --- HAUT B Phase 3 (Dos, Epaules, Biceps -- Intensification) ---
+  tractions_lestees_avancees: {
+    id: "tractions_lestees_avancees",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/3.gif",
+    name: "Tractions lestees + Drop Set",
+    sets: 4, repsMin: 5, repsMax: 6, restSeconds: 150,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.00, label: "Poids de corps", note: "Sans lest -- amplitude complete, descente 3 secondes" },
+      { reps: 6,  weightMultiplier: 1.00, label: "Leste", note: "Avec lest max -- DROP SET : retire le lest et continue" },
+      { reps: 5,  weightMultiplier: 1.00, label: "Leste", note: "Meme protocole DROP SET" },
+      { reps: 6,  weightMultiplier: 0.00, label: "Drop Set", note: "Poids de corps jusqu'a l'echec -- va chercher les dernieres fibres" },
+    ],
+    relevanceScore: 100,
+    relevanceReason: "Drop set sur tractions lestees = volume et intensite maximaux. Technique avancee pour depasser les plateaux de progression.",
+    alternatives: [{ name: "Tractions poids de corps", relevanceScore: 98 }, { name: "Tirage vertical poulie", relevanceScore: 88 }],
+    tips: ["Lest de 10-20kg.", "DROP SET : fais tes reps lestees, retire le lest immediatement, continue jusqu'a l'echec.", "Amplitude complete -- descente complete obligatoire."],
+    muscleGroups: ["Grand dorsal", "Biceps", "Rhomboides"],
+    defaultWeight: 10, weightProgression: "Augmente le lest de 2.5kg quand tu completes 4x6 + 4+ reps en drop set.",
+  },
+  curl_concentration: {
+    id: "curl_concentration",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/34.gif",
+    name: "Curl concentration + Drop Set",
+    sets: 3, repsMin: 10, repsMax: 12, restSeconds: 60,
+    setScheme: [
+      { reps: 12, weightMultiplier: 1.00, label: "Travail", note: "Coude contre la cuisse -- supination maximale en haut" },
+      { reps: 10, weightMultiplier: 1.00, label: "Travail", note: "DROP SET : descends de 2kg et continue jusqu'a l'echec" },
+      { reps: 10, weightMultiplier: 1.00, label: "Drop Set", note: "Meme protocole -- brulure maximale dans le biceps" },
+    ],
+    relevanceScore: 88,
+    relevanceReason: "Isolation maximale du biceps. Le drop set en phase 3 cree un stress metabolique eleve pour maximiser l'hypertrophie.",
+    alternatives: [{ name: "Curl incline", relevanceScore: 95 }, { name: "Curl barre EZ", relevanceScore: 89 }],
+    tips: ["Assis, coude contre la cuisse interieure.", "Supination maximale en haut -- tourne la paume vers le plafond.", "Contraction maximale -- tiens 2 secondes en haut."],
+    muscleGroups: ["Biceps (pic)"],
+    defaultWeight: 12, weightProgression: "Augmente de 2kg quand tu completes 3x12 + 4+ reps en drop set.",
+  },
+  // --- BAS B Phase 3 (Ischio-jambiers, Mollets -- Intensification) ---
+  souleve_sumo: {
+    id: "souleve_sumo",
+    imageUrl: "https://cdn.jefit.com/assets/img/exercises/gifs/11.gif",
+    name: "Souleve de terre Sumo",
+    sets: 4, repsMin: 5, repsMax: 6, restSeconds: 180,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.60, label: "Activation", note: "Pieds larges, orteils vers l'exterieur -- dos plat" },
+      { reps: 6,  weightMultiplier: 0.80, label: "Travail", note: "Charge principale -- pousse le sol, genoux vers l'exterieur" },
+      { reps: 5,  weightMultiplier: 1.00, label: "Intensif", note: "Charge max -- technique Valsalva" },
+      { reps: 5,  weightMultiplier: 1.00, label: "Intensif", note: "Maintiens la charge max -- qualite > quantite" },
+    ],
+    relevanceScore: 95,
+    relevanceReason: "Variation sumo = plus d'activation des adducteurs et des fessiers. Variation essentielle pour un developpement complet des jambes.",
+    alternatives: [{ name: "Souleve de terre classique", relevanceScore: 100 }, { name: "Souleve roumain", relevanceScore: 90 }],
+    tips: ["Pieds a 1.5x largeur d'epaules, orteils a 45 degres.", "Genoux pousses vers l'exterieur pendant toute la montee.", "Barre plus proche du corps qu'en conventionnel."],
+    muscleGroups: ["Ischio-jambiers", "Adducteurs", "Fessiers", "Quadriceps"],
+    defaultWeight: 65, weightProgression: "Augmente de 2.5-5kg quand tu completes 4x6.",
+  },
+  mollets_drop_set: {
+    id: "mollets_drop_set",
+    videoUrl: "https://media.musclewiki.com/media/uploads/videos/branded/male-Vitruvian-standing-calf-raise-side.mp4",
+    name: "Extensions mollets -- Triple Drop Set",
+    sets: 4, repsMin: 12, repsMax: 15, restSeconds: 45,
+    setScheme: [
+      { reps: 15, weightMultiplier: 1.00, label: "Travail", note: "Charge normale -- amplitude complete" },
+      { reps: 12, weightMultiplier: 1.00, label: "DROP 1", note: "Descends de 20% -- continue immediatement" },
+      { reps: 12, weightMultiplier: 0.80, label: "DROP 2", note: "Descends encore de 20% -- continue" },
+      { reps: 15, weightMultiplier: 0.60, label: "DROP 3", note: "Dernier drop -- va jusqu'a l'echec total" },
+    ],
+    relevanceScore: 91,
+    relevanceReason: "Les mollets sont tres resistants a la fatigue. Le triple drop set cree un stress metabolique suffisant pour les faire hypertrophier.",
+    alternatives: [{ name: "Extensions mollets classiques", relevanceScore: 89 }, { name: "Extensions mollets assis", relevanceScore: 85 }],
+    tips: ["Amplitude COMPLETE a chaque repetition.", "Drop set : reduis la charge immediatement sans pause.", "Tiens 1-2 secondes en haut a chaque rep."],
+    muscleGroups: ["Gastrocnemiens", "Soleaires"],
+    defaultWeight: 60, weightProgression: "Augmente la charge de depart de 5kg quand tu completes 4x15 + 12 + 12 + 12.",
+  },
+};
+
+// ============================================================
+// SESSIONS VARIANTES PAR PHASE
+// ============================================================
+
+const sessionsPhase2: WorkoutSession[] = [
+  {
+    id: "upper_a_p2",
+    day: 1, type: "gym" as const,
+    name: "Haut du corps A -- Phase 2",
+    focus: "Pectoraux superieurs . Epaules . Triceps",
+    durationMin: 70,
+    exercises: [
+      exerciseDatabasePhase2.developpe_halteres_incline,
+      exerciseDatabasePhase2.developpe_arnold,
+      exerciseDatabasePhase2.skull_crusher,
+      exerciseDatabasePhase2.cable_fly,
+      exerciseDatabase.elevations_laterales,
+      exerciseDatabase.extension_triceps_poulie,
+    ],
+    coachNote: "Phase 2 : on monte en intensite. Le developpe incline halteres cible les pectoraux superieurs -- la partie qui donne du relief. Le skull crusher est ton arme secrete pour des triceps massifs. Augmente les charges par rapport a la phase 1.",
+  },
+  {
+    id: "lower_a_p2",
+    day: 3, type: "gym" as const,
+    name: "Bas du corps A -- Phase 2",
+    focus: "Quadriceps . Fessiers . Abdos",
+    durationMin: 75,
+    exercises: [
+      exerciseDatabasePhase2.hack_squat,
+      exerciseDatabasePhase2.squat_bulgare_p2,
+      exerciseDatabase.leg_extension,
+      exerciseDatabase.hip_thrust,
+      exerciseDatabase.releve_jambes,
+      exerciseDatabase.gainage,
+    ],
+    coachNote: "Phase 2 : le hack squat remplace le squat barre pour cibler davantage les quadriceps. Le squat bulgare corrige les desequilibres. Volume plus eleve qu'en phase 1.",
+  },
+  {
+    id: "upper_b_p2",
+    day: 4, type: "gym" as const,
+    name: "Haut du corps B -- Phase 2",
+    focus: "Dos . Epaules . Biceps",
+    durationMin: 70,
+    exercises: [
+      exerciseDatabasePhase2.tirage_vertical_prise_serree,
+      exerciseDatabasePhase2.rowing_haltere,
+      exerciseDatabase.tirage_horizontal,
+      exerciseDatabase.face_pull,
+      exerciseDatabasePhase2.curl_barre_ez,
+      exerciseDatabase.curl_marteau,
+    ],
+    coachNote: "Phase 2 : tirage prise serree pour le grand dorsal inferieur, rowing haltere unilateral pour corriger les desequilibres. Curl barre EZ pour charger plus lourd sur les biceps.",
+  },
+  {
+    id: "lower_b_p2",
+    day: 8, type: "gym" as const,
+    name: "Bas du corps B -- Phase 2",
+    focus: "Ischio-jambiers . Mollets . Abdos",
+    durationMin: 70,
+    exercises: [
+      exerciseDatabasePhase2.rdl_halteres,
+      exerciseDatabasePhase2.nordic_hamstring,
+      exerciseDatabase.fentes_bulgares,
+      exerciseDatabase.extensions_mollets,
+      exerciseDatabase.crunches_poulie,
+      exerciseDatabase.russian_twist,
+    ],
+    coachNote: "Phase 2 : RDL halteres pour un etirement maximal des ischio-jambiers. Nordic Hamstring Curls -- l'exercice le plus important pour prevenir les blessures au foot. Indispensable.",
+  },
+];
+
+const sessionsPhase3: WorkoutSession[] = [
+  {
+    id: "upper_a_p3",
+    day: 1, type: "gym" as const,
+    name: "Haut du corps A -- Phase 3",
+    focus: "Pectoraux . Triceps . Intensification",
+    durationMin: 75,
+    exercises: [
+      exerciseDatabase.developpe_couche,
+      exerciseDatabasePhase3.developpe_couche_prise_serree,
+      exerciseDatabasePhase3.dips_lestes_avances,
+      exerciseDatabasePhase2.cable_fly,
+      exerciseDatabase.elevations_laterales,
+      exerciseDatabase.extension_triceps_poulie,
+    ],
+    coachNote: "Phase 3 : intensite maximale. Developpe couche lourd + prise serree = double attaque sur les triceps. Dips lestes en REST-PAUSE pour depasser tes limites. Drop sets sur les cables.",
+  },
+  {
+    id: "lower_a_p3",
+    day: 3, type: "gym" as const,
+    name: "Bas du corps A -- Phase 3",
+    focus: "Quadriceps . Fessiers . Force explosive",
+    durationMin: 80,
+    exercises: [
+      exerciseDatabasePhase3.squat_pause,
+      exerciseDatabasePhase2.hack_squat,
+      exerciseDatabase.leg_extension,
+      exerciseDatabase.hip_thrust,
+      exerciseDatabase.releve_jambes,
+      exerciseDatabase.gainage,
+    ],
+    coachNote: "Phase 3 : squat pause pour eliminer le rebond et recruter 100% des fibres. Technique avancee qui developpe une force explosive directement transferable au football.",
+  },
+  {
+    id: "upper_b_p3",
+    day: 4, type: "gym" as const,
+    name: "Haut du corps B -- Phase 3",
+    focus: "Dos . Biceps . Techniques avancees",
+    durationMin: 75,
+    exercises: [
+      exerciseDatabasePhase3.tractions_lestees_avancees,
+      exerciseDatabase.rowing_barre,
+      exerciseDatabasePhase2.tirage_vertical_prise_serree,
+      exerciseDatabase.face_pull,
+      exerciseDatabasePhase3.curl_concentration,
+      exerciseDatabase.curl_marteau,
+    ],
+    coachNote: "Phase 3 : tractions lestees en DROP SET -- la technique la plus efficace pour maximiser le volume sur les biceps et le dos en une seule serie. Curl concentration pour le pic du biceps.",
+  },
+  {
+    id: "lower_b_p3",
+    day: 8, type: "gym" as const,
+    name: "Bas du corps B -- Phase 3",
+    focus: "Ischio-jambiers . Adducteurs . Mollets",
+    durationMin: 75,
+    exercises: [
+      exerciseDatabasePhase3.souleve_sumo,
+      exerciseDatabasePhase2.nordic_hamstring,
+      exerciseDatabase.leg_curl,
+      exerciseDatabasePhase3.mollets_drop_set,
+      exerciseDatabase.crunches_poulie,
+      exerciseDatabase.russian_twist,
+    ],
+    coachNote: "Phase 3 : souleve sumo pour les adducteurs et fessiers -- variation essentielle. Triple drop set sur les mollets pour les forcer a grandir. Nordic Hamstring obligatoire pour le football.",
+  },
+];
+
+// Fonction pour obtenir la session selon la phase
+export function getSessionForPhase(sessionId: string, weekNumber: number): WorkoutSession | undefined {
+  // Phase 1 : semaines 1-4
+  // Phase 2 : semaines 5-8
+  // Phase 3 : semaines 9-12
+  const baseId = sessionId.replace(/_p[23]$/, "");
+  
+  if (weekNumber >= 9) {
+    // Phase 3
+    const p3Map: Record<string, string> = {
+      upper_a: "upper_a_p3",
+      lower_a: "lower_a_p3",
+      upper_b: "upper_b_p3",
+      lower_b: "lower_b_p3",
+    };
+    if (p3Map[baseId]) {
+      return sessionsPhase3.find(s => s.id === p3Map[baseId]);
+    }
+  } else if (weekNumber >= 5) {
+    // Phase 2
+    const p2Map: Record<string, string> = {
+      upper_a: "upper_a_p2",
+      lower_a: "lower_a_p2",
+      upper_b: "upper_b_p2",
+      lower_b: "lower_b_p2",
+    };
+    if (p2Map[baseId]) {
+      return sessionsPhase2.find(s => s.id === p2Map[baseId]);
+    }
+  }
+  
+  // Phase 1 (semaines 1-4) ou sessions non-musculation
+  return sessions.find(s => s.id === sessionId);
+}
+
 // ============================================================
 // EXERCICES FOOTBALL — Explosivité, Appuis, Accélération
 // ============================================================

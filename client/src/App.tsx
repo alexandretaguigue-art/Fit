@@ -1,37 +1,40 @@
+// DESIGN: "Coach Nocturne" — App principale
+// Dark mode premium fitness, navigation par onglets
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-
+import WorkoutPage from "./pages/WorkoutPage";
+import NutritionPage from "./pages/NutritionPage";
+import ProgressPage from "./pages/ProgressPage";
+import TipsPage from "./pages/TipsPage";
+import Nav from "./components/Nav";
 
 function Router() {
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/workout"} component={WorkoutPage} />
+        <Route path={"/nutrition"} component={NutritionPage} />
+        <Route path={"/progress"} component={ProgressPage} />
+        <Route path={"/tips"} component={TipsPage} />
+        <Route component={Home} />
+      </Switch>
+      <Nav />
+    </div>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster />
+          <Toaster theme="dark" />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

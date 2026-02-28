@@ -1,10 +1,12 @@
 // DESIGN: "Coach Nocturne" — Dark Mode Premium Fitness
 // Hero section avec image, stats du programme, cycle 14 jours, séance du jour
 
+import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Dumbbell, Target, Flame, ChevronRight, Trophy, Calendar, Zap, Bike, Bed } from 'lucide-react';
+import { Dumbbell, Target, Flame, ChevronRight, Trophy, Calendar, Zap, Bike, Bed, X, Check } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
+import { toast } from 'sonner';
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
 
@@ -32,7 +34,8 @@ function SessionTypeIcon({ type, size = 16 }: { type: string; size?: number }) {
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const { data, startProgram, getCurrentWeek, getStats } = useFitnessTracker();
+  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride } = useFitnessTracker();
+  const [editingDay, setEditingDay] = useState<number | null>(null);
   const stats = getStats();
   const currentWeek = getCurrentWeek();
 
@@ -232,13 +235,19 @@ export default function Home() {
           className="rounded-2xl p-4"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Cycle 14 jours
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white/50 text-xs uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Cycle 14 jours
+            </p>
+            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Appuie sur un jour pour modifier
+            </span>
+          </div>
           <div className="grid grid-cols-7 gap-1.5">
             {cycle14Days.map(day => {
               const isToday = data.startDate && day.dayNumber === cycleDayToday;
               const isPast = data.startDate && day.dayNumber < cycleDayToday;
+              const isEditing = editingDay === day.dayNumber;
               const colors = SESSION_TYPE_COLORS[day.type];
               return (
                 <div
@@ -246,29 +255,34 @@ export default function Home() {
                   className="flex flex-col items-center gap-1"
                   title={day.label}
                 >
-                  <div
-                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200"
+                  <button
+                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200 active:scale-90"
                     style={{
-                      background: isToday
+                      background: isEditing
+                        ? 'rgba(255,255,255,0.15)'
+                        : isToday
                         ? colors.text
                         : isPast
                         ? 'rgba(255,255,255,0.06)'
                         : colors.bg,
-                      border: isToday
+                      border: isEditing
+                        ? '2px solid rgba(255,255,255,0.4)'
+                        : isToday
                         ? `2px solid ${colors.text}`
                         : `1px solid ${colors.border}`,
                       opacity: isPast ? 0.5 : 1,
                     }}
+                    onClick={() => setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber)}
                   >
                     <span style={{ fontSize: '14px', lineHeight: 1 }}>{day.icon}</span>
-                  </div>
+                  </button>
                   <span
                     className="text-center leading-none"
                     style={{
                       fontSize: '9px',
-                      color: isToday ? colors.text : 'rgba(255,255,255,0.3)',
+                      color: isToday ? colors.text : isEditing ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
                       fontFamily: 'Inter, sans-serif',
-                      fontWeight: isToday ? 700 : 400,
+                      fontWeight: isToday || isEditing ? 700 : 400,
                     }}
                   >
                     J{day.dayNumber}
@@ -277,6 +291,68 @@ export default function Home() {
               );
             })}
           </div>
+
+          {/* Panneau de modification du jour sélectionné */}
+          {editingDay !== null && (
+            <div
+              className="mt-4 rounded-xl p-3 space-y-2"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white font-semibold text-xs" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  Modifier Jour {editingDay}
+                </p>
+                <button onClick={() => setEditingDay(null)}>
+                  <X size={14} className="text-white/40" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'upper_a', label: 'Haut A', icon: '💪', type: 'gym' },
+                  { id: 'upper_b', label: 'Haut B', icon: '💪', type: 'gym' },
+                  { id: 'lower_a', label: 'Bas A', icon: '🦵', type: 'gym' },
+                  { id: 'lower_b', label: 'Bas B', icon: '🦵', type: 'gym' },
+                  { id: 'football', label: 'Football', icon: '⚽', type: 'football' },
+                  { id: 'running_endurance', label: 'Course endurance', icon: '🏃', type: 'running' },
+                  { id: 'running_intervals', label: 'Course fractionné', icon: '⚡', type: 'running' },
+                  { id: 'cycling', label: 'Vélo', icon: '🚴', type: 'cycling' },
+                  { id: 'rest', label: 'Repos', icon: '💤', type: 'rest' },
+                ].map(opt => {
+                  const colors = SESSION_TYPE_COLORS[opt.type];
+                  const currentDay = cycle14Days.find(d => d.dayNumber === editingDay);
+                  const isCurrentSession = currentDay?.sessionId === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setScheduleOverride(
+                          `cycle_day_${editingDay}`,
+                          isCurrentSession ? null : opt.id
+                        );
+                        toast.success(`Jour ${editingDay} → ${opt.label}`);
+                        setEditingDay(null);
+                      }}
+                      className="flex items-center gap-2 p-2.5 rounded-xl text-left transition-all duration-200 active:scale-95"
+                      style={{
+                        background: isCurrentSession ? colors.bg : 'rgba(255,255,255,0.04)',
+                        border: isCurrentSession ? `1px solid ${colors.border}` : '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <span style={{ fontSize: '16px' }}>{opt.icon}</span>
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: isCurrentSession ? colors.text : 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {opt.label}
+                      </span>
+                      {isCurrentSession && <Check size={10} style={{ color: colors.text, marginLeft: 'auto' }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Légende */}
           <div className="flex flex-wrap gap-3 mt-3">
             {Object.entries(SESSION_TYPE_LABELS).map(([type, label]) => (

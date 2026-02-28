@@ -21,6 +21,8 @@ export interface Exercise {
   muscleGroups: string[];
   defaultWeight?: number; // poids suggéré en kg pour débutant
   weightProgression: string; // conseil de progression
+  imageUrl?: string; // GIF ou image de démonstration
+  videoUrl?: string; // vidéo MP4 de démonstration (musclewiki)
 }
 
 export interface WorkoutSession {
@@ -150,6 +152,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   // --- HAUT DU CORPS A (Pectoraux, Épaules, Triceps) ---
   developpe_couche: {
     id: 'developpe_couche',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/26.gif',
     name: 'Développé couché (barre)',
     sets: 4,
     repsMin: 6,
@@ -173,6 +176,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   developpe_militaire: {
     id: 'developpe_militaire',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-overhead-press-side.mp4',
     name: 'Développé militaire (haltères)',
     sets: 3,
     repsMin: 8,
@@ -195,6 +199,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   dips: {
     id: 'dips',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bench-dips-front.mp4',
     name: 'Dips (lesté si possible)',
     sets: 3,
     repsMin: 8,
@@ -217,6 +222,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   ecarte_incline: {
     id: 'ecarte_incline',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/38.gif',
     name: 'Écarté incliné (haltères)',
     sets: 3,
     repsMin: 10,
@@ -239,6 +245,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   elevations_laterales: {
     id: 'elevations_laterales',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-lateral-raise-front.mp4',
     name: 'Élévations latérales (haltères)',
     sets: 4,
     repsMin: 12,
@@ -262,6 +269,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   extension_triceps_poulie: {
     id: 'extension_triceps_poulie',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/84.gif',
     name: 'Extension triceps à la poulie haute',
     sets: 3,
     repsMin: 10,
@@ -287,6 +295,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   // --- BAS DU CORPS A (Quadriceps, Fessiers) ---
   squat: {
     id: 'squat',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/12.gif',
     name: 'Squat (barre)',
     sets: 4,
     repsMin: 6,
@@ -312,6 +321,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   presse_cuisses: {
     id: 'presse_cuisses',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/67.gif',
     name: 'Presse à cuisses',
     sets: 3,
     repsMin: 10,
@@ -334,6 +344,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   leg_extension: {
     id: 'leg_extension',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-machine-leg-extension-front.mp4',
     name: 'Leg Extension',
     sets: 3,
     repsMin: 12,
@@ -356,6 +367,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   hip_thrust: {
     id: 'hip_thrust',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/355.gif',
     name: 'Hip Thrust (barre)',
     sets: 4,
     repsMin: 8,
@@ -379,6 +391,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   releve_jambes: {
     id: 'releve_jambes',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/109.gif',
     name: 'Relevé de jambes suspendu',
     sets: 3,
     repsMin: 15,
@@ -401,6 +414,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   gainage: {
     id: 'gainage',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/194.gif',
     name: 'Gainage planche',
     sets: 3,
     repsMin: 60,
@@ -425,6 +439,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   // --- HAUT DU CORPS B (Dos, Épaules, Biceps) ---
   tractions: {
     id: 'tractions',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/3.gif',
     name: 'Tractions (lesté si possible)',
     sets: 4,
     repsMin: 6,
@@ -449,6 +464,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   rowing_barre: {
     id: 'rowing_barre',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/7.gif',
     name: 'Rowing barre buste penché',
     sets: 4,
     repsMin: 6,
@@ -472,6 +488,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   tirage_horizontal: {
     id: 'tirage_horizontal',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/29.gif',
     name: 'Tirage horizontal (poulie basse)',
     sets: 3,
     repsMin: 10,
@@ -494,6 +511,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   face_pull: {
     id: 'face_pull',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/638.gif',
     name: 'Face Pull (poulie haute)',
     sets: 3,
     repsMin: 15,
@@ -516,6 +534,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   curl_incline: {
     id: 'curl_incline',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/33.gif',
     name: 'Curl incliné (haltères)',
     sets: 3,
     repsMin: 10,
@@ -539,6 +558,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   curl_marteau: {
     id: 'curl_marteau',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-hammer-curl-front.mp4',
     name: 'Curl marteau',
     sets: 3,
     repsMin: 8,
@@ -563,6 +583,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   // --- BAS DU CORPS B (Ischio-jambiers, Mollets) ---
   souleve_de_terre: {
     id: 'souleve_de_terre',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-romanian-deadlift-front.mp4',
     name: 'Soulevé de terre',
     sets: 4,
     repsMin: 5,
@@ -587,6 +608,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   fentes_bulgares: {
     id: 'fentes_bulgares',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/136.gif',
     name: 'Fentes bulgares (haltères)',
     sets: 3,
     repsMin: 10,
@@ -610,6 +632,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   leg_curl: {
     id: 'leg_curl',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/68.gif',
     name: 'Leg Curl ischios',
     sets: 3,
     repsMin: 12,
@@ -632,6 +655,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   extensions_mollets: {
     id: 'extensions_mollets',
+    videoUrl: 'https://media.musclewiki.com/media/uploads/videos/branded/male-Vitruvian-standing-calf-raise-side.mp4',
     name: 'Extensions mollets debout',
     sets: 5,
     repsMin: 15,
@@ -655,6 +679,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   crunches_poulie: {
     id: 'crunches_poulie',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/91.gif',
     name: 'Crunches à la poulie haute',
     sets: 3,
     repsMin: 12,
@@ -677,6 +702,7 @@ const exerciseDatabase: Record<string, Exercise> = {
   },
   russian_twist: {
     id: 'russian_twist',
+    imageUrl: 'https://cdn.jefit.com/assets/img/exercises/gifs/195.gif',
     name: 'Russian Twist (lesté)',
     sets: 3,
     repsMin: 15,

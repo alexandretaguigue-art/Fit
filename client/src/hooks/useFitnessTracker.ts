@@ -39,6 +39,8 @@ interface FitnessData {
   nutritionLogs: Record<string, DayLog>;
   // Semaine du plan alimentaire affiché
   currentMealPlanWeek: string | null;
+  // Override du planning : date ISO (YYYY-MM-DD) → sessionId
+  scheduleOverrides: Record<string, string>;
 }
 
 const STORAGE_KEY = 'fitpro_data_v2';
@@ -51,6 +53,7 @@ const defaultData: FitnessData = {
   exerciseAdaptations: {},
   nutritionLogs: {},
   currentMealPlanWeek: null,
+  scheduleOverrides: {},
 };
 
 // ============================================================
@@ -69,6 +72,7 @@ export function useFitnessTracker() {
           ...parsed,
           exerciseAdaptations: parsed.exerciseAdaptations ?? {},
           nutritionLogs: parsed.nutritionLogs ?? {},
+          scheduleOverrides: parsed.scheduleOverrides ?? {},
         };
       }
     } catch (e) {
@@ -427,6 +431,26 @@ export function useFitnessTracker() {
     return monday;
   }, []);
 
+  // ============================================================
+  // PLANNING PERSONNALISÉ (override par date)
+  // ============================================================
+
+  const setScheduleOverride = useCallback((dateKey: string, sessionId: string | null) => {
+    setData(prev => {
+      const overrides = { ...prev.scheduleOverrides };
+      if (sessionId === null) {
+        delete overrides[dateKey];
+      } else {
+        overrides[dateKey] = sessionId;
+      }
+      return { ...prev, scheduleOverrides: overrides };
+    });
+  }, []);
+
+  const getScheduleOverride = useCallback((dateKey: string): string | null => {
+    return data.scheduleOverrides[dateKey] ?? null;
+  }, [data.scheduleOverrides]);
+
   return {
     data,
     startProgram,
@@ -458,5 +482,8 @@ export function useFitnessTracker() {
     getShoppingList,
     getNextWeekMonday,
     getCurrentWeekMonday,
+    // Planning personnalisé
+    setScheduleOverride,
+    getScheduleOverride,
   };
 }

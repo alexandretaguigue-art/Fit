@@ -25,18 +25,22 @@ interface ExerciseLog {
   notes?: string;
 }
 
-function ExerciseCard({ exercise, onLog, lastLog }: {
+function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
   exercise: Exercise;
   onLog: (log: ExerciseLog) => void;
   lastLog?: ExerciseLog;
+  adaptation?: import('../lib/adaptationEngine').AdaptationResult | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAlt, setShowAlt] = useState(false);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+  // Utilise le poids suggéré par l'adaptation si disponible, sinon le dernier poids, sinon le défaut
+  const suggestedWeight = adaptation?.suggestedWeight ?? lastLog?.sets[0]?.weight ?? exercise.defaultWeight ?? 0;
+  const suggestedRepsMin = adaptation?.suggestedRepsMin ?? exercise.repsMin;
   const [sets, setSets] = useState<SetData[]>(() =>
-    Array.from({ length: exercise.sets }, (_, i) => ({
-      weight: lastLog?.sets[i]?.weight ?? exercise.defaultWeight ?? 0,
-      reps: lastLog?.sets[i]?.reps ?? exercise.repsMin,
+    Array.from({ length: adaptation?.suggestedSets ?? exercise.sets }, (_, i) => ({
+      weight: suggestedWeight,
+      reps: suggestedRepsMin,
       completed: false,
     }))
   );
@@ -103,8 +107,28 @@ function ExerciseCard({ exercise, onLog, lastLog }: {
               className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{ background: 'rgba(255, 107, 53, 0.15)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}
             >
-              {exercise.sets} × {repsLabel}
+              {adaptation?.suggestedSets ?? exercise.sets} × {suggestedRepsMin}{exercise.repsMax ? `-${exercise.repsMax}` : ''}
             </span>
+            {adaptation && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{
+                  background: adaptation.direction === 'increase_weight' ? 'rgba(34, 197, 94, 0.12)'
+                    : adaptation.direction === 'decrease' || adaptation.direction === 'deload' ? 'rgba(239, 68, 68, 0.12)'
+                    : 'rgba(255, 255, 255, 0.08)',
+                  color: adaptation.direction === 'increase_weight' ? '#22c55e'
+                    : adaptation.direction === 'decrease' || adaptation.direction === 'deload' ? '#ef4444'
+                    : 'rgba(255,255,255,0.5)',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                {adaptation.direction === 'increase_weight' ? `↑ ${suggestedWeight}kg`
+                  : adaptation.direction === 'increase_reps' ? `↑ reps ${suggestedWeight}kg`
+                  : adaptation.direction === 'decrease' ? `↓ ${suggestedWeight}kg`
+                  : adaptation.direction === 'deload' ? '🔄 décharge'
+                  : `= ${suggestedWeight}kg`}
+              </span>
+            )}
             <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
               <Clock size={10} className="inline mr-1" />
               {exercise.restSeconds}s repos
@@ -122,8 +146,34 @@ function ExerciseCard({ exercise, onLog, lastLog }: {
       {/* Expanded content */}
       {expanded && (
         <div className="px-4 pb-4 space-y-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          {/* Score & Raison */}
-          <div className="pt-3">
+          {/* Message coach d'adaptation */}
+          {adaptation && (
+            <div
+              className="pt-3"
+            >
+              <div
+                className="flex items-start gap-2 p-3 rounded-xl"
+                style={{
+                  background: adaptation.direction === 'increase_weight' ? 'rgba(34, 197, 94, 0.08)'
+                    : adaptation.direction === 'decrease' || adaptation.direction === 'deload' ? 'rgba(239, 68, 68, 0.08)'
+                    : 'rgba(255, 255, 255, 0.04)',
+                  border: adaptation.direction === 'increase_weight' ? '1px solid rgba(34, 197, 94, 0.2)'
+                    : adaptation.direction === 'decrease' || adaptation.direction === 'deload' ? '1px solid rgba(239, 68, 68, 0.2)'
+                    : '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: 'rgba(255,255,255,0.8)' }}>
+                  {adaptation.coachMessage}
+                </p>
+              </div>
+              <p className="text-white/30 text-xs mt-1 px-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Confiance : {adaptation.confidence === 'high' ? 'Haute' : adaptation.confidence === 'medium' ? 'Moyenne' : 'Faible'} • {adaptation.reasoning}
+              </p>
+            </div>
+          )}
+
+        {/* Score & Raison */}
+          <div className="pt-2">
             <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
               <Info size={14} className="text-white/40 flex-shrink-0 mt-0.5" />
               <p className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -318,7 +368,8 @@ function ExerciseCard({ exercise, onLog, lastLog }: {
 }
 
 function SessionView({ session }: { session: WorkoutSession }) {
-  const { logSession, getLastSessionLog, analyzeSession, getSuggestedWeight, getCurrentWeek } = useFitnessTracker();
+  const { logSession, getLastSessionLog, analyzeSession, getSuggestedWeight, getCurrentWeek, getExerciseAdaptation, getFatigueScore } = useFitnessTracker();
+  const fatigueScore = getFatigueScore();
   const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
   const [difficulty, setDifficulty] = useState(7);
   const [energy, setEnergy] = useState(7);
@@ -477,6 +528,19 @@ function SessionView({ session }: { session: WorkoutSession }) {
         </p>
       </div>
 
+      {/* Fatigue alert */}
+      {fatigueScore.shouldRest && (
+        <div
+          className="p-3 rounded-2xl flex items-start gap-2"
+          style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+        >
+          <span className="text-red-400 text-sm flex-shrink-0">⚠️</span>
+          <p className="text-red-300/80 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {fatigueScore.recommendation}
+          </p>
+        </div>
+      )}
+
       {/* Exercices */}
       {session.exercises.map(exercise => (
         <ExerciseCard
@@ -484,6 +548,7 @@ function SessionView({ session }: { session: WorkoutSession }) {
           exercise={exercise}
           onLog={handleExerciseLog}
           lastLog={exerciseLogs.find(l => l.exerciseId === exercise.id)}
+          adaptation={getExerciseAdaptation(exercise.id)}
         />
       ))}
 

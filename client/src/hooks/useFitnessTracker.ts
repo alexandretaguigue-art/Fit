@@ -1,33 +1,75 @@
 // ============================================================
 // DESIGN: "Coach Nocturne" — Hook de gestion du journal fitness
 // Gère la persistance des données dans localStorage
+// Inclut : adaptation automatique des charges, journal nutritionnel,
+// liste de courses hebdomadaire
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
 import type { SessionLog, ProgressEntry } from '../lib/programData';
+import {
+  computeAdaptation,
+  computeFatigueScore,
+  type ExercisePerformance,
+  type AdaptationResult,
+} from '../lib/adaptationEngine';
+import {
+  computeDayBalance,
+  computeWeeklyNutritionSummary,
+  generateWeeklyMealPlan,
+  generateShoppingList,
+  type DayLog,
+  type FoodEntry,
+  type WeeklyMealPlan,
+  type ShoppingList,
+} from '../lib/nutritionEngine';
+
+// ============================================================
+// TYPES
+// ============================================================
 
 interface FitnessData {
   sessionLogs: SessionLog[];
   progressEntries: ProgressEntry[];
   currentWeek: number;
   startDate: string | null;
+  // Adaptations calculées par exercice (exerciseId → dernière adaptation)
+  exerciseAdaptations: Record<string, AdaptationResult>;
+  // Journal nutritionnel (date ISO → DayLog)
+  nutritionLogs: Record<string, DayLog>;
+  // Semaine du plan alimentaire affiché
+  currentMealPlanWeek: string | null;
 }
 
-const STORAGE_KEY = 'fitpro_data';
+const STORAGE_KEY = 'fitpro_data_v2';
 
 const defaultData: FitnessData = {
   sessionLogs: [],
   progressEntries: [],
   currentWeek: 1,
   startDate: null,
+  exerciseAdaptations: {},
+  nutritionLogs: {},
+  currentMealPlanWeek: null,
 };
+
+// ============================================================
+// HOOK PRINCIPAL
+// ============================================================
 
 export function useFitnessTracker() {
   const [data, setData] = useState<FitnessData>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Migration depuis ancienne version
+        return {
+          ...defaultData,
+          ...parsed,
+          exerciseAdaptations: parsed.exerciseAdaptations ?? {},
+          nutritionLogs: parsed.nutritionLogs ?? {},
+        };
       }
     } catch (e) {
       console.error('Error loading fitness data:', e);
@@ -44,7 +86,10 @@ export function useFitnessTracker() {
     }
   }, [data]);
 
-  // Démarrer le programme
+  // ============================================================
+  // PROGRAMME
+  // ============================================================
+
   const startProgram = useCallback(() => {
     setData(prev => ({
       ...prev,
@@ -53,7 +98,6 @@ export function useFitnessTracker() {
     }));
   }, []);
 
-  // Calculer la semaine courante
   const getCurrentWeek = useCallback((): number => {
     if (!data.startDate) return 1;
     const start = new Date(data.startDate);
@@ -62,52 +106,82 @@ export function useFitnessTracker() {
     return Math.min(Math.max(1, Math.floor(diffDays / 7) + 1), 12);
   }, [data.startDate]);
 
-  // Enregistrer une séance
+  // ============================================================
+  // SÉANCES & ADAPTATION AUTOMATIQUE
+  // ============================================================
+
   const logSession = useCallback((log: SessionLog) => {
-    setData(prev => ({
-      ...prev,
-      sessionLogs: [...prev.sessionLogs.filter(l => l.sessionId !== log.sessionId || l.date !== log.date), log],
-    }));
+    setData(prev => {
+      const weekNumber = prev.startDate
+        ? Math.min(Math.max(1, Math.floor((Date.now() - new Date(prev.startDate).getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1), 12)
+        : 1;
+
+      // Calculer les nouvelles adaptations pour chaque exercice
+      const newAdaptations = { ...prev.exerciseAdaptations };
+
+      log.exercises.forEach(exLog => {
+        // Trouver les infos de l'exercice dans le programme
+        const perf: ExercisePerformance = {
+          exerciseId: exLog.exerciseId,
+          targetSets: exLog.sets.length,
+          targetRepsMin: exLog.sets[0]?.reps ?? 8,
+          targetRepsMax: null,
+          sets: exLog.sets.map(s => ({
+            weight: s.weight,
+            reps: s.reps,
+            completed: s.completed,
+          })),
+          perceivedDifficulty: log.perceivedDifficulty,
+        };
+
+        const previousAdaptation = prev.exerciseAdaptations[exLog.exerciseId];
+        const adaptation = computeAdaptation(perf, weekNumber, previousAdaptation);
+        newAdaptations[exLog.exerciseId] = adaptation;
+      });
+
+      return {
+        ...prev,
+        sessionLogs: [
+          ...prev.sessionLogs.filter(l => !(l.sessionId === log.sessionId && l.date.split('T')[0] === log.date.split('T')[0])),
+          log,
+        ],
+        exerciseAdaptations: newAdaptations,
+      };
+    });
   }, []);
 
-  // Récupérer les logs d'une séance
   const getSessionLogs = useCallback((sessionId: string): SessionLog[] => {
     return data.sessionLogs
       .filter(l => l.sessionId === sessionId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [data.sessionLogs]);
 
-  // Récupérer le dernier log d'une séance
   const getLastSessionLog = useCallback((sessionId: string): SessionLog | null => {
     const logs = getSessionLogs(sessionId);
     return logs.length > 0 ? logs[0] : null;
   }, [getSessionLogs]);
 
-  // Ajouter une entrée de progression
-  const addProgressEntry = useCallback((entry: ProgressEntry) => {
-    setData(prev => ({
-      ...prev,
-      progressEntries: [...prev.progressEntries, entry].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      ),
-    }));
-  }, []);
+  // Récupérer l'adaptation d'un exercice (charge/reps suggérées)
+  const getExerciseAdaptation = useCallback((exerciseId: string): AdaptationResult | null => {
+    return data.exerciseAdaptations[exerciseId] ?? null;
+  }, [data.exerciseAdaptations]);
 
-  // Calculer la progression d'un exercice
-  const getExerciseProgress = useCallback((exerciseId: string) => {
-    const allLogs = data.sessionLogs.flatMap(log =>
-      log.exercises
-        .filter(e => e.exerciseId === exerciseId)
-        .map(e => ({
-          date: log.date,
-          maxWeight: Math.max(...e.sets.map(s => s.weight), 0),
-          totalVolume: e.sets.reduce((acc, s) => acc + s.weight * s.reps, 0),
-        }))
-    );
-    return allLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Toutes les adaptations
+  const getAllAdaptations = useCallback((): Record<string, AdaptationResult> => {
+    return data.exerciseAdaptations;
+  }, [data.exerciseAdaptations]);
+
+  // Score de fatigue basé sur les dernières séances
+  const getFatigueScore = useCallback(() => {
+    const recentLogs = data.sessionLogs
+      .slice(-6)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const difficulties = recentLogs.map(l => l.perceivedDifficulty);
+    const energies = recentLogs.map(l => l.energyLevel ?? 7);
+    return computeFatigueScore(difficulties, energies);
   }, [data.sessionLogs]);
 
-  // Analyser la performance d'une séance et donner des conseils
+  // Analyser une séance
   const analyzeSession = useCallback((log: SessionLog): {
     verdict: 'excellent' | 'good' | 'average' | 'poor';
     score: number;
@@ -121,28 +195,30 @@ export function useFitnessTracker() {
     const score = Math.round(
       (completionRate * 40) +
       (log.perceivedDifficulty >= 7 ? 30 : log.perceivedDifficulty * 3) +
-      (log.energyLevel >= 6 ? 30 : log.energyLevel * 5)
+      ((log.energyLevel ?? 7) >= 6 ? 30 : (log.energyLevel ?? 7) * 5)
     );
 
     const feedback: string[] = [];
     const suggestions: string[] = [];
 
     if (completionRate < 0.8) {
-      feedback.push(`Tu as complété ${Math.round(completionRate * 100)}% des séries prévues.`);
-      suggestions.push("Réduis légèrement les charges pour la prochaine séance afin de compléter toutes les séries.");
+      feedback.push(`${Math.round(completionRate * 100)}% des séries complétées.`);
+      suggestions.push("Réduis légèrement les charges pour compléter toutes les séries.");
     } else if (completionRate === 1) {
-      feedback.push("Toutes les séries complétées — excellent travail !");
-      suggestions.push("Si la difficulté était ≤ 7/10, augmente les charges de 2.5-5kg la prochaine fois.");
+      feedback.push("Toutes les séries complétées !");
+      if (log.perceivedDifficulty <= 6) {
+        suggestions.push("Séance trop facile — augmente les charges de 2.5-5kg.");
+      }
     }
 
     if (log.perceivedDifficulty < 6) {
-      suggestions.push("La séance était trop facile. Augmente les charges ou réduis les temps de repos.");
+      suggestions.push("Trop facile. Augmente les charges ou réduis les temps de repos.");
     } else if (log.perceivedDifficulty > 9) {
-      suggestions.push("La séance était très difficile. Assure-toi de bien dormir et de manger suffisamment avant la prochaine.");
+      suggestions.push("Très difficile. Dors bien et mange suffisamment avant la prochaine séance.");
     }
 
-    if (log.energyLevel < 5) {
-      suggestions.push("Niveau d'énergie bas — vérifie ton alimentation pré-training et ton sommeil.");
+    if ((log.energyLevel ?? 7) < 5) {
+      suggestions.push("Énergie basse — vérifie ton alimentation pré-training et ton sommeil.");
     }
 
     const verdict: 'excellent' | 'good' | 'average' | 'poor' =
@@ -151,45 +227,59 @@ export function useFitnessTracker() {
     return { verdict, score, feedback, suggestions };
   }, []);
 
-  // Calculer le poids suggéré pour la prochaine séance
-  const getSuggestedWeight = useCallback((exerciseId: string, currentWeight: number, completedAllSets: boolean, difficulty: number): {
-    suggestedWeight: number;
-    message: string;
-    direction: 'up' | 'same' | 'down';
-  } => {
+  // Compatibilité avec l'ancien hook
+  const getSuggestedWeight = useCallback((exerciseId: string, currentWeight: number, completedAllSets: boolean, difficulty: number) => {
+    const adaptation = data.exerciseAdaptations[exerciseId];
+    if (adaptation) {
+      return {
+        suggestedWeight: adaptation.suggestedWeight,
+        message: adaptation.coachMessage,
+        direction: adaptation.direction === 'increase_weight' || adaptation.direction === 'increase_reps' ? 'up' as const
+          : adaptation.direction === 'decrease' || adaptation.direction === 'deload' ? 'down' as const
+          : 'same' as const,
+      };
+    }
+    // Fallback
     if (!completedAllSets) {
-      return {
-        suggestedWeight: Math.max(currentWeight - 2.5, 0),
-        message: "Tu n'as pas complété toutes les séries. Réduis légèrement la charge.",
-        direction: 'down',
-      };
+      return { suggestedWeight: Math.max(currentWeight - 2.5, 0), message: "Réduis légèrement la charge.", direction: 'down' as const };
     }
-
     if (difficulty <= 6) {
-      const increase = currentWeight >= 40 ? 5 : 2.5;
-      return {
-        suggestedWeight: currentWeight + increase,
-        message: `Séance trop facile ! Augmente de ${increase}kg la prochaine fois.`,
-        direction: 'up',
-      };
+      const inc = currentWeight >= 40 ? 5 : 2.5;
+      return { suggestedWeight: currentWeight + inc, message: `Augmente de ${inc}kg.`, direction: 'up' as const };
     }
-
-    if (difficulty >= 8 && completedAllSets) {
-      return {
-        suggestedWeight: currentWeight + 2.5,
-        message: "Toutes les séries complétées avec une bonne difficulté. Augmente de 2.5kg.",
-        direction: 'up',
-      };
+    if (difficulty >= 8) {
+      return { suggestedWeight: currentWeight + 2.5, message: "Augmente de 2.5kg.", direction: 'up' as const };
     }
+    return { suggestedWeight: currentWeight, message: "Garde la même charge.", direction: 'same' as const };
+  }, [data.exerciseAdaptations]);
 
-    return {
-      suggestedWeight: currentWeight,
-      message: "Garde la même charge et concentre-toi sur la qualité d'exécution.",
-      direction: 'same',
-    };
+  // Progression d'un exercice
+  const getExerciseProgress = useCallback((exerciseId: string) => {
+    const allLogs = data.sessionLogs.flatMap(log =>
+      log.exercises
+        .filter(e => e.exerciseId === exerciseId)
+        .map(e => ({
+          date: log.date,
+          maxWeight: Math.max(...e.sets.map(s => s.weight), 0),
+          totalVolume: e.sets.reduce((acc, s) => acc + s.weight * s.reps, 0),
+        }))
+    );
+    return allLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [data.sessionLogs]);
+
+  // ============================================================
+  // PROGRESSION (MENSURATIONS)
+  // ============================================================
+
+  const addProgressEntry = useCallback((entry: ProgressEntry) => {
+    setData(prev => ({
+      ...prev,
+      progressEntries: [...prev.progressEntries, entry].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ),
+    }));
   }, []);
 
-  // Statistiques globales
   const getStats = useCallback(() => {
     const totalSessions = data.sessionLogs.length;
     const totalVolume = data.sessionLogs.reduce((acc, log) =>
@@ -199,39 +289,174 @@ export function useFitnessTracker() {
     const latestProgress = data.progressEntries[data.progressEntries.length - 1];
     const firstProgress = data.progressEntries[0];
 
-    const weightGain = latestProgress && firstProgress
-      ? latestProgress.weight - firstProgress.weight
-      : 0;
-
+    const weightGain = latestProgress && firstProgress ? latestProgress.weight - firstProgress.weight : 0;
     const armGain = latestProgress?.armCircumference && firstProgress?.armCircumference
-      ? latestProgress.armCircumference - firstProgress.armCircumference
-      : 0;
-
+      ? latestProgress.armCircumference - firstProgress.armCircumference : 0;
     const thighGain = latestProgress?.thighCircumference && firstProgress?.thighCircumference
-      ? latestProgress.thighCircumference - firstProgress.thighCircumference
-      : 0;
+      ? latestProgress.thighCircumference - firstProgress.thighCircumference : 0;
 
-    return {
-      totalSessions,
-      totalVolume,
-      weightGain,
-      armGain,
-      thighGain,
-      currentWeek: getCurrentWeek(),
-    };
+    return { totalSessions, totalVolume, weightGain, armGain, thighGain, currentWeek: getCurrentWeek() };
   }, [data, getCurrentWeek]);
+
+  // ============================================================
+  // NUTRITION — JOURNAL QUOTIDIEN
+  // ============================================================
+
+  const getTodayKey = useCallback((): string => {
+    return new Date().toISOString().split('T')[0];
+  }, []);
+
+  const getDayLog = useCallback((dateKey: string): DayLog => {
+    const dayOfWeek = new Date(dateKey + 'T12:00:00').getDay();
+    const trainingDays = [1, 2, 4, 5]; // lun, mar, jeu, ven
+    const isTrainingDay = trainingDays.includes(dayOfWeek);
+
+    return data.nutritionLogs[dateKey] ?? {
+      date: dateKey,
+      entries: [],
+      isTrainingDay,
+    };
+  }, [data.nutritionLogs]);
+
+  const addFoodEntry = useCallback((dateKey: string, entry: FoodEntry) => {
+    setData(prev => {
+      const existing = prev.nutritionLogs[dateKey] ?? {
+        date: dateKey,
+        entries: [],
+        isTrainingDay: [1, 2, 4, 5].includes(new Date(dateKey + 'T12:00:00').getDay()),
+      };
+      return {
+        ...prev,
+        nutritionLogs: {
+          ...prev.nutritionLogs,
+          [dateKey]: {
+            ...existing,
+            entries: [...existing.entries, entry],
+          },
+        },
+      };
+    });
+  }, []);
+
+  const updateFoodEntry = useCallback((dateKey: string, entryId: string, updates: Partial<FoodEntry>) => {
+    setData(prev => {
+      const existing = prev.nutritionLogs[dateKey];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        nutritionLogs: {
+          ...prev.nutritionLogs,
+          [dateKey]: {
+            ...existing,
+            entries: existing.entries.map(e => e.id === entryId ? { ...e, ...updates } : e),
+          },
+        },
+      };
+    });
+  }, []);
+
+  const deleteFoodEntry = useCallback((dateKey: string, entryId: string) => {
+    setData(prev => {
+      const existing = prev.nutritionLogs[dateKey];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        nutritionLogs: {
+          ...prev.nutritionLogs,
+          [dateKey]: {
+            ...existing,
+            entries: existing.entries.filter(e => e.id !== entryId),
+          },
+        },
+      };
+    });
+  }, []);
+
+  const getDayBalance = useCallback((dateKey: string) => {
+    const log = getDayLog(dateKey);
+    return computeDayBalance(log);
+  }, [getDayLog]);
+
+  // Résumé nutritionnel de la semaine
+  const getWeeklyNutritionSummary = useCallback((weekStartDate: string) => {
+    const start = new Date(weekStartDate + 'T12:00:00');
+    const logs: DayLog[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      if (data.nutritionLogs[key]) {
+        logs.push(data.nutritionLogs[key]);
+      }
+    }
+    return computeWeeklyNutritionSummary(logs, getCurrentWeek());
+  }, [data.nutritionLogs, getCurrentWeek]);
+
+  // ============================================================
+  // PLAN ALIMENTAIRE HEBDOMADAIRE & LISTE DE COURSES
+  // ============================================================
+
+  const getWeeklyMealPlan = useCallback((weekStartMonday: Date): WeeklyMealPlan => {
+    return generateWeeklyMealPlan(weekStartMonday);
+  }, []);
+
+  const getShoppingList = useCallback((weekStartMonday: Date): ShoppingList => {
+    const plan = generateWeeklyMealPlan(weekStartMonday);
+    return generateShoppingList(plan);
+  }, []);
+
+  // Calculer le lundi de la semaine prochaine (pour la liste de courses du samedi)
+  const getNextWeekMonday = useCallback((): Date => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+    return nextMonday;
+  }, []);
+
+  // Lundi de la semaine courante
+  const getCurrentWeekMonday = useCallback((): Date => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + daysToMonday);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }, []);
 
   return {
     data,
     startProgram,
     getCurrentWeek,
+    // Séances
     logSession,
     getSessionLogs,
     getLastSessionLog,
-    addProgressEntry,
-    getExerciseProgress,
     analyzeSession,
     getSuggestedWeight,
+    getExerciseProgress,
+    // Adaptation automatique
+    getExerciseAdaptation,
+    getAllAdaptations,
+    getFatigueScore,
+    // Progression
+    addProgressEntry,
     getStats,
+    // Nutrition
+    getTodayKey,
+    getDayLog,
+    addFoodEntry,
+    updateFoodEntry,
+    deleteFoodEntry,
+    getDayBalance,
+    getWeeklyNutritionSummary,
+    // Plan alimentaire & courses
+    getWeeklyMealPlan,
+    getShoppingList,
+    getNextWeekMonday,
+    getCurrentWeekMonday,
   };
 }

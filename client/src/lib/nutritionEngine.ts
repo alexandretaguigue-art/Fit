@@ -46,9 +46,16 @@ export interface DayBalance {
 // MACROS CIBLES
 // ============================================================
 
+// Calories recalibrées pour lean bulk propre :
+// TDEE estimé ~2350 kcal (68kg, 1m75, 26 ans, actif)
+// Training : TDEE + 200 kcal surplus = 2550 kcal
+// Repos    : TDEE - 100 kcal = 2250 kcal (légère restriction)
+// Protéines : 150g (2.2g/kg masse maigre ~59kg)
+// Lipides  : 65g (0.9g/kg)
+// Glucides : reste des calories
 export const MACRO_TARGETS = {
-  training: { calories: 2900, proteins: 140, carbs: 430, fats: 70 },
-  rest: { calories: 2600, proteins: 140, carbs: 360, fats: 70 },
+  training: { calories: 2550, proteins: 150, carbs: 288, fats: 65 },
+  rest:     { calories: 2250, proteins: 150, carbs: 213, fats: 65 },
 };
 
 // ============================================================

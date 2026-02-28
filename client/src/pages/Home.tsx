@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Dumbbell, Target, Flame, ChevronRight, Trophy, Calendar, Zap, Bike, Bed, X, Check } from 'lucide-react';
+import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, X, Check } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
@@ -36,6 +36,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride } = useFitnessTracker();
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [calendarOffset, setCalendarOffset] = useState(0); // offset en cycles de 14 jours
   const stats = getStats();
   const currentWeek = getCurrentWeek();
 
@@ -243,12 +244,39 @@ export default function Home() {
               Appuie sur un jour pour modifier
             </span>
           </div>
+          {/* Navigation du cycle */}
+          <div className="flex items-center justify-between mb-3">
+            <button onClick={() => setCalendarOffset(o => o - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <ChevronLeft size={14} className="text-white/50" />
+            </button>
+            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {calendarOffset === 0 ? 'Cycle actuel (J1–J14)' : calendarOffset > 0 ? `Cycle +${calendarOffset}` : `Cycle ${calendarOffset}`}
+            </span>
+            <button onClick={() => setCalendarOffset(o => o + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <ChevronRight size={14} className="text-white/50" />
+            </button>
+          </div>
+
           <div className="grid grid-cols-7 gap-1.5">
             {cycle14Days.map(day => {
-              const isToday = data.startDate && day.dayNumber === cycleDayToday;
-              const isPast = data.startDate && day.dayNumber < cycleDayToday;
-              const isEditing = editingDay === day.dayNumber;
+              // Calcul du numéro de jour absolu dans le programme
+              const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
+              const isToday = data.startDate && absoluteDayNumber === cycleDayToday;
+              const isPast = data.startDate && absoluteDayNumber < cycleDayToday;
+              const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
               const colors = SESSION_TYPE_COLORS[day.type];
+
+              // Vérifier si cette séance a été validée (enregistrée)
+              const sessionDateMs = data.startDate
+                ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000
+                : null;
+              const sessionDateKey = sessionDateMs
+                ? new Date(sessionDateMs).toISOString().split('T')[0]
+                : null;
+              const isCompleted = sessionDateKey
+                ? Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey))
+                : false;
+
               return (
                 <div
                   key={day.dayNumber}
@@ -256,36 +284,44 @@ export default function Home() {
                   title={day.label}
                 >
                   <button
-                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200 active:scale-90"
+                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200 active:scale-90 relative"
                     style={{
                       background: isEditing
                         ? 'rgba(255,255,255,0.15)'
                         : isToday
                         ? colors.text
+                        : isCompleted
+                        ? 'rgba(34,197,94,0.12)'
                         : isPast
-                        ? 'rgba(255,255,255,0.06)'
+                        ? 'rgba(255,255,255,0.04)'
                         : colors.bg,
                       border: isEditing
                         ? '2px solid rgba(255,255,255,0.4)'
                         : isToday
                         ? `2px solid ${colors.text}`
+                        : isCompleted
+                        ? '1px solid rgba(34,197,94,0.35)'
                         : `1px solid ${colors.border}`,
-                      opacity: isPast ? 0.5 : 1,
+                      opacity: isPast && !isCompleted && !isToday ? 0.45 : 1,
                     }}
-                    onClick={() => setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber)}
+                    onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
                   >
-                    <span style={{ fontSize: '14px', lineHeight: 1 }}>{day.icon}</span>
+                    {isCompleted && !isToday ? (
+                      <span style={{ fontSize: '12px', lineHeight: 1 }}>✅</span>
+                    ) : (
+                      <span style={{ fontSize: '14px', lineHeight: 1 }}>{day.icon}</span>
+                    )}
                   </button>
                   <span
                     className="text-center leading-none"
                     style={{
                       fontSize: '9px',
-                      color: isToday ? colors.text : isEditing ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
+                      color: isToday ? colors.text : isCompleted ? '#22c55e' : isEditing ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
                       fontFamily: 'Inter, sans-serif',
-                      fontWeight: isToday || isEditing ? 700 : 400,
+                      fontWeight: isToday || isEditing || isCompleted ? 700 : 400,
                     }}
                   >
-                    J{day.dayNumber}
+                    J{absoluteDayNumber}
                   </span>
                 </div>
               );

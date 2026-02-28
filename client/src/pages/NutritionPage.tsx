@@ -458,12 +458,13 @@ function JournalTab() {
 }
 
 // ============================================================
-// ONGLET PLAN HEBDOMADAIRE
+// ONGLET PLAN HEBDOMADAIRE — Vue 7 jours en avance
 // ============================================================
 function PlanTab() {
   const { getWeeklyMealPlan, getCurrentWeekMonday, getWeeklyNutritionSummary } = useFitnessTracker();
   const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [expandedMeal, setExpandedMeal] = useState<string | null>(null);
 
   const weekMonday = useMemo(() => {
     const monday = getCurrentWeekMonday();
@@ -475,29 +476,65 @@ function PlanTab() {
   const weekStartKey = weekMonday.toISOString().split('T')[0];
   const summary = getWeeklyNutritionSummary(weekStartKey);
 
-  const weekLabel = weekOffset === 0 ? 'Cette semaine' : weekOffset === 1 ? 'Semaine prochaine' : weekOffset === -1 ? 'Semaine dernière'
+  const today = new Date().toISOString().split('T')[0];
+
+  const weekLabel = weekOffset === 0 ? 'Cette semaine'
+    : weekOffset === 1 ? 'Semaine prochaine'
+    : weekOffset === -1 ? 'Semaine dernière'
     : `Semaine du ${weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
 
+  const DAY_EMOJIS: Record<string, string> = {
+    'Lundi': '📅', 'Mardi': '📅', 'Mercredi': '📅', 'Jeudi': '📅',
+    'Vendredi': '📅', 'Samedi': '📅', 'Dimanche': '📅',
+  };
+
+  const MEAL_ICONS: Record<string, string> = {
+    'Petit-déjeuner': '🍳', 'Déjeuner': '🍽️', 'Collation': '🍊', 'Díner': '🌙', 'Avant de dormir': '💤',
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <button onClick={() => setWeekOffset(w => w - 1)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <ChevronLeft size={16} className="text-white/60" />
+    <div className="space-y-3">
+      {/* Navigation semaine */}
+      <div className="flex items-center justify-between p-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <button onClick={() => { setWeekOffset(w => w - 1); setExpandedDay(null); }} className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <ChevronLeft size={18} className="text-white/70" />
         </button>
-        <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{weekLabel}</p>
-        <button onClick={() => setWeekOffset(w => w + 1)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <ChevronRight size={16} className="text-white/60" />
+        <div className="text-center">
+          <p className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{weekLabel}</p>
+          <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} — {new Date(weekMonday.getTime() + 6 * 86400000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <button onClick={() => { setWeekOffset(w => w + 1); setExpandedDay(null); }} className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <ChevronRight size={18} className="text-white/70" />
         </button>
       </div>
 
+      {/* Raccourcis semaine rapide */}
+      <div className="flex gap-2">
+        {[-1, 0, 1, 2].map(offset => (
+          <button key={offset} onClick={() => { setWeekOffset(offset); setExpandedDay(null); }}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+            style={{
+              background: weekOffset === offset ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.04)',
+              color: weekOffset === offset ? '#FF6B35' : 'rgba(255,255,255,0.35)',
+              border: weekOffset === offset ? '1px solid rgba(255,107,53,0.25)' : '1px solid rgba(255,255,255,0.06)',
+              fontFamily: 'Inter, sans-serif',
+            }}>
+            {offset === -1 ? 'Préc.' : offset === 0 ? 'Cette sem.' : offset === 1 ? 'Prochaine' : 'S+2'}
+          </button>
+        ))}
+      </div>
+
+      {/* Bilan semaine si données */}
       {summary.weeklyConsumed.calories > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'rgba(255, 107, 53, 0.06)', border: '1px solid rgba(255, 107, 53, 0.15)' }}>
           <p className="text-orange-400 font-semibold text-sm mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Bilan semaine enregistré</p>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-3 gap-3 mb-2">
             {[
               { label: 'Moy. kcal/j', value: Math.round(summary.weeklyConsumed.calories / 7) },
               { label: 'Moy. prot./j', value: `${Math.round(summary.weeklyConsumed.proteins / 7)}g` },
-              { label: 'Adéquation prot.', value: `${Math.round((summary.weeklyConsumed.proteins / summary.weeklyTarget.proteins) * 100)}%` }
+              { label: 'Prot. adéquation', value: `${Math.round((summary.weeklyConsumed.proteins / summary.weeklyTarget.proteins) * 100)}%` }
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <div className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{value}</div>
@@ -509,48 +546,103 @@ function PlanTab() {
         </div>
       )}
 
-      {plan.days.map(day => (
-        <div key={day.date} className="rounded-2xl overflow-hidden cursor-pointer"
-          style={{ background: 'rgba(255,255,255,0.04)', border: expandedDay === day.date ? '1px solid rgba(255, 107, 53, 0.3)' : '1px solid rgba(255,255,255,0.08)' }}
-          onClick={() => setExpandedDay(expandedDay === day.date ? null : day.date)}>
-          <div className="p-4 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>{day.dayName}</span>
-                {day.isTrainingDay && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255, 107, 53, 0.12)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>🏋️ {day.sessionName}</span>}
+      {/* 7 jours */}
+      {plan.days.map(day => {
+        const isToday = day.date === today;
+        const isPast = day.date < today;
+        const isExpanded = expandedDay === day.date;
+
+        return (
+          <div key={day.date} className="rounded-2xl overflow-hidden"
+            style={{
+              background: isToday ? 'rgba(255,107,53,0.06)' : 'rgba(255,255,255,0.03)',
+              border: isToday ? '1px solid rgba(255,107,53,0.3)' : isExpanded ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.07)',
+              opacity: isPast && !isToday ? 0.7 : 1,
+            }}>
+            {/* En-tête du jour */}
+            <button className="w-full p-4 flex items-center gap-3 text-left" onClick={() => setExpandedDay(isExpanded ? null : day.date)}>
+              {/* Date badge */}
+              <div className="w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0"
+                style={{ background: isToday ? 'rgba(255,107,53,0.2)' : 'rgba(255,255,255,0.06)', border: isToday ? '1px solid rgba(255,107,53,0.4)' : '1px solid rgba(255,255,255,0.08)' }}>
+                <span className="text-xs font-bold" style={{ color: isToday ? '#FF6B35' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
+                  {new Date(day.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short' }).toUpperCase()}
+                </span>
+                <span className="text-white font-black text-lg leading-none" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  {new Date(day.date + 'T12:00:00').getDate()}
+                </span>
               </div>
-              <div className="flex gap-3 mt-1">
-                <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{Math.round(day.totalMacros.calories)} kcal</span>
-                <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P: {Math.round(day.totalMacros.proteins)}g</span>
-              </div>
-            </div>
-            <span className="text-white/30 text-lg">{expandedDay === day.date ? '−' : '+'}</span>
-          </div>
-          {expandedDay === day.date && (
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              {day.meals.map((meal, idx) => (
-                <div key={idx} className="p-4" style={{ borderBottom: idx < day.meals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>{meal.time} — {meal.name}</span>
-                    <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.totalCalories} kcal</span>
-                  </div>
-                  <div className="space-y-1">
-                    {meal.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#FF6B35' }} />
-                          <span className="text-white/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                        </div>
-                        <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
+
+              {/* Infos */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{day.dayName}</span>
+                  {isToday && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(255,107,53,0.2)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>Aujourd'hui</span>}
+                  {day.isTrainingDay && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>🏋️ {day.sessionName}</span>}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-white/70 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{Math.round(day.totalMacros.calories)} kcal</span>
+                  <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{Math.round(day.totalMacros.proteins)}g</span>
+                  <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{Math.round(day.totalMacros.carbs)}g</span>
+                  <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>L:{Math.round(day.totalMacros.fats)}g</span>
+                </div>
+              </div>
+              <span className="text-white/30 text-xl flex-shrink-0">{isExpanded ? '−' : '+'}</span>
+            </button>
+
+            {/* Détail des repas */}
+            {isExpanded && (
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                {day.meals.map((meal, idx) => {
+                  const mealKey = `${day.date}-${idx}`;
+                  const isMealExpanded = expandedMeal === mealKey;
+                  return (
+                    <div key={idx} style={{ borderBottom: idx < day.meals.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                      {/* En-tête repas */}
+                      <button className="w-full px-4 py-3 flex items-center justify-between text-left" onClick={() => setExpandedMeal(isMealExpanded ? null : mealKey)}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{MEAL_ICONS[meal.name] ?? '🍽️'}</span>
+                          <div>
+                            <span className="text-white/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.time} — {meal.name}</span>
+                            <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.totalCalories} kcal · {meal.items.length} aliments</p>
+                          </div>
+                        </div>
+                        <span className="text-white/25 text-sm">{isMealExpanded ? '−' : '+'}</span>
+                      </button>
+
+                      {/* Détail aliments */}
+                      {isMealExpanded && (
+                        <div className="px-4 pb-3 space-y-2">
+                          {meal.items.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#FF6B35' }} />
+                                <span className="text-white/80 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                                <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal · P:{item.proteins}g</p>
+                              </div>
+                            </div>
+                          ))}
+                          {/* Total repas */}
+                          <div className="flex justify-between pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Total repas</span>
+                            <div className="flex gap-3">
+                              <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.totalCalories} kcal</span>
+                              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{meal.items.reduce((s, i) => s + i.proteins, 0)}g</span>
+                              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{meal.items.reduce((s, i) => s + i.carbs, 0)}g</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

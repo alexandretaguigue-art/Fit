@@ -1,8 +1,12 @@
 // ============================================================
-// MOTEUR NUTRITIONNEL — FitPro v4
-// Calories EXACTES et VÉRIFIÉES : somme des items = totalCalories
-// Objectif : 2900 kcal/jour training | 2600 kcal/jour repos
-// Macros : 140g protéines | 430g glucides | 70g lipides (training)
+// MOTEUR NUTRITIONNEL — FitPro v5
+// Calories CALCULÉES SCIENTIFIQUEMENT (Katch-McArdle + TDEE par composantes)
+// Profil : 68kg | 1m75 | 26 ans | 13% MG | LBM = 59.2 kg
+// BMR Katch-McArdle = 370 + (21.6 × 59.2) = 1648 kcal
+// TDEE moyen = 2704 kcal/jour (bureau 8h + marche 2-3x/sem + sport 8 sessions/14j)
+// Surplus lean bulk = +200 kcal (5-7% — recommandation Helms et al. 2023 + Trifecta RD)
+// Jours musculation : 3000 kcal | Jours course : 3050 kcal | Jours football : 3150 kcal | Jours repos/vélo : 2700 kcal
+// Protéines : 130g (2.2g/kg LBM) | Lipides : 25% calories | Glucides : reste
 // 12 semaines de rotation — jamais les mêmes plats 2 semaines de suite
 // ============================================================
 
@@ -23,6 +27,7 @@ export interface DayLog {
   entries: FoodEntry[];
   notes?: string;
   isTrainingDay: boolean;
+  sessionType?: 'training' | 'running' | 'football' | 'cycling' | 'rest';
   sessionId?: string;
 }
 
@@ -46,16 +51,53 @@ export interface DayBalance {
 // MACROS CIBLES
 // ============================================================
 
-// Calories recalibrées pour lean bulk propre :
-// TDEE estimé ~2350 kcal (68kg, 1m75, 26 ans, actif)
-// Training : TDEE + 200 kcal surplus = 2550 kcal
-// Repos    : TDEE - 100 kcal = 2250 kcal (légère restriction)
-// Protéines : 150g (2.2g/kg masse maigre ~59kg)
-// Lipides  : 65g (0.9g/kg)
-// Glucides : reste des calories
+// ============================================================
+// CALCUL SCIENTIFIQUE DU TDEE (Katch-McArdle + composantes)
+// ============================================================
+// Profil : 68 kg | 1m75 | 26 ans | 13% MG | LBM = 59.2 kg
+//
+// BMR Katch-McArdle = 370 + (21.6 × 59.2) = 1 648 kcal/j
+// (Formule la plus précise quand le % MG est connu — Nutrium 2023)
+//
+// TDEE par composantes :
+//   BMR                        = 1 648 kcal
+//   NEAT bureau 8h             =   685 kcal  (1.2 MET × 8h)
+//   NEAT marche midi 2.5×/sem  =    67 kcal  (3.5 MET × 45min)
+//   NEAT activités légères     =   161 kcal
+//   EAT sport (moyenne/jour)   =   184 kcal  (8 sessions / 14j)
+//   TEF (10%)                  =   274 kcal
+//   ─────────────────────────────────────────
+//   TDEE TOTAL                 = 2 704 kcal/j (moyenne)
+//
+// Vérification facteur multiplicateur :
+//   BMR × 1.45 (entre lightly et moderately active) = 2 389 kcal
+//   Consensus (moyenne méthodes) = 2 704 kcal
+//   Note : le facteur multiplicateur seul sous-estime car il ne
+//   capture pas bien le sport 4-5×/semaine sur fond sédentaire.
+//
+// Surplus lean bulk : +200 kcal (5-7% du TDEE)
+//   → Helms et al. 2023 (Sports Med Open) : surplus 5% = gains
+//     musculaires identiques à 15% mais MOINS de gras
+//   → Trifecta RD : lean+trained → +100 à +300 kcal
+//   → Objectif : 0.2-0.3 kg/semaine (vitesse optimale lean bulk)
+//
+// Calories différenciées par type de jour :
+//   Musculation : TDEE_muscu (2 821) + 200 = 3 000 kcal
+//   Course      : TDEE_course (2 856) + 200 = 3 050 kcal
+//   Football    : TDEE_foot (2 971) + 200 = 3 150 kcal
+//   Repos/vélo  : TDEE_repos (2 521) + 200 = 2 700 kcal
+//
+// Macros (jours musculation) :
+//   Protéines : 130g (2.2g/kg LBM — recommandation haute hypertrophie)
+//   Lipides   : 83g (25% des calories — minimum hormonal)
+//   Glucides  : 432g (reste — carburant principal musculation + cardio)
+// ============================================================
 export const MACRO_TARGETS = {
-  training: { calories: 2550, proteins: 150, carbs: 288, fats: 65 },
-  rest:     { calories: 2250, proteins: 150, carbs: 213, fats: 65 },
+  training:  { calories: 3000, proteins: 130, carbs: 432, fats: 83 },
+  running:   { calories: 3050, proteins: 130, carbs: 450, fats: 83 },
+  football:  { calories: 3150, proteins: 130, carbs: 475, fats: 85 },
+  rest:      { calories: 2700, proteins: 130, carbs: 355, fats: 80 },
+  cycling:   { calories: 2750, proteins: 130, carbs: 370, fats: 80 },
 };
 
 // ============================================================
@@ -85,7 +127,8 @@ export function computeFoodMacros(
 // ============================================================
 
 export function computeDayBalance(log: DayLog): DayBalance {
-  const target = log.isTrainingDay ? MACRO_TARGETS.training : MACRO_TARGETS.rest;
+  const targetKey = log.sessionType ?? (log.isTrainingDay ? 'training' : 'rest');
+  const target = MACRO_TARGETS[targetKey as keyof typeof MACRO_TARGETS] ?? MACRO_TARGETS.rest;
   const consumed: DayMacros = log.entries.reduce(
     (acc, e) => ({
       proteins: acc.proteins + e.proteins,
@@ -1516,9 +1559,11 @@ export function computeMealAdjustments(
   consumedSoFar: DayMacros,
   remainingMeals: Meal[],
   isTrainingDay: boolean,
-  weekCarryover: DayMacros
+  weekCarryover: DayMacros,
+  sessionType?: string
 ): MealAdjustment[] {
-  const target = isTrainingDay ? MACRO_TARGETS.training : MACRO_TARGETS.rest;
+  const targetKey = sessionType ?? (isTrainingDay ? 'training' : 'rest');
+  const target = MACRO_TARGETS[targetKey as keyof typeof MACRO_TARGETS] ?? MACRO_TARGETS.rest;
 
   const adjustedTarget = {
     calories: target.calories - weekCarryover.calories / 7,

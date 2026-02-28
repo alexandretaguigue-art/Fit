@@ -193,10 +193,15 @@ function JournalTab() {
   );
 
   // Ajustements automatiques des repas restants
-  const mealAdjustments = useMemo(() =>
+  const mealAdjustmentsRaw = useMemo(() =>
     getMealAdjustments(dateKey, completedMeals),
     [dateKey, completedMeals, getMealAdjustments]
   );
+  const mealAdjustments: Record<string, typeof mealAdjustmentsRaw[0]> = useMemo(() => {
+    const map: Record<string, typeof mealAdjustmentsRaw[0]> = {};
+    mealAdjustmentsRaw.forEach(a => { if (a) map[a.mealName] = a; });
+    return map;
+  }, [mealAdjustmentsRaw]);
 
   const dateLabel = useMemo(() => {
     if (dateOffset === 0) return 'Aujourd\'hui';
@@ -380,7 +385,7 @@ function JournalTab() {
             {!mealStatus && adjustment && (
               <div className="px-3.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(59,130,246,0.04)' }}>
                 <p className="text-blue-400/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  🔄 Budget ajusté : <strong>{adjustment.calorieBudget} kcal</strong> · P:{adjustment.proteinTarget}g G:{adjustment.carbTarget}g L:{adjustment.fatTarget}g
+                  🔄 Budget ajusté : <strong>{adjustment.adjustedCalories} kcal</strong> · P:{adjustment.adjustedProteins}g G:{adjustment.adjustedCarbs}g L:{adjustment.adjustedFats}g
                 </p>
                 <p className="text-blue-300/50 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{adjustment.message}</p>
               </div>
@@ -485,18 +490,22 @@ function PlanTab() {
         </button>
       </div>
 
-      {summary.avgDailyCalories > 0 && (
+      {summary.weeklyConsumed.calories > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'rgba(255, 107, 53, 0.06)', border: '1px solid rgba(255, 107, 53, 0.15)' }}>
           <p className="text-orange-400 font-semibold text-sm mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Bilan semaine enregistré</p>
           <div className="grid grid-cols-3 gap-3 mb-3">
-            {[{ label: 'Moy. kcal/j', value: summary.avgDailyCalories }, { label: 'Moy. prot./j', value: `${summary.avgDailyProteins}g` }, { label: 'Adéquation prot.', value: `${summary.proteinAdequacyAvg}%` }].map(({ label, value }) => (
+            {[
+              { label: 'Moy. kcal/j', value: Math.round(summary.weeklyConsumed.calories / 7) },
+              { label: 'Moy. prot./j', value: `${Math.round(summary.weeklyConsumed.proteins / 7)}g` },
+              { label: 'Adéquation prot.', value: `${Math.round((summary.weeklyConsumed.proteins / summary.weeklyTarget.proteins) * 100)}%` }
+            ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <div className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{value}</div>
                 <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</div>
               </div>
             ))}
           </div>
-          <p className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{summary.recommendation}</p>
+          <p className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{summary.globalRecommendation}</p>
         </div>
       )}
 
@@ -563,8 +572,8 @@ function RecapTab() {
 
   const weekLabel = weekOffset === 0 ? 'Cette semaine' : weekOffset === -1 ? 'Semaine dernière' : `Semaine du ${weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
 
-  const verdictColors = { excellent: '#22c55e', good: '#84cc16', average: '#eab308', poor: '#ef4444' };
-  const verdictLabels = { excellent: 'Excellent', good: 'Bien', average: 'À améliorer', poor: 'Insuffisant' };
+  const verdictColors: Record<string, string> = { optimal: '#22c55e', surplus: '#eab308', deficit: '#3b82f6', protein_low: '#ef4444' };
+  const verdictLabels: Record<string, string> = { optimal: '✅ Optimal', surplus: '📈 Surplus', deficit: '📉 Déficit', protein_low: '⚠️ Protéines faibles' };
   const statusColors = { optimal: '#22c55e', surplus: '#eab308', deficit: '#3b82f6', protein_low: '#ef4444', no_data: 'rgba(255,255,255,0.2)' };
   const statusLabels = { optimal: '✓', surplus: '↑', deficit: '↓', protein_low: '⚠', no_data: '—' };
 
@@ -584,30 +593,27 @@ function RecapTab() {
       </div>
 
       {/* Verdict global */}
-      <div className="rounded-2xl p-5" style={{ background: `${verdictColors[recap.verdict]}08`, border: `1px solid ${verdictColors[recap.verdict]}25` }}>
+      <div className="rounded-2xl p-5" style={{ background: `${verdictColors[recap.weeklyStatus] ?? '#FF6B35'}08`, border: `1px solid ${verdictColors[recap.weeklyStatus] ?? '#FF6B35'}25` }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="text-3xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: verdictColors[recap.verdict] }}>
-            {verdictLabels[recap.verdict]}
+          <div className="text-3xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: verdictColors[recap.weeklyStatus] ?? '#FF6B35' }}>
+            {verdictLabels[recap.weeklyStatus] ?? '📊'}
           </div>
           <div>
-            <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{recap.verdictMessage}</p>
+            <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{recap.globalRecommendation}</p>
           </div>
         </div>
-        <p className="text-white/50 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-          💡 {recap.nextWeekRecommendation}
-        </p>
       </div>
 
       {/* Totaux semaine — Réalité vs Objectif */}
-      {recap.totals.consumed.calories > 0 && (
+      {recap.weeklyConsumed.calories > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-white/60 text-xs uppercase tracking-wider mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>Totaux semaine — Réalité / Objectif</p>
           <div className="space-y-3">
             {[
-              { label: 'Calories', consumed: recap.totals.consumed.calories, target: recap.totals.target.calories, unit: 'kcal', color: '#FF6B35' },
-              { label: 'Protéines', consumed: recap.totals.consumed.proteins, target: recap.totals.target.proteins, unit: 'g', color: '#ef4444' },
-              { label: 'Glucides', consumed: recap.totals.consumed.carbs, target: recap.totals.target.carbs, unit: 'g', color: '#3b82f6' },
-              { label: 'Lipides', consumed: recap.totals.consumed.fats, target: recap.totals.target.fats, unit: 'g', color: '#a855f7' },
+              { label: 'Calories', consumed: recap.weeklyConsumed.calories, target: recap.weeklyTarget.calories, unit: 'kcal', color: '#FF6B35' },
+              { label: 'Protéines', consumed: recap.weeklyConsumed.proteins, target: recap.weeklyTarget.proteins, unit: 'g', color: '#ef4444' },
+              { label: 'Glucides', consumed: recap.weeklyConsumed.carbs, target: recap.weeklyTarget.carbs, unit: 'g', color: '#3b82f6' },
+              { label: 'Lipides', consumed: recap.weeklyConsumed.fats, target: recap.weeklyTarget.fats, unit: 'g', color: '#a855f7' },
             ].map(({ label, consumed, target, unit, color }) => {
               const p = pct(consumed, target);
               const over = consumed > target;
@@ -628,14 +634,14 @@ function RecapTab() {
           </div>
           <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Adéquation protéines</span>
-            <span className="font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: recap.totals.proteinAdequacy >= 90 ? '#22c55e' : recap.totals.proteinAdequacy >= 75 ? '#eab308' : '#ef4444' }}>
-              {recap.totals.proteinAdequacy}%
+            <span className="font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: (recap.weeklyConsumed.proteins / recap.weeklyTarget.proteins) >= 0.9 ? '#22c55e' : (recap.weeklyConsumed.proteins / recap.weeklyTarget.proteins) >= 0.75 ? '#eab308' : '#ef4444' }}>
+              {Math.round((recap.weeklyConsumed.proteins / recap.weeklyTarget.proteins) * 100)}%
             </span>
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Surplus/Déficit semaine</span>
-            <span className="font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: Math.abs(recap.totals.surplusCalories) < 500 ? '#22c55e' : '#eab308' }}>
-              {recap.totals.surplusCalories > 0 ? '+' : ''}{recap.totals.surplusCalories} kcal
+            <span className="font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: Math.abs(recap.weeklyConsumed.calories - recap.weeklyTarget.calories) < 500 ? '#22c55e' : '#eab308' }}>
+              {recap.weeklyConsumed.calories - recap.weeklyTarget.calories > 0 ? '+' : ''}{Math.round(recap.weeklyConsumed.calories - recap.weeklyTarget.calories)} kcal
             </span>
           </div>
         </div>
@@ -669,8 +675,8 @@ function RecapTab() {
                 <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{Math.round(day.consumed.proteins)}g</span>
                 <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{Math.round(day.consumed.carbs)}g</span>
                 <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>L:{Math.round(day.consumed.fats)}g</span>
-                <span className="text-xs font-semibold" style={{ color: Math.abs(day.surplusCalories) < 200 ? '#22c55e' : '#eab308', fontFamily: 'Inter, sans-serif' }}>
-                  {day.surplusCalories > 0 ? '+' : ''}{day.surplusCalories} kcal
+                <span className="text-xs font-semibold" style={{ color: Math.abs(day.consumed.calories - day.target.calories) < 200 ? '#22c55e' : '#eab308', fontFamily: 'Inter, sans-serif' }}>
+                  {day.consumed.calories - day.target.calories > 0 ? '+' : ''}{Math.round(day.consumed.calories - day.target.calories)} kcal
                 </span>
               </div>
             )}

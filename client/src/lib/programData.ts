@@ -4,6 +4,13 @@
 // sur 3 mois : séances, exercices, nutrition, scoring.
 // ============================================================
 
+export interface SetSchemeEntry {
+  reps: number;
+  weightMultiplier: number; // multiplicateur par rapport au poids de base (1.0 = poids de base)
+  label?: string; // ex: 'Activation', 'Travail', 'Intensif', 'Décharge'
+  note?: string; // conseil spécifique pour cette série
+}
+
 export interface Exercise {
   id: string;
   name: string;
@@ -21,6 +28,7 @@ export interface Exercise {
   muscleGroups: string[];
   defaultWeight?: number; // poids suggéré en kg pour débutant
   weightProgression: string; // conseil de progression
+  setScheme?: SetSchemeEntry[]; // schéma de séries avec progression/dégression
   imageUrl?: string; // GIF ou image de démonstration
   videoUrl?: string; // vidéo MP4 de démonstration (musclewiki)
 }
@@ -160,6 +168,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 6,
     repsMax: 8,
     restSeconds: 120,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: 'Activation', note: 'Série d’échauffement — sens le mouvement, amplitude complète' },
+      { reps: 8,  weightMultiplier: 0.85, label: 'Travail', note: 'Charge de travail principale — forme stricte' },
+      { reps: 6,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge maximale — pousse fort, pas de triche' },
+      { reps: 8,  weightMultiplier: 0.85, label: 'Décharge', note: 'Retour à la charge de travail — va chercher l’échec' },
+    ],
     relevanceScore: 98,
     relevanceReason: "Exercice roi pour la masse pectorale et l'activation des triceps. Charge lourde possible, idéal pour la surcharge progressive.",
     alternatives: [
@@ -184,6 +198,11 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 8,
     repsMax: 10,
     restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.75, label: 'Activation', note: 'Chaleur dans les épaules, amplitude complète' },
+      { reps: 10, weightMultiplier: 0.90, label: 'Travail', note: 'Charge principale, contracte les deltoïdes en haut' },
+      { reps: 8,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge max, reste contrôlé sur la descente' },
+    ],
     relevanceScore: 95,
     relevanceReason: "Développe les épaules (deltoïdes) en masse et en largeur. Les haltères permettent une amplitude plus naturelle que la barre.",
     alternatives: [
@@ -207,6 +226,11 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 8,
     repsMax: 12,
     restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.00, label: 'Poids de corps', note: 'Sans lest — amplitude maximale, descente 3 secondes' },
+      { reps: 10, weightMultiplier: 0.00, label: 'Poids de corps', note: 'Si tu peux, ajoute 5kg de lest' },
+      { reps: 8,  weightMultiplier: 1.00, label: 'Lesté', note: 'Avec lest si disponible — va chercher l’échec' },
+    ],
     relevanceScore: 97,
     relevanceReason: "Exercice polyarticulaire exceptionnel pour les triceps et la partie basse des pectoraux. Très efficace pour la masse des bras.",
     alternatives: [
@@ -253,6 +277,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 12,
     repsMax: 15,
     restSeconds: 60,
+    setScheme: [
+      { reps: 15, weightMultiplier: 0.80, label: 'Léger', note: 'Poids léger, amplitude complète, sens le deltoïde latéral' },
+      { reps: 12, weightMultiplier: 1.00, label: 'Travail', note: 'Charge principale — évite de balancer le corps' },
+      { reps: 12, weightMultiplier: 1.00, label: 'Travail', note: 'Même charge, maintiens la forme' },
+      { reps: 15, weightMultiplier: 0.80, label: 'Pump', note: 'Retour au poids léger — va chercher la brûlure, drop set si possible' },
+    ],
     relevanceScore: 96,
     relevanceReason: "Exercice clé pour élargir les épaules et créer une silhouette en V. Les deltoïdes latéraux ne sont pas bien sollicités par les exercices polyarticulaires.",
     alternatives: [
@@ -277,6 +307,11 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 10,
     repsMax: 12,
     restSeconds: 60,
+    setScheme: [
+      { reps: 15, weightMultiplier: 0.75, label: 'Activation', note: 'Activation des triceps, coudes fixés' },
+      { reps: 12, weightMultiplier: 1.00, label: 'Travail', note: 'Charge principale, extension complète' },
+      { reps: 10, weightMultiplier: 1.15, label: 'Intensif', note: 'Charge plus lourde — si tu tiens la forme' },
+    ],
     relevanceScore: 90,
     relevanceReason: "Isolation directe des triceps. Les triceps représentent 2/3 du volume du bras — les développer est CRUCIAL pour avoir de gros bras.",
     alternatives: [
@@ -303,6 +338,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 6,
     repsMax: 8,
     restSeconds: 180,
+    setScheme: [
+      { reps: 10, weightMultiplier: 0.65, label: 'Activation', note: 'Série d’échauffement — sens la profondeur, genoux dans l’axe des pieds' },
+      { reps: 8,  weightMultiplier: 0.80, label: 'Travail', note: 'Charge de travail — descends sous le parallèle' },
+      { reps: 6,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge maximale — technique Valsalva, pousse le sol' },
+      { reps: 8,  weightMultiplier: 0.80, label: 'Décharge', note: 'Retour à 80% — va chercher l’échec, amplitude complète' },
+    ],
     relevanceScore: 100,
     relevanceReason: "Le roi des exercices. Stimule une libération hormonale (testostérone, GH) unique qui favorise la croissance musculaire globale. Indispensable pour des jambes massives.",
     alternatives: [
@@ -375,6 +416,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 8,
     repsMax: 10,
     restSeconds: 90,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.70, label: 'Activation', note: 'Active les fessiers, contraction en haut 2 secondes' },
+      { reps: 10, weightMultiplier: 0.85, label: 'Travail', note: 'Charge principale, pousse sur les talons' },
+      { reps: 8,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge max, tiens la position haute 1-2 secondes' },
+      { reps: 12, weightMultiplier: 0.75, label: 'Pump', note: 'Retour à 75% — va chercher la brûlure dans les fessiers' },
+    ],
     relevanceScore: 94,
     relevanceReason: "Exercice numéro 1 pour les fessiers. Développe la partie supérieure des fessiers et améliore la puissance des hanches, ce qui booste le squat.",
     alternatives: [
@@ -447,6 +494,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 6,
     repsMax: 8,
     restSeconds: 120,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.00, label: 'Poids de corps', note: 'Sans lest — amplitude complète, descente lente 3 secondes' },
+      { reps: 6,  weightMultiplier: 0.00, label: 'Poids de corps', note: 'Tire les coudes vers le bas et l’arrière' },
+      { reps: 6,  weightMultiplier: 1.00, label: 'Lesté', note: 'Ajoute 5-10kg si possible — charge maximale' },
+      { reps: 8,  weightMultiplier: 0.00, label: 'Poids de corps', note: 'Retour poids de corps — va à l’échec' },
+    ],
     relevanceScore: 100,
     relevanceReason: "Exercice roi pour le dos et les biceps. Développe le grand dorsal en largeur (le fameux V-taper) et masse les bras de façon fonctionnelle.",
     alternatives: [
@@ -472,6 +525,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 6,
     repsMax: 8,
     restSeconds: 120,
+    setScheme: [
+      { reps: 10, weightMultiplier: 0.70, label: 'Activation', note: 'Échauffement du dos, dos plat, buste à 45°' },
+      { reps: 8,  weightMultiplier: 0.85, label: 'Travail', note: 'Charge principale, rétracte les omoplates en fin de mouvement' },
+      { reps: 6,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge max — tire vers le nombril, pas la poitrine' },
+      { reps: 8,  weightMultiplier: 0.85, label: 'Décharge', note: 'Retour à 85% — va chercher l’échec' },
+    ],
     relevanceScore: 98,
     relevanceReason: "Développe l'épaisseur du dos (rhomboïdes, trapèzes moyens). Complément parfait des tractions qui développent la largeur.",
     alternatives: [
@@ -542,6 +601,11 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 10,
     repsMax: 12,
     restSeconds: 60,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.80, label: 'Activation', note: 'Poids léger, sens l’étirement maximal du biceps' },
+      { reps: 10, weightMultiplier: 1.00, label: 'Travail', note: 'Charge principale — supination complète, descente 3-4 secondes' },
+      { reps: 8,  weightMultiplier: 1.15, label: 'Intensif', note: 'Charge plus lourde — si la forme reste parfaite' },
+    ],
     relevanceScore: 95,
     relevanceReason: "Position inclinée = étirement maximal du biceps = recrutement maximal des fibres. C'est l'exercice de biceps le plus efficace pour la masse.",
     alternatives: [
@@ -566,6 +630,11 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 8,
     repsMax: 10,
     restSeconds: 60,
+    setScheme: [
+      { reps: 12, weightMultiplier: 0.80, label: 'Activation', note: 'Prise neutre, coudes fixés, mouvement strict' },
+      { reps: 10, weightMultiplier: 1.00, label: 'Travail', note: 'Charge principale — ne tourne pas le poignet' },
+      { reps: 8,  weightMultiplier: 1.15, label: 'Intensif', note: 'Charge lourde — épaisseur du bras, pas de balancement' },
+    ],
     relevanceScore: 90,
     relevanceReason: "Développe le brachial (sous le biceps) et le brachioradial (avant-bras). Donne de l'épaisseur et de la largeur au bras, pas seulement du pic.",
     alternatives: [
@@ -591,6 +660,12 @@ const exerciseDatabase: Record<string, Exercise> = {
     repsMin: 5,
     repsMax: 6,
     restSeconds: 180,
+    setScheme: [
+      { reps: 8,  weightMultiplier: 0.60, label: 'Activation', note: 'Série d’échauffement — dos plat, barre contre les tibias' },
+      { reps: 6,  weightMultiplier: 0.80, label: 'Travail', note: 'Charge de travail, pousse le sol, ne tire pas la barre' },
+      { reps: 5,  weightMultiplier: 1.00, label: 'Intensif', note: 'Charge maximale — technique Valsalva, verrouille les hanches' },
+      { reps: 5,  weightMultiplier: 1.00, label: 'Intensif', note: 'Maintiens la charge max — qualité > quantité' },
+    ],
     relevanceScore: 100,
     relevanceReason: "Exercice le plus complet qui soit. Développe les ischio-jambiers, les fessiers, le dos, et libère une quantité massive d'hormones anabolisantes.",
     alternatives: [

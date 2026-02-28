@@ -39,13 +39,22 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
   const [showAlt, setShowAlt] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
-  const suggestedWeight = adaptation?.suggestedWeight ?? lastLog?.sets[0]?.weight ?? exercise.defaultWeight ?? 0;
+  const baseWeight = adaptation?.suggestedWeight ?? lastLog?.sets[0]?.weight ?? exercise.defaultWeight ?? 0;
   const suggestedRepsMin = adaptation?.suggestedRepsMin ?? exercise.repsMin;
-  const [sets, setSets] = useState<SetData[]>(() =>
-    Array.from({ length: adaptation?.suggestedSets ?? exercise.sets }, () => ({
-      weight: suggestedWeight, reps: suggestedRepsMin, completed: false,
-    }))
-  );
+
+  // Initialise les séries : utilise le setScheme si disponible, sinon uniforme
+  const [sets, setSets] = useState<SetData[]>(() => {
+    if (exercise.setScheme && exercise.setScheme.length > 0) {
+      return exercise.setScheme.map(s => ({
+        weight: s.weightMultiplier === 0 ? 0 : Math.round((baseWeight * s.weightMultiplier) / 2.5) * 2.5,
+        reps: s.reps,
+        completed: false,
+      }));
+    }
+    return Array.from({ length: adaptation?.suggestedSets ?? exercise.sets }, () => ({
+      weight: baseWeight, reps: suggestedRepsMin, completed: false,
+    }));
+  });
 
   const displayScore = selectedAlt
     ? exercise.alternatives.find(a => a.name === selectedAlt)?.relevanceScore ?? exercise.relevanceScore
@@ -207,7 +216,15 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
                 >
                   {set.completed ? <Check size={14} className="text-green-400" /> : <span className="text-white/40 text-xs font-bold">{idx + 1}</span>}
                 </button>
-                <span className="text-white/40 text-xs w-6" style={{ fontFamily: 'Inter, sans-serif' }}>S{idx + 1}</span>
+                <div className="flex flex-col min-w-0">
+                  {exercise.setScheme?.[idx]?.label ? (
+                    <span className="text-xs font-semibold" style={{ fontFamily: 'Syne, sans-serif', color: idx === 0 ? '#94a3b8' : idx === exercise.setScheme.length - 1 ? '#fb923c' : '#FF6B35' }}>
+                      {exercise.setScheme[idx].label}
+                    </span>
+                  ) : (
+                    <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>S{idx + 1}</span>
+                  )}
+                </div>
                 {/* Poids */}
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateSet(idx, 'weight', Math.max(0, set.weight - 2.5))} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>−</button>
@@ -226,6 +243,12 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
                   </div>
                   <button onClick={() => updateSet(idx, 'reps', set.reps + 1)} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>+</button>
                 </div>
+                {/* Note spécifique de la série */}
+                {exercise.setScheme?.[idx]?.note && !set.completed && (
+                  <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px' }}>
+                    → {exercise.setScheme[idx].note}
+                  </p>
+                )}
               </div>
             ))}
           </div>

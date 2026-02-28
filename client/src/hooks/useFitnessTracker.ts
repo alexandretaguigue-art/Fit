@@ -16,7 +16,6 @@ import {
 } from '../lib/adaptationEngine';
 import {
   computeDayBalance,
-  computeWeeklyNutritionSummary,
   computeWeeklyRecap,
   computeMealAdjustments,
   computeWeeklyCarryover,
@@ -405,7 +404,9 @@ export function useFitnessTracker() {
         logs.push(data.nutritionLogs[key]);
       }
     }
-    return computeWeeklyNutritionSummary(logs, getCurrentWeek());
+    const weekMonday = new Date(weekStartDate + 'T12:00:00');
+    const weekPlan = generateWeeklyMealPlan(weekMonday);
+    return computeWeeklyRecap(weekPlan, data.nutritionLogs as Record<string, DayLog>);
   }, [data.nutritionLogs, getCurrentWeek]);
 
   // ============================================================
@@ -448,8 +449,8 @@ export function useFitnessTracker() {
   // ============================================================
 
   const getWeeklyRecap = useCallback((weekStartMonday: Date) => {
-    const allLogs = Object.values(data.nutritionLogs);
-    return computeWeeklyRecap(allLogs, weekStartMonday);
+    const weekPlan = generateWeeklyMealPlan(weekStartMonday);
+    return computeWeeklyRecap(weekPlan, data.nutritionLogs as Record<string, DayLog>);
   }, [data.nutritionLogs]);
 
   const getMealAdjustments = useCallback((dateKey: string, completedMeals: string[]) => {
@@ -463,9 +464,11 @@ export function useFitnessTracker() {
       }),
       { proteins: 0, carbs: 0, fats: 0, calories: 0 }
     );
-    const allLogs = Object.values(data.nutritionLogs);
-    const weeklyCarryover = computeWeeklyCarryover(allLogs, dateKey);
-    return computeMealAdjustments(consumed, completedMeals, log.isTrainingDay, weeklyCarryover);
+    const weekMonday = getCurrentWeekMonday();
+    const weekPlan = generateWeeklyMealPlan(weekMonday);
+    const weeklyCarryover = computeWeeklyCarryover(data.nutritionLogs as Record<string, DayLog>, weekPlan);
+    const remainingMeals: import('../lib/nutritionEngine').Meal[] = [];
+    return computeMealAdjustments(consumed, remainingMeals, log.isTrainingDay, weeklyCarryover);
   }, [data.nutritionLogs, getDayLog]);
 
   // ============================================================

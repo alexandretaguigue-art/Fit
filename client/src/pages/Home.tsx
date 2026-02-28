@@ -1,12 +1,34 @@
-// DESIGN: "Coach Nocturne" — Page d'accueil
-// Hero section avec image, stats du programme, phase courante
+// DESIGN: "Coach Nocturne" — Dark Mode Premium Fitness
+// Hero section avec image, stats du programme, cycle 14 jours, séance du jour
 
 import { useLocation } from 'wouter';
-import { Dumbbell, Target, Flame, ChevronRight, Trophy, Calendar } from 'lucide-react';
+import { Dumbbell, Target, Flame, ChevronRight, Trophy, Calendar, Zap, Bike, Bed } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
-import { programData } from '../lib/programData';
+import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
+
+const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  gym:      { bg: 'rgba(255,107,53,0.08)',  border: 'rgba(255,107,53,0.25)',  text: '#FF6B35', badge: 'rgba(255,107,53,0.15)' },
+  football: { bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.25)',   text: '#22C55E', badge: 'rgba(34,197,94,0.15)' },
+  running:  { bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.25)',  text: '#3B82F6', badge: 'rgba(59,130,246,0.15)' },
+  cycling:  { bg: 'rgba(20,184,166,0.08)',  border: 'rgba(20,184,166,0.25)',  text: '#14B8A6', badge: 'rgba(20,184,166,0.15)' },
+  rest:     { bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.4)', badge: 'rgba(255,255,255,0.06)' },
+};
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  gym: 'Musculation', football: 'Football', running: 'Course', cycling: 'Vélo', rest: 'Repos',
+};
+
+function SessionTypeIcon({ type, size = 16 }: { type: string; size?: number }) {
+  const color = SESSION_TYPE_COLORS[type]?.text || '#fff';
+  if (type === 'gym') return <Dumbbell size={size} style={{ color }} />;
+  if (type === 'football') return <span style={{ fontSize: size, lineHeight: 1 }}>⚽</span>;
+  if (type === 'running') return <Zap size={size} style={{ color }} />;
+  if (type === 'cycling') return <Bike size={size} style={{ color }} />;
+  if (type === 'rest') return <Bed size={size} style={{ color }} />;
+  return <Dumbbell size={size} style={{ color }} />;
+}
 
 export default function Home() {
   const [, navigate] = useLocation();
@@ -22,12 +44,19 @@ export default function Home() {
     ? Math.min(((currentWeek - 1) / 12) * 100, 100)
     : 0;
 
-  const todayDay = new Date().getDay(); // 0=dim, 1=lun...
-  const sessionDays: Record<number, string> = { 1: 'upper_a', 2: 'lower_a', 4: 'upper_b', 5: 'lower_b' };
-  const todaySession = sessionDays[todayDay];
-  const todayWorkout = todaySession
-    ? programData.sessions.find(s => s.id === todaySession)
-    : null;
+  // Calcul du jour du cycle 14 jours
+  const today = new Date();
+  const programStart = data.startDate ? new Date(data.startDate) : today;
+  const cycleDayToday = data.startDate ? getCycleDayForDate(today, programStart) : 1;
+  const todayCycleDay = cycle14Days.find(d => d.dayNumber === cycleDayToday);
+  const todaySession = todayCycleDay ? getSessionForCycleDay(cycleDayToday) : null;
+  const todayType = todayCycleDay?.type || 'rest';
+  const todayColors = SESSION_TYPE_COLORS[todayType];
+
+  // Prochain jour d'entraînement
+  const nextTrainingDay = cycle14Days.find(
+    d => d.dayNumber > cycleDayToday && d.type !== 'rest'
+  );
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#0F0F14' }}>
@@ -39,23 +68,18 @@ export default function Home() {
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55)' }}
         />
-        {/* Gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
             background: 'linear-gradient(to bottom, rgba(15,15,20,0.3) 0%, rgba(15,15,20,0.0) 40%, rgba(15,15,20,1) 100%)',
           }}
         />
-        {/* Header content */}
         <div className="absolute top-0 left-0 right-0 p-5 flex items-start justify-between">
           <div>
             <p className="text-white/60 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
               Programme
             </p>
-            <h1
-              className="text-white text-2xl font-bold leading-tight"
-              style={{ fontFamily: 'Syne, sans-serif' }}
-            >
+            <h1 className="text-white text-2xl font-bold leading-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
               FitPro
             </h1>
           </div>
@@ -68,18 +92,14 @@ export default function Home() {
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            3 mois
+            Cycle 14 jours
           </div>
         </div>
-        {/* Bottom hero text */}
         <div className="absolute bottom-4 left-5">
           <p className="text-white/70 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {data.startDate ? `Semaine ${currentWeek} / 12` : 'Programme non démarré'}
+            {data.startDate ? `Semaine ${currentWeek} / 12 · Jour ${cycleDayToday}/14` : 'Programme non démarré'}
           </p>
-          <h2
-            className="text-white text-xl font-bold"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
+          <h2 className="text-white text-xl font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>
             {currentPhase.name}
           </h2>
         </div>
@@ -90,10 +110,7 @@ export default function Home() {
         {data.startDate && (
           <div
             className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-white/70 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -106,10 +123,7 @@ export default function Home() {
             <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
               <div
                 className="h-2 rounded-full transition-all duration-1000"
-                style={{
-                  width: `${weekProgress}%`,
-                  background: 'linear-gradient(90deg, #FF6B35, #FF3366)',
-                }}
+                style={{ width: `${weekProgress}%`, background: 'linear-gradient(90deg, #FF6B35, #FF3366)' }}
               />
             </div>
             <div className="flex justify-between mt-2">
@@ -131,63 +145,67 @@ export default function Home() {
         )}
 
         {/* Séance du jour */}
-        {todayWorkout ? (
+        {todaySession && todayType !== 'rest' ? (
           <div
-            className="rounded-2xl overflow-hidden cursor-pointer hover-glow transition-all duration-300"
-            style={{
-              background: 'rgba(255, 107, 53, 0.08)',
-              border: '1px solid rgba(255, 107, 53, 0.2)',
-            }}
+            className="rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+            style={{ background: todayColors.bg, border: `1px solid ${todayColors.border}` }}
             onClick={() => navigate('/workout')}
           >
             <div className="p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Flame size={16} className="text-orange-400" />
-                <span className="text-orange-400 text-xs font-semibold uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Séance du jour
+                <SessionTypeIcon type={todayType} size={16} />
+                <span
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: todayColors.text, fontFamily: 'Inter, sans-serif' }}
+                >
+                  Séance du jour · {SESSION_TYPE_LABELS[todayType]}
                 </span>
               </div>
-              <h3
-                className="text-white text-lg font-bold"
-                style={{ fontFamily: 'Syne, sans-serif' }}
-              >
-                {todayWorkout.name}
+              <h3 className="text-white text-lg font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>
+                {todaySession.name}
               </h3>
               <p className="text-white/60 text-sm mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
-                {todayWorkout.focus}
+                {todaySession.focus}
               </p>
               <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5">
-                  <Dumbbell size={14} className="text-white/40" />
-                  <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {todayWorkout.exercises.length} exercices
-                  </span>
-                </div>
+                {todaySession.exercises.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Dumbbell size={14} className="text-white/40" />
+                    <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      {todaySession.exercises.length} exercices
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <Calendar size={14} className="text-white/40" />
                   <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    ~{todayWorkout.durationMin} min
+                    ~{todaySession.durationMin} min
                   </span>
                 </div>
+                {todaySession.cardioDetails && (
+                  <div className="flex items-center gap-1.5">
+                    <Flame size={14} className="text-white/40" />
+                    <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      ~{todaySession.cardioDetails.totalCaloriesBurned} kcal
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div
               className="px-4 py-3 flex items-center justify-between"
-              style={{ background: 'rgba(255, 107, 53, 0.1)', borderTop: '1px solid rgba(255, 107, 53, 0.15)' }}
+              style={{ background: `${todayColors.badge}`, borderTop: `1px solid ${todayColors.border}` }}
             >
-              <span className="text-orange-400 text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Commencer la séance
+              <span className="text-sm font-semibold" style={{ color: todayColors.text, fontFamily: 'Inter, sans-serif' }}>
+                Voir la séance
               </span>
-              <ChevronRight size={16} className="text-orange-400" />
+              <ChevronRight size={16} style={{ color: todayColors.text }} />
             </div>
           </div>
         ) : (
           <div
             className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div className="flex items-center gap-2 mb-1">
               <Trophy size={16} className="text-white/40" />
@@ -195,17 +213,85 @@ export default function Home() {
                 Jour de repos
               </span>
             </div>
-            <h3
-              className="text-white text-lg font-bold"
-              style={{ fontFamily: 'Syne, sans-serif' }}
-            >
-              Récupération active
+            <h3 className="text-white text-lg font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>
+              Récupération totale
             </h3>
             <p className="text-white/50 text-sm mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Le muscle grandit pendant le repos. Marche légère, étirements, sommeil de qualité.
+              Le muscle grandit pendant le repos. Dors 8h+, mange bien, étire-toi légèrement.
             </p>
+            {nextTrainingDay && (
+              <p className="text-white/30 text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Prochaine séance : J{nextTrainingDay.dayNumber} — {nextTrainingDay.label}
+              </p>
+            )}
           </div>
         )}
+
+        {/* Planning cycle 14 jours */}
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Cycle 14 jours
+          </p>
+          <div className="grid grid-cols-7 gap-1.5">
+            {cycle14Days.map(day => {
+              const isToday = data.startDate && day.dayNumber === cycleDayToday;
+              const isPast = data.startDate && day.dayNumber < cycleDayToday;
+              const colors = SESSION_TYPE_COLORS[day.type];
+              return (
+                <div
+                  key={day.dayNumber}
+                  className="flex flex-col items-center gap-1"
+                  title={day.label}
+                >
+                  <div
+                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200"
+                    style={{
+                      background: isToday
+                        ? colors.text
+                        : isPast
+                        ? 'rgba(255,255,255,0.06)'
+                        : colors.bg,
+                      border: isToday
+                        ? `2px solid ${colors.text}`
+                        : `1px solid ${colors.border}`,
+                      opacity: isPast ? 0.5 : 1,
+                    }}
+                  >
+                    <span style={{ fontSize: '14px', lineHeight: 1 }}>{day.icon}</span>
+                  </div>
+                  <span
+                    className="text-center leading-none"
+                    style={{
+                      fontSize: '9px',
+                      color: isToday ? colors.text : 'rgba(255,255,255,0.3)',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: isToday ? 700 : 400,
+                    }}
+                  >
+                    J{day.dayNumber}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {/* Légende */}
+          <div className="flex flex-wrap gap-3 mt-3">
+            {Object.entries(SESSION_TYPE_LABELS).map(([type, label]) => (
+              <div key={type} className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: SESSION_TYPE_COLORS[type].text }}
+                />
+                <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Stats rapides */}
         {data.startDate && (
@@ -218,16 +304,10 @@ export default function Home() {
               <div
                 key={label}
                 className="rounded-2xl p-3 text-center"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 <Icon size={16} className="mx-auto mb-1.5" style={{ color: '#FF6B35' }} />
-                <div
-                  className="text-white font-bold text-lg leading-none"
-                  style={{ fontFamily: 'Syne, sans-serif' }}
-                >
+                <div className="text-white font-bold text-lg leading-none" style={{ fontFamily: 'Syne, sans-serif' }}>
                   {value}
                   <span className="text-xs text-white/40 ml-0.5">{unit}</span>
                 </div>
@@ -242,20 +322,14 @@ export default function Home() {
         {/* Phase actuelle */}
         <div
           className="rounded-2xl p-4"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-white/50 text-xs uppercase tracking-wider mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>
                 Phase actuelle
               </p>
-              <h3
-                className="text-white font-bold text-base"
-                style={{ fontFamily: 'Syne, sans-serif' }}
-              >
+              <h3 className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>
                 {currentPhase.name}
               </h3>
             </div>
@@ -294,10 +368,7 @@ export default function Home() {
         {/* CTA si programme non démarré */}
         {!data.startDate && (
           <button
-            onClick={() => {
-              startProgram();
-              navigate('/workout');
-            }}
+            onClick={() => { startProgram(); navigate('/workout'); }}
             className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 hover:opacity-90 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #FF6B35, #FF3366)',
@@ -312,10 +383,7 @@ export default function Home() {
         {/* Profil */}
         <div
           className="rounded-2xl p-4"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
             Ton profil
@@ -326,7 +394,7 @@ export default function Home() {
               { label: 'Taille', value: '1m75' },
               { label: 'Âge', value: '26 ans' },
               { label: 'Masse grasse', value: '13%' },
-              { label: 'Objectif', value: 'Volume bras/jambes' },
+              { label: 'Objectif', value: 'Volume bras/jambes + foot' },
               { label: 'Calories/j', value: '2900 kcal' },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center">

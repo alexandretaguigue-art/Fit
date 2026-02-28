@@ -25,20 +25,75 @@ export interface Exercise {
 
 export interface WorkoutSession {
   id: string;
-  day: number; // 1-7
+  day: number; // 1-14 (cycle 14 jours)
   name: string;
+  type: 'gym' | 'football' | 'running' | 'cycling' | 'rest';
   focus: string;
   durationMin: number;
   exercises: Exercise[];
   coachNote: string;
+  // Pour les séances non-salle :
+  cardioDetails?: CardioSession;
+}
+
+export interface CardioSession {
+  type: 'running_endurance' | 'running_intervals' | 'cycling' | 'football';
+  warmupMin: number;
+  mainBlocks: CardioBlock[];
+  cooldownMin: number;
+  totalCaloriesBurned: number; // estimation
+  footballDrills?: FootballDrill[];
+  scores?: FootballScore[];
+}
+
+export interface CardioBlock {
+  name: string;
+  description: string;
+  durationMin?: number;
+  reps?: number;
+  distance?: string;
+  restSeconds?: number;
+  intensity: 'low' | 'medium' | 'high' | 'maximal';
+  coachTip: string;
+}
+
+export interface FootballDrill {
+  id: string;
+  name: string;
+  phase: string;
+  durationMin: number;
+  reps?: number;
+  equipment: string;
+  description: string;
+  coachTip: string;
+  progressionPhase2?: string;
+  progressionPhase3?: string;
+}
+
+export interface FootballScore {
+  id: string;
+  name: string;
+  unit: string;
+  target: string;
+  description: string;
 }
 
 export interface Week {
   weekNumber: number;
   phase: 'Fondation' | 'Développement' | 'Intensification';
   phaseDescription: string;
-  volumeMultiplier: number; // multiplicateur de volume vs semaine 1
+  volumeMultiplier: number;
   sessions: WorkoutSession[];
+}
+
+// Cycle 14 jours : structure principale
+export interface Cycle14Day {
+  dayNumber: number; // 1-14
+  sessionId: string;
+  label: string; // ex: "Musculation Haut A"
+  type: 'gym' | 'football' | 'running' | 'cycling' | 'rest';
+  icon: string;
+  colorClass: string;
 }
 
 export interface NutrientInfo {
@@ -645,6 +700,139 @@ const exerciseDatabase: Record<string, Exercise> = {
 };
 
 // ============================================================
+// EXERCICES FOOTBALL — Explosivité, Appuis, Accélération
+// ============================================================
+
+const footballDrills: FootballDrill[] = [
+  {
+    id: 'activation',
+    name: 'Activation neuromusculaire',
+    phase: 'Échauffement',
+    durationMin: 10,
+    equipment: 'Aucun',
+    description: 'Footing léger 3 min → montées de genoux progressives 2×20m → talons-fesses 2×20m → fentes dynamiques 10/jambe → sauts sur place ×20 → rotations de hanches 10/sens.',
+    coachTip: "L'échauffement est obligatoire pour les sprints. Un muscle froid = blessure assurée. Prends ces 10 minutes au sérieux.",
+    progressionPhase2: 'Ajoute des skips A et B (course technique) sur 20m.',
+    progressionPhase3: 'Ajoute des sauts en contrebas (drop jumps) pour activer les réflexes.',
+  },
+  {
+    id: 'appuis_rythme',
+    name: 'Travail d\'appuis — Rythme',
+    phase: 'Appuis',
+    durationMin: 6,
+    reps: 6,
+    equipment: 'Plots ou objets au sol',
+    description: '10 cases imaginaires de 50cm. Passer 1 pied par case, puis 2 pieds par case. 6 passages à vitesse progressive. Focus sur la fréquence des appuis et la légèreté.',
+    coachTip: 'Pense à poser les pieds sous le centre de gravité, pas devant. Les bras doivent se balancer activement.',
+    progressionPhase2: 'Augmenter la vitesse maximale, ajouter des changements de direction à mi-parcours.',
+    progressionPhase3: 'Ajouter un ballon à conduire entre les cases.',
+  },
+  {
+    id: 'slalom_plots',
+    name: 'Slalom plots — Changements de direction',
+    phase: 'Appuis',
+    durationMin: 6,
+    reps: 6,
+    equipment: '8 plots espacés de 1m',
+    description: '8 plots en ligne droite espacés de 1m. Slalom aller-retour ×6 passages. Chronométre les 3 derniers passages. Objectif : descendre sous 8 secondes.',
+    coachTip: 'Baisse le centre de gravité dans les virages. Pousse fort sur la jambe extérieure pour changer de direction.',
+    progressionPhase2: 'Réduire l\'espacement à 80cm.',
+    progressionPhase3: 'Ajouter un ballon en conduite.',
+  },
+  {
+    id: 'appuis_lateraux',
+    name: 'Appuis latéraux réactifs',
+    phase: 'Appuis',
+    durationMin: 5,
+    reps: 4,
+    equipment: '2 plots espacés de 5m',
+    description: 'Déplacements latéraux (pas chassés) entre 2 plots. 4 séries ×30 secondes. Variante : changement de direction sur signal (clap ou cri). Focus sur la réactivité.',
+    coachTip: 'Ne croise pas les pieds. Reste sur les avant-pieds. La vitesse de réaction se travaille en restant concentré à 100%.',
+    progressionPhase2: 'Ajouter un sprint de 5m après chaque changement de direction.',
+    progressionPhase3: 'Ajouter une réception de balle après le sprint.',
+  },
+  {
+    id: 'sprint_10m',
+    name: 'Sprint 10m — Démarrage explosif',
+    phase: 'Accélération',
+    durationMin: 8,
+    reps: 8,
+    equipment: 'Plots',
+    description: 'Départ debout, position foot (légèrement fléchi). 8 sprints ×10m. Récupération 45 secondes entre chaque. Objectif : < 1.8 secondes. Chronométre chaque sprint.',
+    coachTip: 'Les 3 premières foulées sont décisives. Penche le corps vers l\'avant à 45° au départ. Bras qui propulsent fort.',
+    progressionPhase2: 'Passer à 10 sprints, réduire la récupération à 40 secondes.',
+    progressionPhase3: 'Départ dos à la direction de course (demi-tour + sprint).',
+  },
+  {
+    id: 'sprint_20m_cdc',
+    name: 'Sprint 20m avec changement de direction',
+    phase: 'Accélération',
+    durationMin: 8,
+    reps: 6,
+    equipment: 'Plots',
+    description: 'Sprint 10m → toucher plot → sprint retour 10m. 6 répétitions. Récupération 60 secondes. Variante : départ dos à la direction (réaction + demi-tour).',
+    coachTip: 'Le changement de direction doit être explosif. Plante le pied extérieur, pousse fort, ne ralentis pas avant le plot.',
+    progressionPhase2: 'Ajouter une troisième direction (T-test : gauche, droite, retour).',
+    progressionPhase3: 'Ajouter un sprint final de 15m après le retour.',
+  },
+  {
+    id: 'depart_positions',
+    name: 'Démarrage depuis positions variées',
+    phase: 'Accélération',
+    durationMin: 8,
+    reps: 9,
+    equipment: 'Aucun',
+    description: 'Départ assis → sprint 10m (×3). Départ allongé face au sol → sprint 10m (×3). Départ allongé dos au sol → sprint 10m (×3). Récupération 45 secondes.',
+    coachTip: 'Simule les situations de jeu réelles. Au foot, tu n\'es jamais en position parfaite pour démarrer.',
+    progressionPhase2: 'Ajouter un départ depuis une position de combat (lutte légère avec partenaire).',
+    progressionPhase3: 'Ajouter un ballon à contrôler après le sprint.',
+  },
+  {
+    id: 'conduite_acceleration',
+    name: 'Conduite de balle + accélération',
+    phase: 'Ballon',
+    durationMin: 6,
+    reps: 8,
+    equipment: 'Ballon',
+    description: 'Conduite lente 10m → accélération maximale 10m. 8 répétitions. Récupération 30 secondes. Focus sur la transition conduite lente → sprint.',
+    coachTip: 'La balle doit rester proche du pied pendant l\'accélération. Pousse la balle devant toi sur 1-2m pour accélérer.',
+    progressionPhase2: 'Ajouter un défenseur passif (qui essaie de toucher la balle).',
+    progressionPhase3: 'Ajouter une frappe au but à l\'arrivée.',
+  },
+  {
+    id: 'dribble_carre',
+    name: 'Dribble en carré — Changements de direction',
+    phase: 'Ballon',
+    durationMin: 6,
+    reps: 6,
+    equipment: 'Ballon + 4 plots (5m×5m)',
+    description: '4 plots en carré de 5m×5m. Dribble autour du carré en changeant de direction à chaque plot. 6 passages chronométrés. Varie les feintes (crochet, Zidane, Ronaldo).',
+    coachTip: 'Utilise l\'intérieur ET l\'extérieur du pied. La feinte doit être convaincante — pas juste un changement de direction.',
+    progressionPhase2: 'Réduire le carré à 4m×4m.',
+    progressionPhase3: 'Ajouter un défenseur dans le carré.',
+  },
+  {
+    id: 'frappe_apres_sprint',
+    name: 'Frappe après sprint — Technique sous fatigue',
+    phase: 'Ballon',
+    durationMin: 8,
+    reps: 8,
+    equipment: 'Ballon + but ou cible',
+    description: 'Sprint 15m → réception balle → frappe au but. 8 répétitions. Récupération 45 secondes. Travaille la coordination vitesse + technique sous fatigue.',
+    coachTip: 'La frappe sous fatigue révèle tes vrais automatismes. Concentre-toi sur la technique même quand tu es essoufflé.',
+    progressionPhase2: 'Ajouter une passe de tête avant la frappe.',
+    progressionPhase3: 'Sprint + dribble 1v1 + frappe.',
+  },
+];
+
+const footballScores: FootballScore[] = [
+  { id: 'sprint_10m_time', name: 'Temps sprint 10m', unit: 'secondes', target: '< 1.8s', description: 'Temps moyen sur les 3 meilleurs sprints de 10m. Mesure l\'explosivité pure au démarrage.' },
+  { id: 'slalom_time', name: 'Temps slalom 8 plots', unit: 'secondes', target: '< 8s', description: 'Temps sur le slalom de 8 plots espacés de 1m. Mesure la vitesse de changement de direction.' },
+  { id: 'sprints_completed', name: 'Sprints sans perte de vitesse', unit: 'sur 8', target: '8/8', description: 'Nombre de sprints maintenus à intensité maximale. Mesure l\'endurance explosive.' },
+  { id: 'session_feeling', name: 'Ressenti global', unit: '/10', target: '≥ 7/10', description: 'Évaluation subjective de la séance. Prend en compte la fatigue, la qualité des appuis et la progression.' },
+];
+
+// ============================================================
 // STRUCTURE DES SÉANCES
 // ============================================================
 
@@ -652,6 +840,7 @@ const sessions: WorkoutSession[] = [
   {
     id: 'upper_a',
     day: 1,
+    type: 'gym' as const,
     name: 'Haut du corps A',
     focus: 'Pectoraux · Épaules · Triceps',
     durationMin: 65,
@@ -667,7 +856,8 @@ const sessions: WorkoutSession[] = [
   },
   {
     id: 'lower_a',
-    day: 2,
+    day: 3,
+    type: 'gym' as const,
     name: 'Bas du corps A',
     focus: 'Quadriceps · Fessiers · Abdos',
     durationMin: 70,
@@ -684,6 +874,7 @@ const sessions: WorkoutSession[] = [
   {
     id: 'upper_b',
     day: 4,
+    type: 'gym' as const,
     name: 'Haut du corps B',
     focus: 'Dos · Épaules · Biceps',
     durationMin: 65,
@@ -699,7 +890,8 @@ const sessions: WorkoutSession[] = [
   },
   {
     id: 'lower_b',
-    day: 5,
+    day: 8,
+    type: 'gym' as const,
     name: 'Bas du corps B',
     focus: 'Ischio-jambiers · Mollets · Abdos',
     durationMin: 65,
@@ -713,7 +905,137 @@ const sessions: WorkoutSession[] = [
     ],
     coachNote: "Le soulevé de terre est l'exercice le plus complet qui soit. Priorité absolue à la technique — un mauvais dos peut te mettre hors service des semaines. Les mollets nécessitent un volume élevé (5 séries) et une amplitude complète pour progresser.",
   },
+  // --- SÉANCE FOOTBALL ---
+  {
+    id: 'football',
+    day: 5,
+    type: 'football' as const,
+    name: 'Séance Football',
+    focus: 'Explosivité · Appuis · Accélération',
+    durationMin: 70,
+    exercises: [],
+    coachNote: "Cette séance est conçue pour te rendre DOMINANT sur le terrain. Chaque exercice simule une situation de jeu réelle. Chronomètre tes sprints et note tes scores — c'est comme ça que tu verras ta progression. La créatine (5g/jour) va directement booster tes performances ici.",
+    cardioDetails: {
+      type: 'football',
+      warmupMin: 10,
+      cooldownMin: 8,
+      totalCaloriesBurned: 450,
+      mainBlocks: [
+        { name: 'Travail d\'appuis', description: 'Rythme, slalom, latéralité', durationMin: 15, intensity: 'high', coachTip: 'Appuis légers, fréquence élevée, centre de gravité bas.' },
+        { name: 'Accélération & démarrage', description: 'Sprints 10m, 20m avec CDC, positions variées', durationMin: 22, intensity: 'maximal', coachTip: 'Récupération complète entre chaque sprint — qualité > quantité.' },
+        { name: 'Technique avec ballon', description: 'Conduite + accélération, dribble, frappe sous fatigue', durationMin: 18, intensity: 'high', coachTip: 'La balle doit être une extension de ton pied. Même sous fatigue.' },
+      ],
+      footballDrills,
+      scores: footballScores,
+    },
+  },
+  // --- COURSE ENDURANCE ---
+  {
+    id: 'running_endurance',
+    day: 2,
+    type: 'running' as const,
+    name: 'Course — Endurance',
+    focus: 'Base aérobie · Endurance football',
+    durationMin: 40,
+    exercises: [],
+    coachNote: "Cette course développe ta base aérobie — indispensable pour tenir 90 minutes au foot. Allure conversation (tu peux parler). Ne t'épuise pas, c'est une séance de développement, pas de performance.",
+    cardioDetails: {
+      type: 'running_endurance',
+      warmupMin: 5,
+      cooldownMin: 5,
+      totalCaloriesBurned: 320,
+      mainBlocks: [
+        { name: 'Footing zone 2', description: '30 minutes à allure conversation (65-70% FC max). Tu dois pouvoir parler en courant.', durationMin: 30, intensity: 'low', coachTip: 'Si tu ne peux plus parler, ralentis. Zone 2 = la zone où les adaptations aérobies sont maximales.' },
+      ],
+    },
+  },
+  // --- COURSE FRACTIONNÉE ---
+  {
+    id: 'running_intervals',
+    day: 6,
+    type: 'running' as const,
+    name: 'Course — Fractionné',
+    focus: 'VMA · Vitesse · Explosivité cardio',
+    durationMin: 35,
+    exercises: [],
+    coachNote: "Le fractionné développe ta VMA (vitesse maximale aérobie) — directement transférable au foot. 8 sprints de 30 secondes à fond, récupération 90 secondes. C'est difficile mais c'est ce qui te rend plus rapide.",
+    cardioDetails: {
+      type: 'running_intervals',
+      warmupMin: 10,
+      cooldownMin: 8,
+      totalCaloriesBurned: 380,
+      mainBlocks: [
+        { name: 'Fractionné 30/90', description: '8 × 30 secondes à vitesse maximale / 90 secondes récupération active (marche ou footing très léger).', durationMin: 16, reps: 8, intensity: 'maximal', coachTip: 'Chaque sprint doit être à 95-100% de ton maximum. Si tu peux tenir une conversation, tu n\'es pas assez vite.' },
+      ],
+    },
+  },
+  // --- VÉLO ---
+  {
+    id: 'cycling',
+    day: 7,
+    type: 'cycling' as const,
+    name: 'Vélo — Récupération active',
+    focus: 'Récupération · Endurance douce',
+    durationMin: 55,
+    exercises: [],
+    coachNote: "Le vélo est ta séance de récupération active. Intensité légère à modérée — jamais épuisant. Il favorise la circulation sanguine dans les jambes et accélère la récupération musculaire sans les abîmer. Profites-en pour te vider la tête.",
+    cardioDetails: {
+      type: 'cycling',
+      warmupMin: 5,
+      cooldownMin: 5,
+      totalCaloriesBurned: 280,
+      mainBlocks: [
+        { name: 'Vélo intensité modérée', description: '45 minutes à intensité légère à modérée. Cadence régulière, jamais essoufflé. Profite du paysage.', durationMin: 45, intensity: 'low', coachTip: 'Résistance légère, cadence de pédalage élevée (80-90 tours/min). Évite les grosses montées.' },
+      ],
+    },
+  },
+  // --- REPOS ---
+  {
+    id: 'rest',
+    day: 14,
+    type: 'rest' as const,
+    name: 'Repos total',
+    focus: 'Récupération · Croissance musculaire',
+    durationMin: 0,
+    exercises: [],
+    coachNote: "Le muscle grandit pendant le repos, pas pendant l'entraînement. Cette journée est aussi importante que tes séances. Dors 8h+, mange bien, étire-toi légèrement si tu veux. Pas de sport.",
+  },
 ];
+
+// ============================================================
+// CYCLE 14 JOURS — Planning
+// ============================================================
+
+export const cycle14Days: Cycle14Day[] = [
+  { dayNumber: 1,  sessionId: 'upper_a',           label: 'Musculation Haut A',    type: 'gym',      icon: '💪', colorClass: 'orange' },
+  { dayNumber: 2,  sessionId: 'running_endurance',  label: 'Course — Endurance',    type: 'running',  icon: '🏃', colorClass: 'blue' },
+  { dayNumber: 3,  sessionId: 'lower_a',            label: 'Musculation Bas A',     type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 4,  sessionId: 'upper_b',            label: 'Musculation Haut B',    type: 'gym',      icon: '💪', colorClass: 'orange' },
+  { dayNumber: 5,  sessionId: 'football',           label: 'Séance Football',       type: 'football', icon: '⚽', colorClass: 'green' },
+  { dayNumber: 6,  sessionId: 'running_intervals',  label: 'Course — Fractionné',   type: 'running',  icon: '⚡', colorClass: 'blue' },
+  { dayNumber: 7,  sessionId: 'cycling',            label: 'Vélo',                  type: 'cycling',  icon: '🚴', colorClass: 'teal' },
+  { dayNumber: 8,  sessionId: 'lower_b',            label: 'Musculation Bas B',     type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 9,  sessionId: 'upper_a',            label: 'Musculation Haut A',    type: 'gym',      icon: '💪', colorClass: 'orange' },
+  { dayNumber: 10, sessionId: 'running_endurance',  label: 'Course — Endurance',    type: 'running',  icon: '🏃', colorClass: 'blue' },
+  { dayNumber: 11, sessionId: 'lower_a',            label: 'Musculation Bas A',     type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 12, sessionId: 'upper_b',            label: 'Musculation Haut B',    type: 'gym',      icon: '💪', colorClass: 'orange' },
+  { dayNumber: 13, sessionId: 'football',           label: 'Séance Football',       type: 'football', icon: '⚽', colorClass: 'green' },
+  { dayNumber: 14, sessionId: 'rest',               label: 'Repos Total',           type: 'rest',     icon: '😴', colorClass: 'gray' },
+];
+
+// Retourne la séance correspondant à un jour du cycle
+export function getSessionForCycleDay(dayNumber: number): WorkoutSession | undefined {
+  const cycleDay = cycle14Days.find(d => d.dayNumber === dayNumber);
+  if (!cycleDay) return undefined;
+  return sessions.find(s => s.id === cycleDay.sessionId);
+}
+
+// Retourne le jour du cycle (1-14) pour une date donnée
+export function getCycleDayForDate(date: Date, programStartDate: Date): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysSinceStart = Math.floor((date.getTime() - programStartDate.getTime()) / msPerDay);
+  return (daysSinceStart % 14) + 1;
+}
 
 // ============================================================
 // PHASES DU PROGRAMME SUR 3 MOIS
@@ -990,6 +1312,9 @@ export const programData = {
   macroTargets,
   advancedTips,
   exerciseDatabase,
+  cycle14Days,
+  footballDrills,
+  footballScores,
 };
 
 export default programData;

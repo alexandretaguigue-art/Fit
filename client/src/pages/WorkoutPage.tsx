@@ -381,6 +381,19 @@ function FootballView({ session }: { session: WorkoutSession }) {
             </div>
             {isExpanded && (
               <div className="px-4 pb-4 space-y-3">
+                {/* Vidéo YouTube de démonstration */}
+                {drill.videoUrl && (
+                  <div className="rounded-xl overflow-hidden" style={{ aspectRatio: '16/9', background: '#000' }}>
+                    <iframe
+                      src={`${drill.videoUrl}?autoplay=0&rel=0&modestbranding=1`}
+                      title={drill.name}
+                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                      style={{ border: 'none' }}
+                    />
+                  </div>
+                )}
                 <p className="text-white/70 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{drill.description}</p>
                 <div className="p-3 rounded-xl" style={{ background: `${phaseColor}10`, border: `1px solid ${phaseColor}20` }}>
                   <p className="text-xs font-semibold mb-1" style={{ color: phaseColor, fontFamily: 'Inter, sans-serif' }}>💡 Conseil coach</p>
@@ -446,26 +459,70 @@ function FootballView({ session }: { session: WorkoutSession }) {
 }
 
 // ============================================================
-// VUE CARDIO (Course + Vélo)
+// ============================================================
+// VUE CARDIO (Course + Vélo) — Journal complet avec adaptation
 // ============================================================
 
 function CardioView({ session }: { session: WorkoutSession }) {
+  const { logCardioSession, getCardioAdaptation } = useFitnessTracker();
   const [duration, setDuration] = useState(session.durationMin);
+  const [distanceKm, setDistanceKm] = useState('');
+  const [avgHR, setAvgHR] = useState('');
+  const [maxHR, setMaxHR] = useState('');
+  const [paceMin, setPaceMin] = useState('');
+  const [paceSec, setPaceSec] = useState('');
   const [feeling, setFeeling] = useState(7);
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [showBlocks, setShowBlocks] = useState(false);
   const cardio = session.cardioDetails;
   const colors = SESSION_TYPE_COLORS[session.type];
   const isRunning = session.type === 'running';
+  const adaptation = getCardioAdaptation(session.id);
+
+  const handleSubmit = () => {
+    const avgPaceSeconds = paceMin && paceSec ? parseInt(paceMin) * 60 + parseInt(paceSec) : undefined;
+    logCardioSession({
+      sessionId: session.id,
+      date: new Date().toISOString(),
+      type: isRunning ? 'running' : 'cycling',
+      durationMin: duration,
+      distanceKm: distanceKm ? parseFloat(distanceKm) : undefined,
+      avgHeartRate: avgHR ? parseInt(avgHR) : undefined,
+      maxHeartRate: maxHR ? parseInt(maxHR) : undefined,
+      avgPaceMinPerKm: avgPaceSeconds,
+      feeling,
+      notes: notes || undefined,
+    });
+    setSubmitted(true);
+    toast.success(`${session.name} enregistré !`);
+  };
 
   if (submitted) {
+    const newAdaptation = getCardioAdaptation(session.id);
+    const verdictColors = { progress: '#22c55e', maintain: '#eab308', recover: '#ef4444' };
     return (
       <div className="p-4 space-y-4">
         <div className="rounded-2xl p-6 text-center" style={{ background: `${colors.bg}`, border: `1px solid ${colors.border}` }}>
           <div className="text-4xl mb-2">{isRunning ? '🏃' : '🚴'}</div>
           <div className="text-white text-xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Séance enregistrée !</div>
-          <p className="text-white/60 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{duration} min · Ressenti {feeling}/10</p>
-          {cardio && <p className="text-white/40 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>~{cardio.totalCaloriesBurned} kcal brûlées</p>}
+          <div className="flex flex-wrap justify-center gap-2 mt-2">
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{duration} min</span>
+            {distanceKm && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{distanceKm} km</span>}
+            {avgHR && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>FC {avgHR} bpm</span>}
+            {paceMin && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{paceMin}'{paceSec || '00'}"/km</span>}
+          </div>
+        </div>
+        <div className="rounded-2xl p-4" style={{ background: `${verdictColors[newAdaptation.verdict]}10`, border: `1px solid ${verdictColors[newAdaptation.verdict]}30` }}>
+          <p className="font-semibold text-sm mb-2" style={{ color: verdictColors[newAdaptation.verdict], fontFamily: 'Syne, sans-serif' }}>
+            {newAdaptation.verdict === 'progress' ? '↗️ Progression recommandée' : newAdaptation.verdict === 'recover' ? '⚠️ Récupération conseillée' : '✅ Continue comme ça'}
+          </p>
+          <p className="text-white/70 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{newAdaptation.message}</p>
+          {newAdaptation.nextTarget.distanceKm && (
+            <div className="mt-2 p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Prochaine séance : vise <strong className="text-white">{newAdaptation.nextTarget.distanceKm} km</strong></p>
+            </div>
+          )}
         </div>
         <button onClick={() => setSubmitted(false)} className="w-full py-3 rounded-xl text-white/60 text-sm border" style={{ borderColor: 'rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif' }}>
           Revoir la séance
@@ -476,65 +533,175 @@ function CardioView({ session }: { session: WorkoutSession }) {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Adaptation de la dernière séance */}
+      <div className="p-3 rounded-xl" style={{ background: `${{ progress: '#22c55e', maintain: '#eab308', recover: '#ef4444' }[adaptation.verdict]}10`, border: `1px solid ${{ progress: '#22c55e', maintain: '#eab308', recover: '#ef4444' }[adaptation.verdict]}25` }}>
+        <p className="text-xs font-semibold mb-1" style={{ color: colors.text, fontFamily: 'Inter, sans-serif' }}>Objectif du coach</p>
+        <p className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{adaptation.message}</p>
+        {adaptation.nextTarget.distanceKm && (
+          <p className="text-white/40 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Cible : <strong className="text-white/70">{adaptation.nextTarget.distanceKm} km</strong></p>
+        )}
+      </div>
+
       {/* Note du coach */}
       <div className="p-3 rounded-xl" style={{ background: `${colors.bg}`, border: `1px solid ${colors.border}` }}>
         <p className="text-xs font-semibold mb-1" style={{ color: colors.text, fontFamily: 'Inter, sans-serif' }}>Note du coach</p>
         <p className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{session.coachNote}</p>
       </div>
 
-      {/* Blocs de la séance */}
+      {/* Blocs de la séance (dépliables) */}
       {cardio && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: '#FF6B35' }} />
-            <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Échauffement : {cardio.warmupMin} min</span>
-          </div>
-          {cardio.mainBlocks.map((block, i) => {
-            const intensityColor = { low: '#14B8A6', medium: '#eab308', high: '#FF6B35', maximal: '#ef4444' }[block.intensity];
-            return (
-              <div key={i} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{block.name}</h4>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: `${intensityColor}15`, color: intensityColor, fontFamily: 'Inter, sans-serif' }}>
-                    {block.intensity === 'maximal' ? 'Max' : block.intensity === 'high' ? 'Haute' : block.intensity === 'medium' ? 'Modérée' : 'Légère'}
-                  </span>
-                </div>
-                <p className="text-white/60 text-xs leading-relaxed mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>{block.description}</p>
-                {block.reps && <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{block.reps} répétitions</p>}
-                <div className="mt-2 p-2 rounded-lg" style={{ background: `${intensityColor}10` }}>
-                  <p className="text-xs" style={{ color: intensityColor, fontFamily: 'Inter, sans-serif' }}>💡 {block.coachTip}</p>
-                </div>
+        <div>
+          <button
+            onClick={() => setShowBlocks(!showBlocks)}
+            className="w-full flex items-center justify-between p-3 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>Voir le détail de la séance</span>
+            {showBlocks ? <ChevronUp size={14} className="text-white/30" /> : <ChevronDown size={14} className="text-white/30" />}
+          </button>
+          {showBlocks && (
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: '#FF6B35' }} />
+                <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Échauffement : {cardio.warmupMin} min</span>
               </div>
-            );
-          })}
-          <div className="flex items-center gap-2 px-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: '#14B8A6' }} />
-            <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Retour au calme : {cardio.cooldownMin} min</span>
-          </div>
+              {cardio.mainBlocks.map((block, i) => {
+                const intensityColor = { low: '#14B8A6', medium: '#eab308', high: '#FF6B35', maximal: '#ef4444' }[block.intensity];
+                return (
+                  <div key={i} className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="text-white font-bold text-xs" style={{ fontFamily: 'Syne, sans-serif' }}>{block.name}</h4>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${intensityColor}15`, color: intensityColor, fontFamily: 'Inter, sans-serif' }}>
+                        {block.intensity === 'maximal' ? 'Max' : block.intensity === 'high' ? 'Haute' : block.intensity === 'medium' ? 'Modérée' : 'Légère'}
+                      </span>
+                    </div>
+                    <p className="text-white/50 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{block.description}</p>
+                    <p className="text-xs mt-1" style={{ color: intensityColor, fontFamily: 'Inter, sans-serif' }}>💡 {block.coachTip}</p>
+                  </div>
+                );
+              })}
+              <div className="flex items-center gap-2 px-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: '#14B8A6' }} />
+                <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Retour au calme : {cardio.cooldownMin} min</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Durée réelle */}
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="flex justify-between mb-2">
-          <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Durée réelle</span>
-          <span className="text-white font-bold text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{duration} min</span>
+      {/* JOURNAL DE SÉANCE */}
+      <div className="rounded-2xl p-4 space-y-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Enregistrer ma séance</p>
+
+        {/* Durée */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Durée réelle</span>
+            <span className="text-white font-bold text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{duration} min</span>
+          </div>
+          <input type="range" min="10" max="120" step="5" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ accentColor: colors.text }} />
         </div>
-        <input type="range" min="15" max="90" step="5" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ accentColor: colors.text }} />
-        <div className="flex justify-between mb-2 mt-3">
-          <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Ressenti</span>
-          <span className="text-white font-bold text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{feeling}/10</span>
+
+        {/* Distance (course seulement) */}
+        {isRunning && (
+          <div>
+            <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Distance parcourue (km)</p>
+            <input
+              type="number" step="0.1" min="0" max="50"
+              value={distanceKm}
+              onChange={e => setDistanceKm(e.target.value)}
+              placeholder="Ex : 5.2"
+              className="w-full text-white text-sm rounded-xl px-3 py-2.5"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}
+            />
+          </div>
+        )}
+
+        {/* Allure (course seulement) */}
+        {isRunning && (
+          <div>
+            <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Allure moyenne (min:sec / km)</p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="number" min="0" max="20"
+                value={paceMin}
+                onChange={e => setPaceMin(e.target.value)}
+                placeholder="Min"
+                className="flex-1 text-white text-sm rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}
+              />
+              <span className="text-white/40 font-bold">:</span>
+              <input
+                type="number" min="0" max="59"
+                value={paceSec}
+                onChange={e => setPaceSec(e.target.value)}
+                placeholder="Sec"
+                className="flex-1 text-white text-sm rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}
+              />
+              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>/km</span>
+            </div>
+          </div>
+        )}
+
+        {/* Fréquence cardiaque */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>FC moyenne (bpm)</p>
+            <input
+              type="number" min="50" max="220"
+              value={avgHR}
+              onChange={e => setAvgHR(e.target.value)}
+              placeholder="Ex : 145"
+              className="w-full text-white text-sm rounded-xl px-3 py-2.5"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}
+            />
+          </div>
+          <div>
+            <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>FC max (bpm)</p>
+            <input
+              type="number" min="50" max="220"
+              value={maxHR}
+              onChange={e => setMaxHR(e.target.value)}
+              placeholder="Ex : 178"
+              className="w-full text-white text-sm rounded-xl px-3 py-2.5"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', fontFamily: 'Inter, sans-serif' }}
+            />
+          </div>
         </div>
-        <input type="range" min="1" max="10" value={feeling} onChange={e => setFeeling(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ accentColor: colors.text }} />
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes, distance, sensations..." className="w-full text-white/80 text-xs rounded-xl p-3 resize-none mt-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif', minHeight: '70px' }} />
+
+        {/* Ressenti */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Ressenti global</span>
+            <span className="text-white font-bold text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{feeling}/10</span>
+          </div>
+          <input type="range" min="1" max="10" value={feeling} onChange={e => setFeeling(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ accentColor: colors.text }} />
+          <div className="flex justify-between mt-1">
+            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Facile</span>
+            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Très dur</span>
+          </div>
+        </div>
+
+        {/* Notes libres */}
+        <div>
+          <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Notes (optionnel)</p>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Sensations, conditions météo, douleurs..."
+            className="w-full text-white/80 text-xs rounded-xl p-3 resize-none"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif', minHeight: '60px' }}
+          />
+        </div>
       </div>
 
       <button
-        onClick={() => { setSubmitted(true); toast.success(`${session.name} enregistré !`); }}
+        onClick={handleSubmit}
         className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 hover:opacity-90 active:scale-95"
         style={{ background: `linear-gradient(135deg, ${colors.text}, ${colors.text}CC)`, fontFamily: 'Syne, sans-serif', boxShadow: `0 8px 30px ${colors.text}30` }}
       >
-        {isRunning ? '🏃 Terminer la course' : '🚴 Terminer le vélo'}
+        {isRunning ? '🏃 Enregistrer la course' : '🚴 Enregistrer le vélo'}
       </button>
     </div>
   );

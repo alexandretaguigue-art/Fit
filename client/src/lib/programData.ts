@@ -70,6 +70,8 @@ export interface FootballDrill {
   coachTip: string;
   progressionPhase2?: string;
   progressionPhase3?: string;
+  videoUrl?: string;  // URL YouTube embed
+  imageUrl?: string;  // Image de démonstration
 }
 
 export interface FootballScore {
@@ -740,6 +742,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: "L'échauffement est obligatoire pour les sprints. Un muscle froid = blessure assurée. Prends ces 10 minutes au sérieux.",
     progressionPhase2: 'Ajoute des skips A et B (course technique) sur 20m.',
     progressionPhase3: 'Ajoute des sauts en contrebas (drop jumps) pour activer les réflexes.',
+    videoUrl: 'https://www.youtube.com/embed/R0mMyV5OtcM',
+    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80',
   },
   {
     id: 'appuis_rythme',
@@ -752,6 +756,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Pense à poser les pieds sous le centre de gravité, pas devant. Les bras doivent se balancer activement.',
     progressionPhase2: 'Augmenter la vitesse maximale, ajouter des changements de direction à mi-parcours.',
     progressionPhase3: 'Ajouter un ballon à conduire entre les cases.',
+    videoUrl: 'https://www.youtube.com/embed/tFBGLJnFpSU',
+    imageUrl: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400&q=80',
   },
   {
     id: 'slalom_plots',
@@ -764,6 +770,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Baisse le centre de gravité dans les virages. Pousse fort sur la jambe extérieure pour changer de direction.',
     progressionPhase2: 'Réduire l\'espacement à 80cm.',
     progressionPhase3: 'Ajouter un ballon en conduite.',
+    videoUrl: 'https://www.youtube.com/embed/2_LKfxBNEhw',
+    imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&q=80',
   },
   {
     id: 'appuis_lateraux',
@@ -776,6 +784,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Ne croise pas les pieds. Reste sur les avant-pieds. La vitesse de réaction se travaille en restant concentré à 100%.',
     progressionPhase2: 'Ajouter un sprint de 5m après chaque changement de direction.',
     progressionPhase3: 'Ajouter une réception de balle après le sprint.',
+    videoUrl: 'https://www.youtube.com/embed/Oy5ORnlGME4',
+    imageUrl: 'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=400&q=80',
   },
   {
     id: 'sprint_10m',
@@ -788,6 +798,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Les 3 premières foulées sont décisives. Penche le corps vers l\'avant à 45° au départ. Bras qui propulsent fort.',
     progressionPhase2: 'Passer à 10 sprints, réduire la récupération à 40 secondes.',
     progressionPhase3: 'Départ dos à la direction de course (demi-tour + sprint).',
+    videoUrl: 'https://www.youtube.com/embed/nSfGzGCxFBc',
+    imageUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
   },
   {
     id: 'sprint_20m_cdc',
@@ -800,6 +812,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Le changement de direction doit être explosif. Plante le pied extérieur, pousse fort, ne ralentis pas avant le plot.',
     progressionPhase2: 'Ajouter une troisième direction (T-test : gauche, droite, retour).',
     progressionPhase3: 'Ajouter un sprint final de 15m après le retour.',
+    videoUrl: 'https://www.youtube.com/embed/6H5-VGQW_EY',
+    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80',
   },
   {
     id: 'depart_positions',
@@ -812,6 +826,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Simule les situations de jeu réelles. Au foot, tu n\'es jamais en position parfaite pour démarrer.',
     progressionPhase2: 'Ajouter un départ depuis une position de combat (lutte légère avec partenaire).',
     progressionPhase3: 'Ajouter un ballon à contrôler après le sprint.',
+    videoUrl: 'https://www.youtube.com/embed/Oy5ORnlGME4',
+    imageUrl: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=400&q=80',
   },
   {
     id: 'conduite_acceleration',
@@ -824,6 +840,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'La balle doit rester proche du pied pendant l\'accélération. Pousse la balle devant toi sur 1-2m pour accélérer.',
     progressionPhase2: 'Ajouter un défenseur passif (qui essaie de toucher la balle).',
     progressionPhase3: 'Ajouter une frappe au but à l\'arrivée.',
+    videoUrl: 'https://www.youtube.com/embed/2_LKfxBNEhw',
+    imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&q=80',
   },
   {
     id: 'dribble_carre',
@@ -836,6 +854,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'Utilise l\'intérieur ET l\'extérieur du pied. La feinte doit être convaincante — pas juste un changement de direction.',
     progressionPhase2: 'Réduire le carré à 4m×4m.',
     progressionPhase3: 'Ajouter un défenseur dans le carré.',
+    videoUrl: 'https://www.youtube.com/embed/nSfGzGCxFBc',
+    imageUrl: 'https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=400&q=80',
   },
   {
     id: 'frappe_apres_sprint',
@@ -848,6 +868,8 @@ const footballDrills: FootballDrill[] = [
     coachTip: 'La frappe sous fatigue révèle tes vrais automatismes. Concentre-toi sur la technique même quand tu es essoufflé.',
     progressionPhase2: 'Ajouter une passe de tête avant la frappe.',
     progressionPhase3: 'Sprint + dribble 1v1 + frappe.',
+    videoUrl: 'https://www.youtube.com/embed/6H5-VGQW_EY',
+    imageUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
   },
 ];
 

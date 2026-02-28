@@ -469,6 +469,107 @@ export function useFitnessTracker() {
   }, [data.nutritionLogs, getDayLog]);
 
   // ============================================================
+  // JOURNAL DE FOOTING — Course & Vélo
+  // ============================================================
+
+  const logCardioSession = useCallback((session: {
+    sessionId: string;
+    date: string;
+    type: 'running' | 'cycling';
+    durationMin: number;
+    distanceKm?: number;
+    avgHeartRate?: number;
+    maxHeartRate?: number;
+    avgPaceMinPerKm?: number; // en secondes
+    feeling: number;
+    notes?: string;
+    intervals?: Array<{ distanceM: number; timeSeconds: number; heartRate?: number }>;
+  }) => {
+    setData(prev => ({
+      ...prev,
+      sessionLogs: [...prev.sessionLogs, {
+        sessionId: session.sessionId,
+        date: session.date,
+        weekNumber: prev.currentWeek,
+        exercises: [],
+        perceivedDifficulty: session.feeling,
+        energyLevel: session.feeling,
+        overallNotes: [
+          session.distanceKm ? `Distance : ${session.distanceKm} km` : '',
+          session.avgHeartRate ? `FC moy : ${session.avgHeartRate} bpm` : '',
+          session.avgPaceMinPerKm ? `Allure : ${Math.floor(session.avgPaceMinPerKm / 60)}'${String(session.avgPaceMinPerKm % 60).padStart(2, '0')}" /km` : '',
+          session.notes ?? '',
+        ].filter(Boolean).join(' · '),
+        // Données cardio étendues stockées dans notes
+        cardioData: {
+          type: session.type,
+          durationMin: session.durationMin,
+          distanceKm: session.distanceKm,
+          avgHeartRate: session.avgHeartRate,
+          maxHeartRate: session.maxHeartRate,
+          avgPaceMinPerKm: session.avgPaceMinPerKm,
+          intervals: session.intervals,
+        } as unknown as undefined,
+      } as SessionLog],
+    }));
+  }, []);
+
+  // Analyse et adaptation pour la prochaine séance cardio
+  const getCardioAdaptation = useCallback((sessionId: string): {
+    message: string;
+    nextTarget: { durationMin?: number; distanceKm?: number; paceTarget?: string };
+    verdict: 'progress' | 'maintain' | 'recover';
+  } => {
+    // Récupère les 3 dernières séances de ce type
+    const logs = data.sessionLogs
+      .filter(l => l.sessionId === sessionId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+
+    if (logs.length === 0) {
+      return {
+        message: 'Première séance — donne tout !',
+        nextTarget: {},
+        verdict: 'progress',
+      };
+    }
+
+    const last = logs[0];
+    const avgFeeling = logs.reduce((acc, l) => acc + l.perceivedDifficulty, 0) / logs.length;
+
+    // Extraire les données cardio depuis les notes
+    const noteParts = (last.overallNotes ?? '').split(' · ');
+    const distanceMatch = noteParts.find(p => p.includes('km'));
+    const lastDistance = distanceMatch ? parseFloat(distanceMatch.replace(/[^0-9.]/g, '')) : undefined;
+    const paceMatch = noteParts.find(p => p.includes('/km'));
+
+    if (avgFeeling <= 6 && logs.length >= 2) {
+      // Trop facile → progresser
+      const nextDist = lastDistance ? Math.round((lastDistance + 0.5) * 10) / 10 : undefined;
+      return {
+        message: `Séances faciles (${avgFeeling.toFixed(1)}/10 en moyenne) — augmente la distance de 0.5 km ou accélère l'allure de 10-15 sec/km.`,
+        nextTarget: { distanceKm: nextDist },
+        verdict: 'progress',
+      };
+    } else if (avgFeeling >= 9) {
+      // Trop dur → récupérer
+      return {
+        message: `Séances très difficiles — maintiens la même distance/allure et priorise la récupération.`,
+        nextTarget: { distanceKm: lastDistance },
+        verdict: 'recover',
+      };
+    } else {
+      // Optimal → maintenir ou légère progression
+      const nextDist = lastDistance ? Math.round((lastDistance + 0.3) * 10) / 10 : undefined;
+      return {
+        message: `Progression régulière. ${lastDistance ? `Essaie ${nextDist} km` : 'Ajoute 2-3 min'} à la prochaine séance.`,
+        nextTarget: { distanceKm: nextDist },
+        verdict: 'maintain',
+      };
+    }
+  }, [data.sessionLogs]);
+
+  // ============================================================
   // Planning personnalisé (override par date)
   // ============================================================
 
@@ -525,5 +626,8 @@ export function useFitnessTracker() {
     // Récap hebdomadaire
     getWeeklyRecap,
     getMealAdjustments,
+    // Cardio (course & vélo)
+    logCardioSession,
+    getCardioAdaptation,
   };
 }

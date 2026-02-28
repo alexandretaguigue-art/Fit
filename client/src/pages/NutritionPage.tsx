@@ -682,51 +682,40 @@ function RecapTab() {
 }
 
 // Produits Intermarché avec photos et liens
-const INTERMARCHE_PRODUCTS: Record<string, {
-  productName: string; productUrl: string; imageUrl: string; price: string; format: string;
-  category: string; quantityPerWeek: string; notes: string;
-}> = {
-  'Filet de poulet': { productName: 'Filet de poulet blanc — Intermarché', productUrl: 'https://www.intermarche.com/produit/filet-de-poulet-blanc/3266980306823', imageUrl: 'https://www.intermarche.com/assets/images/produits/3266980306823_1.jpg', price: '~10.00€/kg', format: '1 kg', category: 'Protéines', quantityPerWeek: '2 × 1 kg', notes: 'Source principale de protéines. 31g prot/100g. Cuire à la poêle ou au four.' },
-  'Oeufs bio': { productName: 'Oeufs bio plein air — Breizh Oeuf', productUrl: 'https://www.intermarche.com/produit/%C5%93ufs-bio-plein-air/3578402323258', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/XZfhQewhyrNWFAHq.jpg', price: '~3.60€', format: '6 oeufs', category: 'Protéines', quantityPerWeek: '2 boîtes (12 oeufs)', notes: '6g prot/oeuf. Protéines complètes + oméga-3. Idéal au petit-déjeuner.' },
-  'Thon naturel': { productName: 'Thon albacore au naturel — Odyssée', productUrl: 'https://www.intermarche.com/produit/thon-en-tranches-au-naturel-albacore/3250390806059', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/mKfYCZjhfGpcjGWf.jpg', price: '~2.15€', format: '280g égoutté', category: 'Protéines', quantityPerWeek: '3 boîtes', notes: '26g prot/100g. Rapide, pratique, zéro cuisson.' },
-  'Fromage blanc 0%': { productName: 'Fromage blanc 0% MG — Chabrior', productUrl: 'https://fr.openfoodfacts.org/produit/3250391896554', imageUrl: 'https://media.carrefour.fr/medias/770bd2e2707535f89bba634ba3cc283d/p_43x43/3560070758036-0.jpg', price: '~2.50€', format: '500g', category: 'Protéines', quantityPerWeek: '2 × 500g', notes: '10g prot/100g. Coll. avant de dormir. Protéines lentes (caséine).' },
-  'Lait demi-écrémé': { productName: 'Lait UHT demi-écrémé — Intermarché', productUrl: 'https://fr.openfoodfacts.org/produit/3250392559748', imageUrl: 'https://images.openfoodfacts.org/images/products/325/039/255/9748/front_fr.70.full.jpg', price: '~1.10€/L', format: '1 L', category: 'Protéines', quantityPerWeek: '3 L', notes: '3.5g prot/100ml. Shakes, porridge, café.' },
-  'Flocons d\'avoine': { productName: 'Flocons d\'avoine complète — Chabrior', productUrl: 'https://fr.openfoodfacts.org/produit/3250391896554/flocons-d-avoine-complete-500g-chabrior', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/xdqRkRiWQbbosWWD.webp', price: '~1.20€', format: '500g', category: 'Glucides', quantityPerWeek: '2 × 500g', notes: 'IG bas, fibres. 60g le matin = 220 kcal.' },
-  'Riz basmati': { productName: 'Riz basmati long — Chabrior', productUrl: 'https://www.intermarche.com/produit/riz-basmati', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/txoaauYaoDDmdpmf.webp', price: '~1.59€', format: '500g', category: 'Glucides', quantityPerWeek: '2 × 500g', notes: 'Glucide principal post-training. 200g cuit = 260 kcal.' },
-  'Patate douce': { productName: 'Patate douce — Le Choix du Primeur', productUrl: 'https://www.intermarche.com/produit/patate-douce', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/ADzoJQFCpUFTNjnV.webp', price: '~3.79€', format: '1 kg', category: 'Glucides', quantityPerWeek: '2 kg', notes: 'IG moyen, vitamines A et C. 150g = 130 kcal.' },
-  'Pain complet': { productName: 'Pain de mie Grand Mie complet — Chabrior', productUrl: 'https://fr.openfoodfacts.org/produit/3250390272007', imageUrl: 'https://fr.openfoodfacts.org/images/products/325/039/027/2007/1.jpg', price: '~2.00€', format: '550g', category: 'Glucides', quantityPerWeek: '1 paquet', notes: 'Fibres + glucides complexes. 2 tranches = 160 kcal.' },
-  'Bananes': { productName: 'Bananes BIO — Le Choix du Primeur', productUrl: 'https://www.intermarche.com/produit/bananes-bio/3250393062582', imageUrl: 'https://www.intermarche.com/assets/images/produits/3250393062582_1.jpg', price: '~1.39€', format: '5 unités', category: 'Glucides', quantityPerWeek: '2 régimes (10 bananes)', notes: 'Glucides rapides + potassium. 1 banane = 90 kcal.' },
-  'Brocolis': { productName: 'Brocolis en fleurettes surgelés — Chabrior', productUrl: 'https://www.intermarche.com/produit/brocolis-surgeles', imageUrl: 'https://media.carrefour.fr/medias/9673f2b71e5f4c09bd823595a9769f65/p_43x43/3560071019570_1.JPG', price: '~2.00€', format: '900g', category: 'Légumes', quantityPerWeek: '2 × 900g', notes: 'Vitamines C et K, fibres. Cuire à la vapeur 8 min.' },
-  'Épinards': { productName: 'Épinards en branches surgelés — Chabrior', productUrl: 'https://www.intermarche.com/produit/epinards-surgeles', imageUrl: 'https://www.carrefour.fr/media/550x550/Photosite/FICHE_PRODUIT/356/007/3560070122165_PHOTOSITE_2023_1.jpg', price: '~1.49€', format: '1 kg', category: 'Légumes', quantityPerWeek: '1 kg', notes: 'Fer, magnésium, nitrates (performance).' },
-  'Huile d\'olive': { productName: 'Huile d\'olive vierge extra Bio — Bouton d\'Or', productUrl: 'https://www.intermarche.com/produit/huile-d%27olive-vierge-extra/3250390006411', imageUrl: 'https://www.intermarche.com/assets/images/produits/3250390006411_1.jpg', price: '~7.31€', format: '750 ml', category: 'Graisses', quantityPerWeek: '1 bouteille (dure 3-4 semaines)', notes: 'Oméga-9, anti-inflammatoire. 1 c. à soupe = 90 kcal.' },
-  'Amandes': { productName: 'Amandes grilles salées — Chabrior', productUrl: 'https://www.intermarche.com/produit/amandes', imageUrl: 'https://media.carrefour.fr/medias/f10d4a8d999538ef95c259b365d06146/p_540x540/3276552314002-photosite-20191224-163831-0.jpg', price: '~3.50€', format: '200g', category: 'Graisses', quantityPerWeek: '1 sachet 200g', notes: 'Oméga-6, magnésium, vitamine E. 30g = 180 kcal.' },
-  'Whey protéine': { productName: 'Poudre Whey Protein vanille — Isostar', productUrl: 'https://www.carrefour.fr/p/poudre-whey-protein-vanille-isostar-3175681247161', imageUrl: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663274447138/VtgwqOQDYWEvdkhP.webp', price: '~17.89€', format: '570g (~19 doses)', category: 'Suppléments', quantityPerWeek: '1 boite (dure 3 semaines)', notes: '25g prot/dose. Prendre dans les 30 min post-training.' },
-  'Créatine': { productName: 'Créatine monohydrate — Accelerate', productUrl: 'https://www.action.com/fr-fr/p/3218530/creatine-monohydrate-accelerate/', imageUrl: 'https://asset.action.com/image/upload/t_digital_product_image/w_1080/3218530_8719979204525-111_01_umsvkt.webp', price: '~5.99€', format: '300g (60 doses)', category: 'Suppléments', quantityPerWeek: '1 boite (dure 2 mois)', notes: '5g/jour avec eau. Meilleur supplément scientifiquement prouvé.' },
-};
-
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  'Protéines': { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: '#ef4444' },
-  'Glucides': { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', text: '#eab308' },
+  'Viandes': { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)', text: '#ef4444' },
+  'Poissons & Fruits de mer': { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', text: '#3b82f6' },
+  'Produits laitiers & Œufs': { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', text: '#eab308' },
+  'Féculents & Légumineuses': { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.2)', text: '#eab308' },
   'Légumes': { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', text: '#22c55e' },
-  'Graisses': { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', text: '#3b82f6' },
+  'Fruits': { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)', text: '#22c55e' },
+  'Lipides & Oléagineux': { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', text: '#3b82f6' },
+  'Condiments & Divers': { bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.2)', text: '#a855f7' },
   'Suppléments': { bg: 'rgba(168,85,247,0.08)', border: 'rgba(168,85,247,0.2)', text: '#a855f7' },
+  'Divers': { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: 'rgba(255,255,255,0.5)' },
 };
 
 // ============================================================
-// ONGLET LISTE DE COURSES
+// ONGLET LISTE DE COURSES — générée depuis le plan réel
 // ============================================================
 function CoursesTab() {
-  const { getNextWeekMonday, getCurrentWeekMonday } = useFitnessTracker();
+  const { getNextWeekMonday, getCurrentWeekMonday, getShoppingList, getWeeklyMealPlan } = useFitnessTracker();
   const [forNextWeek, setForNextWeek] = useState(true);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
+  // Lundi de la semaine cible
   const weekMonday = forNextWeek ? getNextWeekMonday() : getCurrentWeekMonday();
-  const weekLabel = forNextWeek ? `Semaine du ${weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : `Semaine courante`;
+  const weekLabel = weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const products = Object.entries(INTERMARCHE_PRODUCTS);
-  const categories = Array.from(new Set(products.map(([, p]) => p.category)));
+  // Générer la liste depuis le plan réel de la semaine
+  const weekPlan = getWeeklyMealPlan(weekMonday);
+  const shoppingList = getShoppingList(weekMonday);
+  const items = shoppingList.items;
+
+  // Regrouper par catégorie
+  const categories = Array.from(new Set(items.map(i => i.category)));
   const checkedCount = checkedItems.size;
-  const totalCount = products.length;
+  const totalCount = items.length;
 
   const toggleItem = (key: string) => {
     setCheckedItems(prev => {
@@ -736,22 +725,37 @@ function CoursesTab() {
     });
   };
 
+  // Calcul du budget estimé
+  const totalBudget = shoppingList.totalEstimatedBudget;
+
+  // Rappel drive : commande samedi, récupération lundi midi → courses disponibles lundi soir
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=dim, 6=sam
+  const isSaturday = dayOfWeek === 6;
+  const isMonday = dayOfWeek === 1;
+
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Drive Intermarché Venelles</h3>
-            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{weekLabel} · ~55-65€/semaine</p>
+            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Semaine du {weekLabel} · {totalBudget}
+            </p>
+            <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {totalCount} articles · générés depuis ton plan alimentaire
+            </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(255, 107, 53, 0.12)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>{checkedCount}/{totalCount}</span>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setForNextWeek(false)} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+          <button onClick={() => { setForNextWeek(false); setCheckedItems(new Set()); }} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
             style={{ background: !forNextWeek ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.06)', color: !forNextWeek ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
             Cette semaine
           </button>
-          <button onClick={() => setForNextWeek(true)} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+          <button onClick={() => { setForNextWeek(true); setCheckedItems(new Set()); }} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
             style={{ background: forNextWeek ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.06)', color: forNextWeek ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
             Semaine prochaine 🛒
           </button>
@@ -763,15 +767,31 @@ function CoursesTab() {
         </div>
       </div>
 
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255, 107, 53, 0.06)', border: '1px solid rgba(255, 107, 53, 0.15)' }}>
-        <p className="text-orange-400 font-semibold text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>🚗 Drive Intermarché Venelles</p>
-        {['✔ Commande le samedi sur intermarche.com', '✔ Récupération le lundi matin avant le travail', '✔ Protéines en tête de liste — ne jamais en manquer', '✔ Surgelés = même valeur nutritive que le frais'].map((tip, i) => (
-          <p key={i} className="text-white/60 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
-        ))}
+      {/* Rappel drive */}
+      <div className="rounded-2xl p-4" style={{ background: isSaturday ? 'rgba(255,107,53,0.1)' : 'rgba(255,255,255,0.04)', border: isSaturday ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
+        <p className="font-semibold text-xs mb-2" style={{ color: isSaturday ? '#FF6B35' : 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif' }}>
+          {isSaturday ? "🛒 C'est samedi — commande ton drive maintenant !" : isMonday ? '📦 Récupération lundi midi — courses disponibles ce soir !' : '🚗 Drive Intermarché Venelles'}
+        </p>
+        <div className="space-y-1">
+          {['✔ Commande le samedi sur intermarche.com', '✔ Récupération le lundi à midi — courses disponibles lundi soir', '✔ Congèle viandes et poissons en portions de 150-180g', '✔ Surgelés = même valeur nutritive que le frais, moins chers', '✔ Prépare riz, patates douces et légumes en batch le lundi soir'].map((tip, i) => (
+            <p key={i} className="text-white/50 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
+          ))}
+        </div>
       </div>
 
+      {/* Conseils supplémentaires */}
+      {shoppingList.storeTips.length > 0 && (
+        <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <p className="text-white/40 text-xs font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Conseils du coach</p>
+          {shoppingList.storeTips.slice(0, 3).map((tip, i) => (
+            <p key={i} className="text-white/40 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Liste par catégorie */}
       {categories.map(category => {
-        const catProducts = products.filter(([, p]) => p.category === category);
+        const catItems = items.filter(i => i.category === category);
         const catColors = CATEGORY_COLORS[category] ?? { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: '#fff' };
         return (
           <div key={category}>
@@ -780,37 +800,44 @@ function CoursesTab() {
               <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: catColors.bg, color: catColors.text, border: `1px solid ${catColors.border}`, fontFamily: 'Inter, sans-serif' }}>{category}</span>
               <div className="h-px flex-1" style={{ background: catColors.border }} />
             </div>
-            <div className="space-y-3">
-              {catProducts.map(([key, product]) => {
-                const isChecked = checkedItems.has(key);
+            <div className="space-y-2">
+              {catItems.map((item) => {
+                const itemKey = `${category}-${item.name}`;
+                const isChecked = checkedItems.has(itemKey);
+                const priorityColor = item.priority === 'essential' ? '#22c55e' : item.priority === 'recommended' ? '#eab308' : '#6b7280';
                 return (
-                  <div key={key} className="rounded-2xl overflow-hidden transition-all duration-200"
-                    style={{ background: isChecked ? 'rgba(34, 197, 94, 0.05)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(34, 197, 94, 0.2)' : '1px solid rgba(255,255,255,0.08)', opacity: isChecked ? 0.6 : 1 }}>
-                    <div className="flex items-stretch gap-0">
-                      <div className="w-20 flex-shrink-0 relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <img src={product.imageUrl} alt={product.productName} className="w-full h-full object-contain p-2" style={{ minHeight: '80px' }}
-                          onError={e => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect fill="%23ffffff10" width="80" height="80"/><text x="40" y="45" font-size="24" text-anchor="middle" fill="%23ffffff30">🛒</text></svg>'; }} />
-                        {isChecked && <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.3)' }}><Check size={24} className="text-green-400" /></div>}
+                  <div key={itemKey}
+                    className="rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer"
+                    style={{ background: isChecked ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', opacity: isChecked ? 0.55 : 1 }}
+                    onClick={() => toggleItem(itemKey)}
+                  >
+                    <div className="flex items-center gap-3 p-3">
+                      {/* Checkbox */}
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                        style={{ background: isChecked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)', border: isChecked ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)' }}>
+                        {isChecked && <Check size={13} className="text-green-400" />}
                       </div>
-                      <div className="flex-1 p-3 min-w-0">
+                      {/* Infos produit */}
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white font-semibold text-xs leading-tight" style={{ fontFamily: 'Syne, sans-serif', textDecoration: isChecked ? 'line-through' : 'none', color: isChecked ? 'rgba(255,255,255,0.4)' : 'white' }}>{product.productName}</p>
-                            <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{product.format} · {product.price}</p>
+                          <p className="text-white font-semibold text-sm leading-tight" style={{ fontFamily: 'Syne, sans-serif', textDecoration: isChecked ? 'line-through' : 'none', color: isChecked ? 'rgba(255,255,255,0.4)' : 'white' }}>
+                            {item.name}
+                          </p>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: catColors.bg, color: catColors.text, fontFamily: 'Inter, sans-serif' }}>
+                              {item.quantity} {item.unit}
+                            </span>
                           </div>
-                          <button onClick={() => toggleItem(key)} className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 active:scale-90"
-                            style={{ background: isChecked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)', border: isChecked ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)' }}>
-                            {isChecked ? <Check size={14} className="text-green-400" /> : null}
-                          </button>
                         </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: catColors.bg, color: catColors.text, fontFamily: 'Inter, sans-serif' }}>{product.quantityPerWeek}</span>
-                          <a href={product.productUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-xs px-2 py-0.5 rounded-full transition-all"
-                            style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.2)', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}>
-                            Voir ↗
-                          </a>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.estimatedPrice}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${priorityColor}15`, color: priorityColor, fontFamily: 'Inter, sans-serif' }}>
+                            {item.priority === 'essential' ? 'Essentiel' : item.priority === 'recommended' ? 'Recommandé' : 'Optionnel'}
+                          </span>
                         </div>
-                        {!isChecked && <p className="text-white/35 text-xs mt-1.5 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{product.notes}</p>}
+                        {!isChecked && item.notes && (
+                          <p className="text-white/30 text-xs mt-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{item.notes}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -821,6 +848,30 @@ function CoursesTab() {
         );
       })}
 
+      {/* Whey — rappel commande en ligne */}
+      <div className="rounded-2xl p-4" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
+        <p className="text-purple-400 font-semibold text-xs mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>💊 Suppléments — Commander en ligne</p>
+        <div className="space-y-2">
+          {[
+            { name: 'Whey Isolate', detail: '1 kg (~30 doses)', price: '~25-35€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/impact-whey-isolate/10852482.html', tip: "Myprotein ou Bulk — 2× moins cher qu'en magasin." },
+            { name: 'Créatine monohydrate', detail: '500g (~100 doses)', price: '~15-20€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/creatine-monohydrate/10852430.html', tip: '5g/jour avec eau. Meilleur supplément prouvé scientifiquement.' },
+          ].map((supp) => (
+            <div key={supp.name} className="flex items-center justify-between gap-2">
+              <div className="flex-1">
+                <p className="text-white/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{supp.name} — {supp.detail}</p>
+                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{supp.price} · {supp.tip}</p>
+              </div>
+              <a href={supp.link} target="_blank" rel="noopener noreferrer"
+                className="text-xs px-2 py-1 rounded-full flex-shrink-0"
+                style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.25)', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
+                onClick={e => e.stopPropagation()}>
+                Commander ↗
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {checkedCount > 0 && (
         <button onClick={() => setCheckedItems(new Set())} className="w-full py-3 rounded-xl text-white/50 text-sm"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'Inter, sans-serif' }}>
@@ -830,7 +881,6 @@ function CoursesTab() {
     </div>
   );
 }
-
 // ============================================================
 // PAGE PRINCIPALE
 // ============================================================

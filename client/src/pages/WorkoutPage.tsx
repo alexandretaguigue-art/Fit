@@ -2,7 +2,8 @@
 // Journal interactif avec scoring, jugement des charges, alternatives
 // Cycle 14 jours : musculation, football, course, vélo, repos
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
 import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target } from 'lucide-react';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
@@ -29,21 +30,53 @@ const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: st
 interface SetData { weight: number; reps: number; completed: boolean; }
 interface ExerciseLog { exerciseId: string; sets: SetData[]; alternativeUsed?: string; notes?: string; }
 
-function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
+function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraftChange }: {
   exercise: Exercise;
   onLog: (log: ExerciseLog) => void;
   lastLog?: ExerciseLog;
   adaptation?: import('../lib/adaptationEngine').AdaptationResult | null;
+  draftSets?: SetData[] | null;
+  onDraftChange?: (exerciseId: string, sets: SetData[]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAlt, setShowAlt] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [selectedAlt, setSelectedAlt] = useState<string | null>(null);
+  // Minuteur de repos
+  const [restTimer, setRestTimer] = useState<number | null>(null);
+  const [restTotal, setRestTotal] = useState(90);
+  const restIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startRestTimer = useCallback((seconds: number) => {
+    if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    setRestTotal(seconds);
+    setRestTimer(seconds);
+    // Vibration si disponible
+    if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+    restIntervalRef.current = setInterval(() => {
+      setRestTimer(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(restIntervalRef.current!);
+          if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 200]);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const stopRestTimer = useCallback(() => {
+    if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    setRestTimer(null);
+  }, []);
+
+  useEffect(() => () => { if (restIntervalRef.current) clearInterval(restIntervalRef.current); }, []);
   const baseWeight = adaptation?.suggestedWeight ?? lastLog?.sets[0]?.weight ?? exercise.defaultWeight ?? 0;
   const suggestedRepsMin = adaptation?.suggestedRepsMin ?? exercise.repsMin;
 
-  // Initialise les séries : utilise le setScheme si disponible, sinon uniforme
+  // Initialise les séries depuis le draft persisté, sinon depuis le setScheme/adaptation
   const [sets, setSets] = useState<SetData[]>(() => {
+    if (draftSets && draftSets.length > 0) return draftSets;
     if (exercise.setScheme && exercise.setScheme.length > 0) {
       return exercise.setScheme.map(s => ({
         weight: s.weightMultiplier === 0 ? 0 : Math.round((baseWeight * s.weightMultiplier) / 2.5) * 2.5,
@@ -62,11 +95,35 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
   const allCompleted = sets.every(s => s.completed);
   const completedCount = sets.filter(s => s.completed).length;
 
+  // Sauvegarde immédiate dans le draft à chaque modification
+  const persistSets = useCallback((newSets: SetData[]) => {
+    onDraftChange?.(exercise.id, newSets);
+  }, [exercise.id, onDraftChange]);
+
   const updateSet = (idx: number, field: 'weight' | 'reps', value: number) => {
-    setSets(prev => prev.map((s, i) => i === idx ? { ...s, [field]: value } : s));
+    setSets(prev => {
+      const next = prev.map((s, i) => i === idx ? { ...s, [field]: value } : s);
+      persistSets(next);
+      return next;
+    });
   };
   const toggleSet = (idx: number) => {
-    setSets(prev => prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s));
+    setSets(prev => {
+      const next = prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s);
+      persistSets(next);
+      // Démarrer le minuteur de repos si on vient de cocher une série
+      const wasCompleted = prev[idx]?.completed;
+      if (!wasCompleted) {
+        // Durée selon le type d'exercice
+        const restSeconds = exercise.repsMax !== null && exercise.repsMin <= 6 ? 120
+          : exercise.repsMax !== null && exercise.repsMin <= 10 ? 90
+          : 60;
+        startRestTimer(restSeconds);
+      } else {
+        stopRestTimer();
+      }
+      return next;
+    });
   };
   const handleSave = () => {
     onLog({ exerciseId: exercise.id, sets, alternativeUsed: selectedAlt ?? undefined });
@@ -164,6 +221,30 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation }: {
           ))}
         </div>
       </div>
+
+      {/* Minuteur de repos */}
+      {restTimer !== null && (
+        <div className="mx-4 mb-3 rounded-2xl p-3 flex items-center gap-3" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}>
+          <div className="relative w-12 h-12 flex-shrink-0">
+            <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,107,53,0.15)" strokeWidth="4" />
+              <circle
+                cx="24" cy="24" r="20" fill="none" stroke="#FF6B35" strokeWidth="4"
+                strokeDasharray={`${2 * Math.PI * 20}`}
+                strokeDashoffset={`${2 * Math.PI * 20 * (1 - restTimer / restTotal)}`}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 1s linear' }}
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-orange-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{restTimer}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-orange-400 font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Repos en cours</p>
+            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Prochaine série dans {restTimer}s</p>
+          </div>
+          <button onClick={stopRestTimer} className="text-white/30 text-xs px-2 py-1 rounded-lg" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>Passer</button>
+        </div>
+      )}
 
       {/* Démo image/vidéo */}
       {showDemo && hasMedia && (
@@ -735,14 +816,25 @@ function CardioView({ session }: { session: WorkoutSession }) {
 // ============================================================
 
 function GymSessionView({ session }: { session: WorkoutSession }) {
-  const { logSession, analyzeSession, getSuggestedWeight, getCurrentWeek, getExerciseAdaptation, getFatigueScore } = useFitnessTracker();
+  const { logSession, analyzeSession, getSuggestedWeight, getCurrentWeek, getExerciseAdaptation, getFatigueScore, updateDraftExercise, updateDraftMeta, clearWorkoutDraft, getWorkoutDraft } = useFitnessTracker();
   const fatigueScore = getFatigueScore();
-  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>([]);
-  const [difficulty, setDifficulty] = useState(7);
-  const [energy, setEnergy] = useState(7);
-  const [notes, setNotes] = useState('');
-  const [submitted, setSubmitted] = useState(false);
   const currentWeek = getCurrentWeek();
+
+  // Restaurer le draft persisté au montage
+  const draft = getWorkoutDraft(session.id);
+  const [exerciseLogs, setExerciseLogs] = useState<ExerciseLog[]>(() => {
+    if (!draft) return [];
+    return Object.entries(draft.exercises).map(([exerciseId, sets]) => ({ exerciseId, sets }));
+  });
+  const [difficulty, setDifficulty] = useState(draft?.feeling ?? 7);
+  const [energy, setEnergy] = useState(7);
+  const [notes, setNotes] = useState(draft?.notes ?? '');
+  const [submitted, setSubmitted] = useState(false);
+
+  // Sync difficulty/notes dans le draft
+  useEffect(() => {
+    updateDraftMeta(session.id, difficulty, notes);
+  }, [difficulty, notes, session.id, updateDraftMeta]);
 
   const handleExerciseLog = (log: ExerciseLog) => {
     setExerciseLogs(prev => {
@@ -752,12 +844,18 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
     });
   };
 
+  // Sauvegarde immédiate dans le draft à chaque modification de série
+  const handleDraftChange = useCallback((exerciseId: string, sets: SetData[]) => {
+    updateDraftExercise(session.id, exerciseId, sets);
+  }, [session.id, updateDraftExercise]);
+
   const handleSubmitSession = () => {
     const sessionLog: SessionLog = {
       sessionId: session.id, date: new Date().toISOString(), weekNumber: currentWeek,
       exercises: exerciseLogs, perceivedDifficulty: difficulty, energyLevel: energy, overallNotes: notes,
     };
     logSession(sessionLog);
+    clearWorkoutDraft(); // Efface le draft après soumission
     const analysis = analyzeSession(sessionLog);
     setSubmitted(true);
     toast.success(`Séance enregistrée ! Score : ${analysis.score}/100`);
@@ -830,6 +928,8 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
           onLog={handleExerciseLog}
           lastLog={exerciseLogs.find(l => l.exerciseId === exercise.id)}
           adaptation={getExerciseAdaptation(exercise.id)}
+          draftSets={draft?.exercises[exercise.id] ?? null}
+          onDraftChange={handleDraftChange}
         />
       ))}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>

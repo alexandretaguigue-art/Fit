@@ -520,42 +520,64 @@ export default function ProgressPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {['developpe_couche', 'squat', 'tractions', 'rowing_barre', 'souleve_de_terre', 'curl_incline', 'curl_marteau', 'extension_triceps_poulie'].map(exerciseId => {
+                {[
+                  { id: 'developpe_couche', name: 'Développé couché', group: 'Pectoraux', color: '#FF6B35' },
+                  { id: 'developpe_incline', name: 'Développé incliné', group: 'Pectoraux', color: '#FF6B35' },
+                  { id: 'squat', name: 'Squat', group: 'Jambes', color: '#22C55E' },
+                  { id: 'presse_cuisse', name: 'Presse cuisse', group: 'Jambes', color: '#22C55E' },
+                  { id: 'tractions', name: 'Tractions', group: 'Dos', color: '#3B82F6' },
+                  { id: 'rowing_barre', name: 'Rowing barre', group: 'Dos', color: '#3B82F6' },
+                  { id: 'souleve_de_terre', name: 'Soulevé de terre', group: 'Ischio/Dos', color: '#8B5CF6' },
+                  { id: 'curl_incline', name: 'Curl incliné', group: 'Biceps', color: '#F59E0B' },
+                  { id: 'curl_marteau', name: 'Curl marteau', group: 'Biceps', color: '#F59E0B' },
+                  { id: 'extension_triceps_poulie', name: 'Extension triceps', group: 'Triceps', color: '#EF4444' },
+                  { id: 'dips', name: 'Dips', group: 'Triceps', color: '#EF4444' },
+                  { id: 'fentes_marche', name: 'Fentes marchées', group: 'Jambes', color: '#22C55E' },
+                ].map(({ id: exerciseId, name: exerciseName, group, color }) => {
                   const progress = getExerciseProgress(exerciseId);
                   if (!progress || progress.length === 0) return null;
                   const chartData = progress.map((p, i) => ({
                     name: `S${i + 1}`,
-                    'Charge max (kg)': p.maxWeight,
-                    'Volume (kg×reps)': p.totalVolume,
+                    'Charge (kg)': p.maxWeight,
+                    'Volume': Math.round(p.totalVolume / 10),
                   }));
-                  const exerciseNames: Record<string, string> = {
-                    developpe_couche: 'Développé couché',
-                    squat: 'Squat',
-                    tractions: 'Tractions',
-                    rowing_barre: 'Rowing barre',
-                    souleve_de_terre: 'Soulevé de terre',
-                    curl_incline: 'Curl incliné',
-                    curl_marteau: 'Curl marteau',
-                    extension_triceps_poulie: 'Extension triceps',
-                  };
+                  const firstWeight = progress[0]?.maxWeight ?? 0;
+                  const lastWeight = progress[progress.length - 1]?.maxWeight ?? 0;
+                  const gain = lastWeight - firstWeight;
+                  const gainPct = firstWeight > 0 ? Math.round((gain / firstWeight) * 100) : 0;
                   return (
-                    <div key={exerciseId} className="p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <h3 className="text-white font-bold text-sm mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>{exerciseNames[exerciseId] ?? exerciseId}</h3>
-                      <ResponsiveContainer width="100%" height={120}>
-                        <LineChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                    <div key={exerciseId} className="p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${color}20` }}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{exerciseName}</h3>
+                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${color}15`, color, fontFamily: 'Inter, sans-serif' }}>{group}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif', color }}>{lastWeight} kg</div>
+                          {gain !== 0 && (
+                            <div className="text-xs font-semibold" style={{ color: gain > 0 ? '#22c55e' : '#ef4444', fontFamily: 'Inter, sans-serif' }}>
+                              {gain > 0 ? '+' : ''}{gain} kg ({gainPct > 0 ? '+' : ''}{gainPct}%)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={110}>
+                        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id={`grad-${exerciseId}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={color} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
                           <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
                           <Tooltip content={<CustomTooltip />} />
-                          <Line type="monotone" dataKey="Charge max (kg)" stroke="#FF6B35" strokeWidth={2} dot={{ fill: '#FF6B35', r: 3 }} />
-                        </LineChart>
+                          <Area type="monotone" dataKey="Charge (kg)" stroke={color} strokeWidth={2} fill={`url(#grad-${exerciseId})`} dot={{ fill: color, r: 3 }} />
+                        </AreaChart>
                       </ResponsiveContainer>
                       <div className="flex justify-between mt-2">
-                        <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Départ : {progress[0]?.maxWeight ?? 0} kg
-                        </span>
-                        <span className="text-orange-400 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
-                          Actuel : {progress[progress.length - 1]?.maxWeight ?? 0} kg
-                        </span>
+                        <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Début : {firstWeight} kg</span>
+                        <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{progress.length} séances</span>
                       </div>
                     </div>
                   );

@@ -31,6 +31,16 @@ import {
 // TYPES
 // ============================================================
 
+// Données d'une séance en cours (draft) — persistées pour survie au rechargement
+interface WorkoutDraftSet { weight: number; reps: number; completed: boolean; }
+interface WorkoutDraft {
+  sessionId: string;
+  date: string; // YYYY-MM-DD
+  exercises: Record<string, WorkoutDraftSet[]>; // exerciseId → sets
+  feeling: number;
+  notes: string;
+}
+
 interface FitnessData {
   sessionLogs: SessionLog[];
   progressEntries: ProgressEntry[];
@@ -44,6 +54,8 @@ interface FitnessData {
   currentMealPlanWeek: string | null;
   // Override du planning : date ISO (YYYY-MM-DD) → sessionId
   scheduleOverrides: Record<string, string>;
+  // Séance en cours (draft) — survit au rechargement
+  workoutDraft: WorkoutDraft | null;
 }
 
 const STORAGE_KEY = 'fitpro_data_v2';
@@ -57,6 +69,7 @@ const defaultData: FitnessData = {
   nutritionLogs: {},
   currentMealPlanWeek: null,
   scheduleOverrides: {},
+  workoutDraft: null,
 };
 
 // ============================================================
@@ -576,6 +589,59 @@ export function useFitnessTracker() {
   // Planning personnalisé (override par date)
   // ============================================================
 
+  // ============================================================
+  // SÉANCE EN COURS (DRAFT) — persistance complète
+  // ============================================================
+
+  const saveWorkoutDraft = useCallback((draft: WorkoutDraft) => {
+    setData(prev => ({ ...prev, workoutDraft: draft }));
+  }, []);
+
+  const updateDraftExercise = useCallback((sessionId: string, exerciseId: string, sets: WorkoutDraftSet[]) => {
+    setData(prev => {
+      const today = new Date().toISOString().split('T')[0];
+      const existing = prev.workoutDraft;
+      // Si le draft est d'une autre séance ou d'un autre jour, on repart de zéro
+      if (!existing || existing.sessionId !== sessionId || existing.date !== today) {
+        return {
+          ...prev,
+          workoutDraft: {
+            sessionId,
+            date: today,
+            exercises: { [exerciseId]: sets },
+            feeling: 7,
+            notes: '',
+          },
+        };
+      }
+      return {
+        ...prev,
+        workoutDraft: {
+          ...existing,
+          exercises: { ...existing.exercises, [exerciseId]: sets },
+        },
+      };
+    });
+  }, []);
+
+  const updateDraftMeta = useCallback((sessionId: string, feeling: number, notes: string) => {
+    setData(prev => {
+      if (!prev.workoutDraft || prev.workoutDraft.sessionId !== sessionId) return prev;
+      return { ...prev, workoutDraft: { ...prev.workoutDraft, feeling, notes } };
+    });
+  }, []);
+
+  const clearWorkoutDraft = useCallback(() => {
+    setData(prev => ({ ...prev, workoutDraft: null }));
+  }, []);
+
+  const getWorkoutDraft = useCallback((sessionId: string): WorkoutDraft | null => {
+    const today = new Date().toISOString().split('T')[0];
+    const draft = data.workoutDraft;
+    if (draft && draft.sessionId === sessionId && draft.date === today) return draft;
+    return null;
+  }, [data.workoutDraft]);
+
   const setScheduleOverride = useCallback((dateKey: string, sessionId: string | null) => {
     setData(prev => {
       const overrides = { ...prev.scheduleOverrides };
@@ -632,5 +698,11 @@ export function useFitnessTracker() {
     // Cardio (course & vélo)
     logCardioSession,
     getCardioAdaptation,
+    // Séance en cours (draft)
+    saveWorkoutDraft,
+    updateDraftExercise,
+    updateDraftMeta,
+    clearWorkoutDraft,
+    getWorkoutDraft,
   };
 }

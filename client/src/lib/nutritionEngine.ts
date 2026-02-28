@@ -200,762 +200,712 @@ export interface WeeklyMealPlan {
 
 // ============================================================
 // RÈGLE DE CONSTRUCTION : totalCalories = somme exacte des items.calories
-// Objectif journée training : ~2900 kcal répartis sur 5 repas :
-//   Petit-déj  : ~800 kcal
-//   Déjeuner   : ~800 kcal
-//   Collation  : ~350 kcal
-//   Dîner      : ~750 kcal
-//   Avant-dodo : ~200 kcal
-//   TOTAL      : 2900 kcal
+// Objectif journée training : ~3000 kcal | ~155g prot | ~400g gluc | ~80g lip
+// Objectif journée repos    : ~2700 kcal | ~140g prot | ~340g gluc | ~90g lip
+// Les protéines sont légèrement au-dessus de 130g (minimum recommandé)
 // ============================================================
 
 // ============================================================
-// PETITS-DÉJEUNERS TRAINING — 12 variantes (~800 kcal chacun)
+// PETITS-DÉJEUNERS TRAINING — 12 variantes
 // ============================================================
 const BREAKFASTS_TRAINING: Meal[] = [
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 787, items: [
     { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
-    { food: 'Whey Isolate vanille', quantity: '30g', proteins: 25, carbs: 1, fats: 0, calories: 111 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
     { food: 'Banane', quantity: '1 grande (150g)', proteins: 2, carbs: 34, fats: 0, calories: 134 },
     { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
-    { food: 'Lait écrémé', quantity: '100ml', proteins: 3, carbs: 5, fats: 0, calories: 50 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
   ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 801, items: [
-    { food: 'Pain complet grillé', quantity: '4 tranches (120g)', proteins: 12, carbs: 64, fats: 4, calories: 336 },
-    { food: 'Œufs brouillés', quantity: '3 œufs (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 624, items: [
+    { food: 'Pain complet grillé', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Oeufs brouillés', quantity: '2 oeufs (120g)', proteins: 15, carbs: 1, fats: 12, calories: 171 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
     { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
-    { food: 'Jus d\'orange pressé', quantity: '150ml', proteins: 1, carbs: 16, fats: 0, calories: 66 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
   ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 802, items: [
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 775, items: [
     { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
-    { food: 'Lait écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 0, calories: 100 },
-    { food: 'Whey Isolate chocolat', quantity: '30g', proteins: 25, carbs: 2, fats: 1, calories: 117 },
+    { food: 'Lait demi-écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 6, calories: 153 },
     { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
     { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
-    { food: 'Flocons d\'avoine', quantity: '90g', proteins: 12, carbs: 54, fats: 6, calories: 350 },
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Mangue', quantity: '200g', proteins: 2, carbs: 30, fats: 0, calories: 128 },
-    { food: 'Amandes effilées', quantity: '25g', proteins: 5, carbs: 6, fats: 12, calories: 145 },
-    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
-    { food: 'Cannelle', quantity: '1g', proteins: 0, carbs: 1, fats: 0, calories: 3 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 799, items: [
-    { food: 'Pancakes protéinés (avoine + œuf + banane)', quantity: '3 pancakes (200g)', proteins: 28, carbs: 62, fats: 12, calories: 468 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Framboises', quantity: '100g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
-    { food: 'Sirop d\'érable', quantity: '20g', proteins: 0, carbs: 15, fats: 0, calories: 55 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
-    { food: 'Muesli sans sucre ajouté', quantity: '80g', proteins: 10, carbs: 52, fats: 8, calories: 320 },
-    { food: 'Lait écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 0, calories: 100 },
-    { food: 'Whey Isolate fraise', quantity: '30g', proteins: 25, carbs: 1, fats: 0, calories: 111 },
-    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 801, items: [
-    { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
-    { food: 'Beurre de cacahuète naturel', quantity: '30g', proteins: 8, carbs: 5, fats: 15, calories: 181 },
-    { food: 'Whey Isolate vanille', quantity: '30g', proteins: 25, carbs: 1, fats: 0, calories: 111 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
-    { food: 'Lait écrémé', quantity: '80ml', proteins: 3, carbs: 4, fats: 0, calories: 40 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 799, items: [
-    { food: 'Riz au lait maison (riz + lait écrémé)', quantity: '250g', proteins: 12, carbs: 72, fats: 2, calories: 364 },
-    { food: 'Œufs durs', quantity: '3 (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Orange', quantity: '1 (180g)', proteins: 1, carbs: 18, fats: 0, calories: 76 },
-    { food: 'Noix', quantity: '10g', proteins: 2, carbs: 1, fats: 7, calories: 65 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
-    { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
-    { food: 'Skyr vanille', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Pêche', quantity: '2 (300g)', proteins: 2, carbs: 28, fats: 0, calories: 120 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-    { food: 'Miel', quantity: '18g', proteins: 0, carbs: 14, fats: 0, calories: 56 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
-    { food: 'Toast complet + avocat écrasé', quantity: '3 tranches (90g) + 100g avocat', proteins: 9, carbs: 45, fats: 16, calories: 356 },
-    { food: 'Œufs pochés', quantity: '3 (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Jus de citron', quantity: '20ml', proteins: 0, carbs: 1, fats: 0, calories: 5 },
-    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
-    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 799, items: [
-    { food: 'Overnight oats (avoine + lait + chia)', quantity: '100g avoine + 200ml lait + 15g chia', proteins: 20, carbs: 68, fats: 11, calories: 455 },
-    { food: 'Whey Isolate caramel', quantity: '30g', proteins: 25, carbs: 1, fats: 0, calories: 111 },
-    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 11, fats: 0, calories: 48 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-  ]},
-  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 800, items: [
-    { food: 'Galettes de riz + beurre de cajou', quantity: '4 galettes (40g) + 25g beurre cajou', proteins: 6, carbs: 36, fats: 12, calories: 272 },
-    { food: 'Œufs à la coque', quantity: '3 (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
     { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 730, items: [
+    { food: 'Flocons d\'avoine', quantity: '90g', proteins: 12, carbs: 54, fats: 6, calories: 350 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Mangue', quantity: '200g', proteins: 2, carbs: 30, fats: 0, calories: 128 },
+    { food: 'Amandes effilées', quantity: '20g', proteins: 4, carbs: 5, fats: 8, calories: 116 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 578, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
+    { food: 'Framboises', quantity: '100g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
+    { food: 'Miel', quantity: '20g', proteins: 0, carbs: 16, fats: 0, calories: 62 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 710, items: [
+    { food: 'Muesli sans sucre', quantity: '80g', proteins: 10, carbs: 52, fats: 8, calories: 320 },
+    { food: 'Lait demi-écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 6, calories: 153 },
+    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 699, items: [
+    { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 12, fats: 0, calories: 48 },
+    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 695, items: [
+    { food: 'Pain complet', quantity: '4 tranches (120g)', proteins: 12, carbs: 64, fats: 4, calories: 336 },
+    { food: 'Oeufs à la coque', quantity: '2 oeufs (120g)', proteins: 15, carbs: 1, fats: 12, calories: 171 },
+    { food: 'Orange', quantity: '1 (180g)', proteins: 2, carbs: 18, fats: 0, calories: 72 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 748, items: [
+    { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Pomme', quantity: '1 (180g)', proteins: 0, carbs: 23, fats: 0, calories: 93 },
+    { food: 'Beurre de cacahuète naturel', quantity: '20g', proteins: 5, carbs: 4, fats: 10, calories: 118 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 623, items: [
+    { food: 'Riz au lait maison (riz + lait)', quantity: '300g', proteins: 8, carbs: 55, fats: 5, calories: 297 },
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 771, items: [
+    { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
+    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 562, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
+    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
   ]},
 ];
 
 // ============================================================
-// DÉJEUNERS TRAINING — 12 variantes (~800 kcal chacun)
+// DÉJEUNERS TRAINING — 12 variantes
 // ============================================================
 const LUNCHES_TRAINING: Meal[] = [
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Blanc de poulet grillé', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 6, carbs: 55, fats: 1, calories: 255 },
-    { food: 'Brocolis vapeur', quantity: '200g', proteins: 5, carbs: 14, fats: 0, calories: 68 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Sauce soja', quantity: '10g', proteins: 1, carbs: 1, fats: 0, calories: 6 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 590, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
+    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 799, items: [
-    { food: 'Saumon grillé', quantity: '180g', proteins: 36, carbs: 0, fats: 22, calories: 354 },
-    { food: 'Patate douce rôtie', quantity: '300g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
-    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Jus de citron', quantity: '20ml', proteins: 0, carbs: 1, fats: 0, calories: 5 },
-    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 580, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Steak haché 5% MG', quantity: '200g', proteins: 46, carbs: 0, fats: 10, calories: 274 },
-    { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 10, carbs: 58, fats: 2, calories: 292 },
-    { food: 'Sauce tomate maison', quantity: '100g', proteins: 2, carbs: 8, fats: 1, calories: 49 },
-    { food: 'Courgettes grillées', quantity: '150g', proteins: 2, carbs: 5, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 570, items: [
+    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
+    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 46, fats: 4, calories: 248 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 801, items: [
-    { food: 'Blanc de dinde', quantity: '200g', proteins: 56, carbs: 0, fats: 4, calories: 256 },
-    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 38, fats: 4, calories: 222 },
-    { food: 'Poivrons rôtis', quantity: '150g', proteins: 2, carbs: 9, fats: 0, calories: 44 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
-    { food: 'Orange', quantity: '1 (180g)', proteins: 1, carbs: 18, fats: 0, calories: 76 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 603, items: [
+    { food: 'Saumon grillé', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Riz basmati cuit', quantity: '220g', proteins: 4, carbs: 57, fats: 0, calories: 246 },
+    { food: 'Courgette sautée', quantity: '150g', proteins: 2, carbs: 6, fats: 0, calories: 27 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Cabillaud poêlé', quantity: '200g', proteins: 42, carbs: 0, fats: 2, calories: 186 },
-    { food: 'Riz complet cuit', quantity: '250g', proteins: 6, carbs: 52, fats: 2, calories: 250 },
-    { food: 'Haricots verts', quantity: '200g', proteins: 4, carbs: 8, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 526, items: [
+    { food: 'Blanc de poulet grillé', quantity: '140g', proteins: 32, carbs: 0, fats: 2, calories: 152 },
+    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Poulet au curry', quantity: '200g poulet + sauce', proteins: 52, carbs: 8, fats: 8, calories: 312 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Pois chiches', quantity: '100g cuit', proteins: 9, carbs: 20, fats: 3, calories: 143 },
-    { food: 'Épinards', quantity: '100g', proteins: 3, carbs: 3, fats: 0, calories: 23 },
-    { food: 'Yaourt grec 0%', quantity: '100g', proteins: 10, carbs: 4, fats: 0, calories: 57 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 554, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 158 },
+    { food: 'Pâtes complètes cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
+    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Thon au naturel', quantity: '2 boîtes (200g)', proteins: 46, carbs: 0, fats: 2, calories: 202 },
-    { food: 'Patate douce rôtie', quantity: '300g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
-    { food: 'Salade verte + tomates', quantity: '200g', proteins: 2, carbs: 6, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Œufs durs', quantity: '2 (120g)', proteins: 15, carbs: 1, fats: 12, calories: 172 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Riz complet cuit', quantity: '250g', proteins: 5, carbs: 55, fats: 2, calories: 258 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 799, items: [
-    { food: 'Blanc de poulet grillé', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Boulgour cuit', quantity: '200g', proteins: 6, carbs: 44, fats: 1, calories: 210 },
-    { food: 'Ratatouille (courgettes, poivrons, tomates)', quantity: '200g', proteins: 3, carbs: 12, fats: 2, calories: 76 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 567, items: [
+    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
+    { food: 'Quinoa cuit', quantity: '220g', proteins: 9, carbs: 51, fats: 4, calories: 273 },
+    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Saumon fumé', quantity: '150g', proteins: 33, carbs: 0, fats: 14, calories: 261 },
-    { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 10, carbs: 58, fats: 2, calories: 292 },
-    { food: 'Brocolis vapeur', quantity: '150g', proteins: 4, carbs: 10, fats: 0, calories: 51 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Orange', quantity: '1 (180g)', proteins: 1, carbs: 18, fats: 0, calories: 76 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 576, items: [
+    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
+    { food: 'Riz basmati cuit', quantity: '230g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Escalope de veau', quantity: '180g', proteins: 42, carbs: 0, fats: 6, calories: 222 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 6, carbs: 55, fats: 1, calories: 255 },
-    { food: 'Champignons sautés', quantity: '150g', proteins: 3, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Pâtes complètes cuites', quantity: '230g', proteins: 8, carbs: 57, fats: 2, calories: 281 },
+    { food: 'Champignons sautés', quantity: '100g', proteins: 3, carbs: 4, fats: 0, calories: 22 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 801, items: [
-    { food: 'Blanc de poulet grillé', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Lentilles vertes cuites', quantity: '200g', proteins: 18, carbs: 40, fats: 1, calories: 241 },
-    { food: 'Carottes rôties', quantity: '150g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 564, items: [
+    { food: 'Saumon grillé', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
+    { food: 'Épinards sautés', quantity: '100g', proteins: 3, carbs: 3, fats: 1, calories: 37 },
+    { food: 'Huile d\'olive', quantity: '10ml', proteins: 0, carbs: 0, fats: 9, calories: 90 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 800, items: [
-    { food: 'Crevettes sautées', quantity: '200g', proteins: 38, carbs: 2, fats: 4, calories: 196 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 6, carbs: 55, fats: 1, calories: 255 },
-    { food: 'Edamames', quantity: '100g', proteins: 11, carbs: 8, fats: 5, calories: 121 },
-    { food: 'Sauce soja + gingembre', quantity: '15g', proteins: 1, carbs: 2, fats: 0, calories: 9 },
-    { food: 'Huile de sésame', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Mangue', quantity: '150g', proteins: 1, carbs: 23, fats: 0, calories: 96 },
+  { time: '12h30', name: 'Déjeuner', totalCalories: 541, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 137 },
+    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
+    { food: 'Concombre', quantity: '100g', proteins: 1, carbs: 3, fats: 0, calories: 16 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
 ];
 
 // ============================================================
-// COLLATIONS TRAINING — 12 variantes (~350 kcal chacune)
+// COLLATIONS TRAINING — 12 variantes
 // ============================================================
 const SNACKS_TRAINING: Meal[] = [
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Flocons d\'avoine', quantity: '50g', proteins: 7, carbs: 30, fats: 4, calories: 194 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 403, items: [
+    { food: 'Riz cuit', quantity: '200g', proteins: 4, carbs: 52, fats: 0, calories: 224 },
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
   ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 349, items: [
-    { food: 'Galettes de riz', quantity: '4 (40g)', proteins: 3, carbs: 32, fats: 1, calories: 149 },
-    { food: 'Beurre de cacahuète naturel', quantity: '30g', proteins: 8, carbs: 5, fats: 15, calories: 181 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
-    { food: 'Thon au naturel', quantity: '100g', proteins: 23, carbs: 0, fats: 1, calories: 101 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 407, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
     { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
-    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
   ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Flocons d\'avoine', quantity: '50g', proteins: 7, carbs: 30, fats: 4, calories: 194 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 442, items: [
+    { food: 'Flocons d\'avoine', quantity: '60g', proteins: 8, carbs: 36, fats: 4, calories: 233 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+  ]},
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 338, items: [
+    { food: 'Riz cuit', quantity: '180g', proteins: 4, carbs: 47, fats: 0, calories: 202 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
     { food: 'Myrtilles', quantity: '80g', proteins: 1, carbs: 11, fats: 0, calories: 46 },
   ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 349, items: [
-    { food: 'Whey Isolate vanille', quantity: '30g', proteins: 25, carbs: 1, fats: 0, calories: 111 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
-    { food: 'Lait écrémé', quantity: '30ml', proteins: 1, carbs: 2, fats: 0, calories: 15 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 114 },
-    { food: 'Granola maison (avoine + miel)', quantity: '50g', proteins: 5, carbs: 32, fats: 5, calories: 193 },
-    { food: 'Fraises', quantity: '100g', proteins: 1, carbs: 8, fats: 0, calories: 32 },
-    { food: 'Noix', quantity: '10g', proteins: 2, carbs: 1, fats: 7, calories: 65 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Flocons d\'avoine', quantity: '60g', proteins: 8, carbs: 36, fats: 5, calories: 233 },
-    { food: 'Framboises', quantity: '100g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
-    { food: 'Blanc de poulet froid', quantity: '100g', proteins: 27, carbs: 0, fats: 3, calories: 135 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 383, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
   ]},
   { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 351, items: [
-    { food: 'Muesli sans sucre', quantity: '60g', proteins: 8, carbs: 39, fats: 6, calories: 240 },
-    { food: 'Lait écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 0, calories: 67 },
-    { food: 'Kiwi', quantity: '1 (75g)', proteins: 1, carbs: 9, fats: 0, calories: 45 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Skyr vanille', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Noix de cajou', quantity: '30g', proteins: 5, carbs: 9, fats: 13, calories: 174 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-  ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 350, items: [
-    { food: 'Galettes de riz', quantity: '3 (30g)', proteins: 2, carbs: 24, fats: 1, calories: 112 },
-    { food: 'Beurre d\'amande', quantity: '30g', proteins: 7, carbs: 5, fats: 15, calories: 183 },
+    { food: 'Patate douce cuite', quantity: '200g', proteins: 3, carbs: 40, fats: 0, calories: 172 },
     { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
   ]},
-  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 349, items: [
-    { food: 'Flocons d\'avoine', quantity: '60g', proteins: 8, carbs: 36, fats: 5, calories: 233 },
-    { food: 'Lait écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 0, calories: 67 },
-    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
-  ]},
-];
-
-// ============================================================
-// DÎNERS TRAINING — 12 variantes (~750 kcal chacun)
-// ============================================================
-const DINNERS_TRAINING: Meal[] = [
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Blanc de poulet grillé', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Patate douce rôtie', quantity: '300g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
-    { food: 'Brocolis vapeur', quantity: '200g', proteins: 5, carbs: 14, fats: 0, calories: 68 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Sauce soja', quantity: '10g', proteins: 1, carbs: 1, fats: 0, calories: 6 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 365, items: [
+    { food: 'Riz cuit', quantity: '200g', proteins: 4, carbs: 52, fats: 0, calories: 224 },
     { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+    { food: 'Pomme', quantity: '1 (180g)', proteins: 0, carbs: 23, fats: 0, calories: 93 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Saumon grillé', quantity: '200g', proteins: 40, carbs: 0, fats: 26, calories: 394 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Citron', quantity: '1/2 (30g)', proteins: 0, carbs: 3, fats: 0, calories: 9 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Steak haché 5% MG', quantity: '200g', proteins: 46, carbs: 0, fats: 10, calories: 274 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Haricots verts', quantity: '200g', proteins: 4, carbs: 8, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 378, items: [
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
     { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Blanc de dinde', quantity: '200g', proteins: 56, carbs: 0, fats: 4, calories: 256 },
-    { food: 'Pâtes complètes cuites', quantity: '200g', proteins: 8, carbs: 46, fats: 2, calories: 234 },
-    { food: 'Sauce tomate maison', quantity: '150g', proteins: 3, carbs: 12, fats: 1, calories: 73 },
-    { food: 'Courgettes grillées', quantity: '150g', proteins: 2, carbs: 5, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Cabillaud au four', quantity: '250g', proteins: 52, carbs: 0, fats: 3, calories: 232 },
-    { food: 'Riz complet cuit', quantity: '200g', proteins: 5, carbs: 42, fats: 2, calories: 200 },
-    { food: 'Ratatouille', quantity: '200g', proteins: 3, carbs: 12, fats: 2, calories: 76 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
-    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 751, items: [
-    { food: 'Poulet au citron + thym', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Patate douce + brocolis', quantity: '250g + 150g', proteins: 8, carbs: 58, fats: 0, calories: 252 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Sauce soja', quantity: '5g', proteins: 1, carbs: 0, fats: 0, calories: 3 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Maquereau grillé', quantity: '200g', proteins: 42, carbs: 0, fats: 26, calories: 394 },
-    { food: 'Lentilles beluga cuites', quantity: '150g', proteins: 12, carbs: 28, fats: 1, calories: 169 },
-    { food: 'Salade de roquette', quantity: '100g', proteins: 2, carbs: 3, fats: 0, calories: 25 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Blanc de poulet grillé', quantity: '200g', proteins: 54, carbs: 0, fats: 6, calories: 270 },
-    { food: 'Boulgour cuit', quantity: '200g', proteins: 6, carbs: 44, fats: 1, calories: 210 },
-    { food: 'Poivrons rôtis', quantity: '200g', proteins: 2, carbs: 12, fats: 0, calories: 58 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Saumon en papillote', quantity: '200g', proteins: 40, carbs: 0, fats: 26, calories: 394 },
-    { food: 'Patate douce', quantity: '200g', proteins: 3, carbs: 40, fats: 0, calories: 172 },
-    { food: 'Haricots verts', quantity: '150g', proteins: 3, carbs: 6, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Blanc de dinde + sauce champignons', quantity: '200g + 100g', proteins: 58, carbs: 6, fats: 5, calories: 305 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Brocolis vapeur', quantity: '150g', proteins: 4, carbs: 10, fats: 0, calories: 51 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Cabillaud + sauce vierge', quantity: '250g + 50g', proteins: 52, carbs: 5, fats: 4, calories: 264 },
-    { food: 'Pâtes complètes cuites', quantity: '200g', proteins: 8, carbs: 46, fats: 2, calories: 234 },
-    { food: 'Salade de roquette', quantity: '100g', proteins: 2, carbs: 3, fats: 0, calories: 25 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 750, items: [
-    { food: 'Bœuf sauté aux légumes', quantity: '200g bœuf + 200g légumes', proteins: 48, carbs: 12, fats: 14, calories: 370 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Huile de sésame', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-];
-
-// ============================================================
-// AVANT DE DORMIR TRAINING — 12 variantes (~200 kcal chacun)
-// ============================================================
-const BEFORE_SLEEP: Meal[] = [
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-    { food: 'Cannelle', quantity: '1g', proteins: 0, carbs: 1, fats: 0, calories: 3 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 199, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 201, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 114 },
-    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 5, fats: 7, calories: 87 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Beurre de cacahuète naturel', quantity: '15g', proteins: 4, carbs: 3, fats: 8, calories: 90 },
-    { food: 'Miel', quantity: '5g', proteins: 0, carbs: 4, fats: 0, calories: 16 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Skyr vanille', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Noix', quantity: '8g', proteins: 1, carbs: 1, fats: 5, calories: 52 },
-    { food: 'Myrtilles', quantity: '50g', proteins: 0, carbs: 7, fats: 0, calories: 29 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Fromage blanc 0%', quantity: '250g', proteins: 20, carbs: 10, fats: 0, calories: 120 },
-    { food: 'Amandes', quantity: '14g', proteins: 3, carbs: 4, fats: 7, calories: 81 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 199, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 114 },
-    { food: 'Noix', quantity: '8g', proteins: 1, carbs: 1, fats: 5, calories: 52 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
     { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
   ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Noix de cajou', quantity: '14g', proteins: 2, carbs: 5, fats: 6, calories: 81 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Beurre d\'amande', quantity: '15g', proteins: 4, carbs: 3, fats: 8, calories: 90 },
-    { food: 'Fraises', quantity: '50g', proteins: 0, carbs: 4, fats: 0, calories: 16 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 199, items: [
-    { food: 'Skyr vanille', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Amandes', quantity: '14g', proteins: 3, carbs: 4, fats: 7, calories: 81 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 201, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Noix', quantity: '10g', proteins: 2, carbs: 1, fats: 7, calories: 65 },
-    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 114 },
-    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 5, fats: 7, calories: 87 },
-  ]},
-];
-
-// ============================================================
-// PETITS-DÉJEUNERS REPOS — 12 variantes (~700 kcal chacun)
-// ============================================================
-const BREAKFASTS_REST: Meal[] = [
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 10, carbs: 48, fats: 6, calories: 311 },
-    { food: 'Lait écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 0, calories: 100 },
-    { food: 'Whey Isolate vanille', quantity: '25g', proteins: 21, carbs: 1, fats: 0, calories: 93 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
-    { food: 'Œufs brouillés', quantity: '3 (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 413, items: [
+    { food: 'Flocons d\'avoine', quantity: '60g', proteins: 8, carbs: 36, fats: 4, calories: 233 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
     { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
   ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 699, items: [
-    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 10, carbs: 48, fats: 6, calories: 311 },
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
-    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 130 },
-    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Pancakes protéinés', quantity: '3 (180g)', proteins: 25, carbs: 55, fats: 10, calories: 410 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Framboises', quantity: '150g', proteins: 1, carbs: 18, fats: 0, calories: 78 },
-    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Overnight oats', quantity: '80g avoine + 200ml lait + 10g chia', proteins: 18, carbs: 60, fats: 9, calories: 397 },
-    { food: 'Whey Isolate chocolat', quantity: '25g', proteins: 21, carbs: 2, fats: 1, calories: 97 },
-    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 11, fats: 0, calories: 48 },
-    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Toast complet + avocat', quantity: '3 tranches (90g) + 75g avocat', proteins: 9, carbs: 48, fats: 12, calories: 336 },
-    { food: 'Œufs pochés', quantity: '2 (120g)', proteins: 15, carbs: 1, fats: 12, calories: 172 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-    { food: 'Orange', quantity: '1 (180g)', proteins: 1, carbs: 18, fats: 0, calories: 76 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Muesli sans sucre', quantity: '80g', proteins: 10, carbs: 52, fats: 8, calories: 320 },
-    { food: 'Lait écrémé', quantity: '300ml', proteins: 10, carbs: 15, fats: 0, calories: 100 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
-    { food: 'Amandes', quantity: '17g', proteins: 4, carbs: 4, fats: 9, calories: 98 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 699, items: [
-    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 10, carbs: 48, fats: 6, calories: 311 },
-    { food: 'Beurre de cacahuète naturel', quantity: '25g', proteins: 6, carbs: 4, fats: 13, calories: 151 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-    { food: 'Lait écrémé', quantity: '150ml', proteins: 5, carbs: 8, fats: 0, calories: 75 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Riz au lait maison', quantity: '200g', proteins: 10, carbs: 58, fats: 2, calories: 292 },
-    { food: 'Œufs durs', quantity: '2 (120g)', proteins: 15, carbs: 1, fats: 12, calories: 172 },
-    { food: 'Mangue', quantity: '150g', proteins: 1, carbs: 23, fats: 0, calories: 96 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Galettes de riz + beurre de cajou', quantity: '4 (40g) + 25g', proteins: 6, carbs: 36, fats: 12, calories: 272 },
-    { food: 'Œufs à la coque', quantity: '3 (180g)', proteins: 23, carbs: 2, fats: 18, calories: 257 },
-    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 10, carbs: 48, fats: 6, calories: 311 },
-    { food: 'Skyr vanille', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Pêche', quantity: '2 (300g)', proteins: 2, carbs: 28, fats: 0, calories: 120 },
-    { food: 'Amandes', quantity: '25g', proteins: 5, carbs: 6, fats: 12, calories: 145 },
-  ]},
-  { time: '08h00', name: 'Petit-déjeuner', totalCalories: 700, items: [
-    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
-    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 130 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 341, items: [
+    { food: 'Riz cuit', quantity: '200g', proteins: 4, carbs: 52, fats: 0, calories: 224 },
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
     { food: 'Fraises', quantity: '100g', proteins: 1, carbs: 8, fats: 0, calories: 32 },
   ]},
-];
-
-// ============================================================
-// DÉJEUNERS REPOS — 12 variantes (~750 kcal chacun)
-// ============================================================
-const LUNCHES_REST: Meal[] = [
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 6, carbs: 55, fats: 1, calories: 255 },
-    { food: 'Brocolis vapeur', quantity: '200g', proteins: 5, carbs: 14, fats: 0, calories: 68 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 389, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
     { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Saumon grillé', quantity: '180g', proteins: 36, carbs: 0, fats: 22, calories: 354 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Haricots verts', quantity: '150g', proteins: 3, carbs: 6, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 749, items: [
-    { food: 'Blanc de dinde', quantity: '180g', proteins: 50, carbs: 0, fats: 4, calories: 230 },
-    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 38, fats: 4, calories: 222 },
-    { food: 'Poivrons rôtis', quantity: '200g', proteins: 2, carbs: 12, fats: 0, calories: 58 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Thon au naturel', quantity: '200g', proteins: 46, carbs: 0, fats: 2, calories: 202 },
-    { food: 'Pâtes complètes cuites', quantity: '200g', proteins: 8, carbs: 46, fats: 2, calories: 234 },
-    { food: 'Salade verte + tomates', quantity: '200g', proteins: 2, carbs: 6, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Cabillaud poêlé', quantity: '200g', proteins: 42, carbs: 0, fats: 2, calories: 186 },
-    { food: 'Lentilles vertes cuites', quantity: '200g', proteins: 18, carbs: 40, fats: 1, calories: 241 },
-    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Boulgour cuit', quantity: '200g', proteins: 6, carbs: 44, fats: 1, calories: 210 },
-    { food: 'Courgettes grillées', quantity: '200g', proteins: 3, carbs: 7, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Steak haché 5% MG', quantity: '180g', proteins: 41, carbs: 0, fats: 9, calories: 247 },
-    { food: 'Riz complet cuit', quantity: '200g', proteins: 5, carbs: 42, fats: 2, calories: 200 },
-    { food: 'Champignons sautés', quantity: '150g', proteins: 3, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Saumon fumé', quantity: '150g', proteins: 33, carbs: 0, fats: 14, calories: 261 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Brocolis vapeur', quantity: '200g', proteins: 5, carbs: 14, fats: 0, calories: 68 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Poulet au curry', quantity: '180g poulet + sauce', proteins: 47, carbs: 7, fats: 7, calories: 279 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Pois chiches', quantity: '100g cuit', proteins: 9, carbs: 20, fats: 3, calories: 143 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Maquereau grillé', quantity: '180g', proteins: 38, carbs: 0, fats: 23, calories: 355 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Salade de roquette', quantity: '100g', proteins: 2, carbs: 3, fats: 0, calories: 25 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Crevettes sautées', quantity: '200g', proteins: 38, carbs: 2, fats: 4, calories: 196 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 6, carbs: 55, fats: 1, calories: 255 },
-    { food: 'Edamames', quantity: '100g', proteins: 11, carbs: 8, fats: 5, calories: 121 },
-    { food: 'Sauce soja + gingembre', quantity: '15g', proteins: 1, carbs: 2, fats: 0, calories: 9 },
-    { food: 'Huile de sésame', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 750, items: [
-    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Haricots blancs cuits', quantity: '200g', proteins: 14, carbs: 44, fats: 1, calories: 241 },
-    { food: 'Tomates + concombre', quantity: '200g', proteins: 2, carbs: 8, fats: 0, calories: 40 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+  { time: '16h00', name: 'Collation pré-entraînement', totalCalories: 369, items: [
+    { food: 'Patate douce cuite', quantity: '200g', proteins: 3, carbs: 40, fats: 0, calories: 172 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
   ]},
 ];
 
 // ============================================================
-// COLLATIONS REPOS — 12 variantes (~250 kcal chacune)
+// DÎNERS TRAINING — 12 variantes
 // ============================================================
-const SNACKS_REST: Meal[] = [
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
+const DINNERS_TRAINING: Meal[] = [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 858, items: [
+    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
+    { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
+    { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 826, items: [
+    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
+    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 722, items: [
+    { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
+    { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 794, items: [
+    { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
+    { food: 'Patate douce cuite', quantity: '300g', proteins: 4, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 812, items: [
+    { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
+    { food: 'Riz complet cuit', quantity: '280g', proteins: 6, carbs: 61, fats: 2, calories: 289 },
+    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 815, items: [
+    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
+    { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
+    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 669, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '160g', proteins: 37, carbs: 0, fats: 2, calories: 169 },
+    { food: 'Pâtes complètes cuites', quantity: '270g', proteins: 10, carbs: 67, fats: 2, calories: 330 },
+    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 827, items: [
+    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
+    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
+    { food: 'Champignons sautés', quantity: '150g', proteins: 5, carbs: 6, fats: 0, calories: 33 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 847, items: [
+    { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
+    { food: 'Patate douce cuite', quantity: '280g', proteins: 4, carbs: 56, fats: 0, calories: 241 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 684, items: [
+    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
+    { food: 'Pâtes complètes cuites', quantity: '260g', proteins: 9, carbs: 65, fats: 2, calories: 318 },
+    { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 842, items: [
+    { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
+    { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 830, items: [
+    { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
+    { food: 'Riz basmati cuit', quantity: '270g', proteins: 6, carbs: 70, fats: 0, calories: 303 },
+    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+  ]},
+];
+
+// ============================================================
+// AVANT DE DORMIR — 12 variantes
+// ============================================================
+const BEFORE_SLEEP: Meal[] = [
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 227, items: [
     { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-    { food: 'Pomme', quantity: '1 (150g)', proteins: 0, carbs: 22, fats: 0, calories: 78 },
+    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 249, items: [
-    { food: 'Galettes de riz', quantity: '3 (30g)', proteins: 2, carbs: 24, fats: 1, calories: 112 },
-    { food: 'Beurre de cacahuète naturel', quantity: '20g', proteins: 5, carbs: 3, fats: 10, calories: 121 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 207, items: [
+    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 212, items: [
+    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
     { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
-    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 86 },
-    { food: 'Noix de cajou', quantity: '20g', proteins: 3, carbs: 6, fats: 9, calories: 116 },
-    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 11, fats: 0, calories: 48 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
+    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
+    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 4, fats: 7, calories: 87 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Flocons d\'avoine', quantity: '30g', proteins: 4, carbs: 18, fats: 2, calories: 117 },
-    { food: 'Myrtilles', quantity: '80g', proteins: 1, carbs: 11, fats: 0, calories: 46 },
-  ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
-    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
-  ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Skyr vanille', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 218, items: [
+    { food: 'Fromage blanc 0%', quantity: '250g', proteins: 20, carbs: 10, fats: 0, calories: 120 },
     { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-    { food: 'Orange', quantity: '1 (180g)', proteins: 1, carbs: 18, fats: 0, calories: 76 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Galettes de riz', quantity: '3 (30g)', proteins: 2, carbs: 24, fats: 1, calories: 112 },
-    { food: 'Beurre d\'amande', quantity: '20g', proteins: 5, carbs: 3, fats: 10, calories: 122 },
-    { food: 'Pêche', quantity: '1 (150g)', proteins: 1, carbs: 14, fats: 0, calories: 60 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 218, items: [
+    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
+    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 212, items: [
+    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
+    { food: 'Noix de cajou', quantity: '20g', proteins: 3, carbs: 5, fats: 9, calories: 116 },
+  ]},
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 229, items: [
+    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+  ]},
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 185, items: [
+    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
+    { food: 'Beurre de cacahuète naturel', quantity: '15g', proteins: 4, carbs: 3, fats: 8, calories: 89 },
+  ]},
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 207, items: [
+    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
+    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 4, fats: 7, calories: 87 },
+  ]},
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 198, items: [
     { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
     { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-    { food: 'Mangue', quantity: '100g', proteins: 1, carbs: 15, fats: 0, calories: 65 },
+    { food: 'Miel', quantity: '5g', proteins: 0, carbs: 4, fats: 0, calories: 15 },
   ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 86 },
-    { food: 'Flocons d\'avoine', quantity: '30g', proteins: 4, carbs: 18, fats: 2, calories: 117 },
-    { food: 'Framboises', quantity: '100g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
-  ]},
-  { time: '16h00', name: 'Collation', totalCalories: 249, items: [
-    { food: 'Skyr nature', quantity: '150g', proteins: 16, carbs: 6, fats: 0, calories: 90 },
-    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 5, fats: 7, calories: 87 },
-    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 28, fats: 0, calories: 107 },
-  ]},
-  { time: '16h00', name: 'Collation', totalCalories: 250, items: [
-    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
-    { food: 'Thon au naturel', quantity: '80g', proteins: 18, carbs: 0, fats: 1, calories: 81 },
+  { time: '22h00', name: 'Avant de dormir', totalCalories: 244, items: [
+    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
+    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
   ]},
 ];
 
 // ============================================================
-// DÎNERS REPOS — 12 variantes (~700 kcal chacun)
+// PETITS-DÉJEUNERS REPOS — 12 variantes
+// ============================================================
+const BREAKFASTS_REST: Meal[] = [
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 682, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Banane', quantity: '1 moyenne (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 582, items: [
+    { food: 'Pain complet grillé', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Oeufs brouillés', quantity: '2 oeufs (120g)', proteins: 15, carbs: 1, fats: 12, calories: 171 },
+    { food: 'Orange', quantity: '1 (180g)', proteins: 2, carbs: 18, fats: 0, calories: 72 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 646, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
+    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 644, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Mangue', quantity: '150g', proteins: 1, carbs: 22, fats: 0, calories: 96 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 520, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Framboises', quantity: '100g', proteins: 1, carbs: 12, fats: 0, calories: 52 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 585, items: [
+    { food: 'Muesli sans sucre', quantity: '70g', proteins: 9, carbs: 46, fats: 7, calories: 280 },
+    { food: 'Lait demi-écrémé', quantity: '250ml', proteins: 8, carbs: 12, fats: 5, calories: 128 },
+    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 606, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 12, fats: 0, calories: 48 },
+    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 599, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Oeufs à la coque', quantity: '2 oeufs (120g)', proteins: 15, carbs: 1, fats: 12, calories: 171 },
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 655, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Pomme', quantity: '1 (180g)', proteins: 0, carbs: 23, fats: 0, calories: 93 },
+    { food: 'Beurre de cacahuète naturel', quantity: '20g', proteins: 5, carbs: 4, fats: 10, calories: 118 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 678, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
+    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 532, items: [
+    { food: 'Pain complet', quantity: '3 tranches (90g)', proteins: 9, carbs: 48, fats: 3, calories: 252 },
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
+    { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '07h00', name: 'Petit-déjeuner', totalCalories: 682, items: [
+    { food: 'Flocons d\'avoine', quantity: '80g', proteins: 11, carbs: 48, fats: 6, calories: 311 },
+    { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+];
+
+// ============================================================
+// DÉJEUNERS REPOS — 12 variantes
+// ============================================================
+const LUNCHES_REST: Meal[] = [
+  { time: '12h30', name: 'Déjeuner', totalCalories: 569, items: [
+    { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 2, calories: 130 },
+    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 533, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 137 },
+    { food: 'Pâtes complètes cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
+    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 549, items: [
+    { food: 'Escalope de dinde', quantity: '130g', proteins: 29, carbs: 0, fats: 3, calories: 138 },
+    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 46, fats: 4, calories: 248 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 586, items: [
+    { food: 'Saumon grillé', quantity: '120g', proteins: 24, carbs: 0, fats: 13, calories: 205 },
+    { food: 'Riz basmati cuit', quantity: '220g', proteins: 4, carbs: 57, fats: 0, calories: 246 },
+    { food: 'Courgette sautée', quantity: '150g', proteins: 2, carbs: 6, fats: 0, calories: 27 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 498, items: [
+    { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 2, calories: 130 },
+    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 534, items: [
+    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
+    { food: 'Riz complet cuit', quantity: '230g', proteins: 5, carbs: 50, fats: 2, calories: 237 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 530, items: [
+    { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 2, calories: 130 },
+    { food: 'Pâtes complètes cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
+    { food: 'Champignons sautés', quantity: '100g', proteins: 3, carbs: 4, fats: 0, calories: 22 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 519, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 137 },
+    { food: 'Riz basmati cuit', quantity: '230g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Concombre', quantity: '100g', proteins: 1, carbs: 3, fats: 0, calories: 16 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
+    { food: 'Escalope de dinde', quantity: '130g', proteins: 29, carbs: 0, fats: 3, calories: 138 },
+    { food: 'Riz basmati cuit', quantity: '230g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 580, items: [
+    { food: 'Saumon grillé', quantity: '120g', proteins: 24, carbs: 0, fats: 13, calories: 205 },
+    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 46, fats: 4, calories: 248 },
+    { food: 'Épinards sautés', quantity: '100g', proteins: 3, carbs: 3, fats: 1, calories: 37 },
+    { food: 'Huile d\'olive', quantity: '10ml', proteins: 0, carbs: 0, fats: 9, calories: 90 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 520, items: [
+    { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 2, calories: 130 },
+    { food: 'Riz complet cuit', quantity: '230g', proteins: 5, carbs: 50, fats: 2, calories: 237 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  { time: '12h30', name: 'Déjeuner', totalCalories: 512, items: [
+    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
+    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
+    { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+];
+
+// ============================================================
+// COLLATIONS REPOS — 12 variantes
+// ============================================================
+const SNACKS_REST: Meal[] = [
+  { time: '16h00', name: 'Collation', totalCalories: 377, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Flocons d\'avoine', quantity: '50g', proteins: 7, carbs: 30, fats: 4, calories: 194 },
+    { food: 'Myrtilles', quantity: '80g', proteins: 1, carbs: 11, fats: 0, calories: 46 },
+    { food: 'Noix', quantity: '10g', proteins: 1, carbs: 2, fats: 7, calories: 65 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 284, items: [
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 272, items: [
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Flocons d\'avoine', quantity: '40g', proteins: 5, carbs: 24, fats: 3, calories: 155 },
+    { food: 'Fraises', quantity: '100g', proteins: 1, carbs: 8, fats: 0, calories: 32 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 271, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 263, items: [
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
+    { food: 'Noix de cajou', quantity: '20g', proteins: 3, carbs: 5, fats: 9, calories: 116 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 359, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Flocons d\'avoine', quantity: '50g', proteins: 7, carbs: 30, fats: 4, calories: 194 },
+    { food: 'Pomme', quantity: '1 (180g)', proteins: 0, carbs: 23, fats: 0, calories: 93 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 279, items: [
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 282, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
+    { food: 'Framboises', quantity: '80g', proteins: 1, carbs: 10, fats: 0, calories: 42 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 278, items: [
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 316, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Flocons d\'avoine', quantity: '40g', proteins: 5, carbs: 24, fats: 3, calories: 155 },
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 284, items: [
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
+    { food: 'Miel', quantity: '10g', proteins: 0, carbs: 8, fats: 0, calories: 31 },
+  ]},
+  { time: '16h00', name: 'Collation', totalCalories: 362, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Flocons d\'avoine', quantity: '50g', proteins: 7, carbs: 30, fats: 4, calories: 194 },
+    { food: 'Mangue', quantity: '150g', proteins: 1, carbs: 22, fats: 0, calories: 96 },
+  ]},
+];
+
+// ============================================================
+// DÎNERS REPOS — 12 variantes
 // ============================================================
 const DINNERS_REST: Meal[] = [
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Brocolis vapeur', quantity: '200g', proteins: 5, carbs: 14, fats: 0, calories: 68 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 909, items: [
+    { food: 'Saumon au four', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Patate douce cuite', quantity: '300g', proteins: 4, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Avocat', quantity: '50g', proteins: 1, carbs: 2, fats: 8, calories: 80 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Saumon grillé', quantity: '180g', proteins: 36, carbs: 0, fats: 22, calories: 354 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 783, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
+    { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Blanc de dinde', quantity: '180g', proteins: 50, carbs: 0, fats: 4, calories: 230 },
-    { food: 'Pâtes complètes cuites', quantity: '200g', proteins: 8, carbs: 46, fats: 2, calories: 234 },
-    { food: 'Sauce tomate maison', quantity: '100g', proteins: 2, carbs: 8, fats: 1, calories: 49 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 778, items: [
+    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
+    { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
+    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Cabillaud au four', quantity: '220g', proteins: 46, carbs: 0, fats: 3, calories: 204 },
-    { food: 'Riz complet cuit', quantity: '200g', proteins: 5, carbs: 42, fats: 2, calories: 200 },
-    { food: 'Ratatouille', quantity: '200g', proteins: 3, carbs: 12, fats: 2, calories: 76 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 784, items: [
+    { food: 'Escalope de dinde', quantity: '140g', proteins: 31, carbs: 0, fats: 3, calories: 149 },
+    { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
+    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Steak haché 5% MG', quantity: '180g', proteins: 41, carbs: 0, fats: 9, calories: 247 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Haricots verts', quantity: '150g', proteins: 3, carbs: 6, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 840, items: [
+    { food: 'Saumon au four', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Riz complet cuit', quantity: '270g', proteins: 6, carbs: 59, fats: 2, calories: 279 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Poulet au citron + thym', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Quinoa cuit', quantity: '200g', proteins: 8, carbs: 38, fats: 4, calories: 222 },
-    { food: 'Poivrons rôtis', quantity: '150g', proteins: 2, carbs: 9, fats: 0, calories: 44 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 738, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '140g', proteins: 33, carbs: 0, fats: 2, calories: 148 },
+    { food: 'Patate douce cuite', quantity: '280g', proteins: 4, carbs: 56, fats: 0, calories: 241 },
+    { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Thon au naturel', quantity: '200g', proteins: 46, carbs: 0, fats: 2, calories: 202 },
-    { food: 'Lentilles vertes cuites', quantity: '200g', proteins: 18, carbs: 40, fats: 1, calories: 241 },
-    { food: 'Salade de roquette', quantity: '100g', proteins: 2, carbs: 3, fats: 0, calories: 25 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 809, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
+    { food: 'Poivrons grillés', quantity: '200g', proteins: 3, carbs: 13, fats: 0, calories: 64 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 49, carbs: 0, fats: 5, calories: 243 },
-    { food: 'Boulgour cuit', quantity: '200g', proteins: 6, carbs: 44, fats: 1, calories: 210 },
-    { food: 'Champignons sautés', quantity: '150g', proteins: 3, carbs: 4, fats: 0, calories: 32 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 756, items: [
+    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
+    { food: 'Riz basmati cuit', quantity: '260g', proteins: 5, carbs: 68, fats: 0, calories: 291 },
+    { food: 'Champignons sautés', quantity: '150g', proteins: 5, carbs: 6, fats: 0, calories: 33 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Saumon en papillote', quantity: '180g', proteins: 36, carbs: 0, fats: 22, calories: 354 },
-    { food: 'Patate douce', quantity: '200g', proteins: 3, carbs: 40, fats: 0, calories: 172 },
-    { food: 'Brocolis vapeur', quantity: '150g', proteins: 4, carbs: 10, fats: 0, calories: 51 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 769, items: [
+    { food: 'Escalope de dinde', quantity: '140g', proteins: 31, carbs: 0, fats: 3, calories: 149 },
+    { food: 'Patate douce cuite', quantity: '300g', proteins: 4, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Blanc de dinde + sauce champignons', quantity: '180g + 100g', proteins: 52, carbs: 6, fats: 4, calories: 272 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Haricots verts', quantity: '150g', proteins: 3, carbs: 6, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 818, items: [
+    { food: 'Saumon au four', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Pâtes complètes cuites', quantity: '240g', proteins: 9, carbs: 60, fats: 2, calories: 294 },
+    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Cabillaud + sauce vierge', quantity: '220g + 50g', proteins: 48, carbs: 5, fats: 4, calories: 248 },
-    { food: 'Patate douce rôtie', quantity: '250g', proteins: 4, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Salade de roquette', quantity: '100g', proteins: 2, carbs: 3, fats: 0, calories: 25 },
-    { food: 'Huile d\'olive', quantity: '15g', proteins: 0, carbs: 0, fats: 14, calories: 132 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 758, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '140g', proteins: 33, carbs: 0, fats: 2, calories: 148 },
+    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
+    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner', totalCalories: 700, items: [
-    { food: 'Bœuf sauté aux légumes', quantity: '180g bœuf + 200g légumes', proteins: 44, carbs: 12, fats: 13, calories: 341 },
-    { food: 'Riz basmati cuit', quantity: '200g', proteins: 5, carbs: 44, fats: 1, calories: 204 },
-    { food: 'Huile de sésame', quantity: '10g', proteins: 0, carbs: 0, fats: 10, calories: 88 },
-    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
+  { time: '19h30', name: 'Dîner', totalCalories: 801, items: [
+    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+    { food: 'Patate douce cuite', quantity: '280g', proteins: 4, carbs: 56, fats: 0, calories: 241 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Avocat', quantity: '50g', proteins: 1, carbs: 2, fats: 8, calories: 80 },
   ]},
 ];
 
-// ============================================================
-// AVANT DE DORMIR REPOS — mêmes que training (casein = casein)
-// ============================================================
 const BEFORE_SLEEP_REST = BEFORE_SLEEP;
-
-// ============================================================
-// GÉNÉRATION DU PLAN HEBDOMADAIRE
-// ============================================================
 
 const DAY_NAMES_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 

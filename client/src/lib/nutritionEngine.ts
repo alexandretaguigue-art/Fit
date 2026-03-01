@@ -15,7 +15,7 @@ export interface FoodEntry {
   foodId: string;
   foodName: string;
   quantity: number;
-  meal: 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'before_sleep';
+  meal: 'breakfast' | 'morning_snack' | 'lunch' | 'snack' | 'dinner';
   proteins: number;
   carbs: number;
   fats: number;
@@ -527,57 +527,68 @@ const DINNERS_TRAINING: Meal[] = [
 ];
 
 // ============================================================
-// AVANT DE DORMIR — 12 variantes
+// COLLATION MATINALE 10h30 — 12 variantes (anti-hypoglycémie)
+// Objectif : stabiliser la glycémie entre 9h30 et 12h30
+// Glucides à IG modéré + protéines + un peu de lipides
 // ============================================================
-const BEFORE_SLEEP: Meal[] = [
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 227, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 207, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 212, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
+const MORNING_SNACKS: Meal[] = [
+  { time: '10h30', name: 'Collation matinale', totalCalories: 245, items: [
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
     { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
   ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 200, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
-    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 4, fats: 7, calories: 87 },
+  { time: '10h30', name: 'Collation matinale', totalCalories: 238, items: [
+    { food: 'Pomme', quantity: '1 (180g)', proteins: 0, carbs: 23, fats: 0, calories: 93 },
+    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
   ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 218, items: [
-    { food: 'Fromage blanc 0%', quantity: '250g', proteins: 20, carbs: 10, fats: 0, calories: 120 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
+  { time: '10h30', name: 'Collation matinale', totalCalories: 252, items: [
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Amandes', quantity: '10g', proteins: 2, carbs: 2, fats: 5, calories: 58 },
   ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 218, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 212, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Noix de cajou', quantity: '20g', proteins: 3, carbs: 5, fats: 9, calories: 116 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 229, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
-    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 185, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Beurre de cacahuète naturel', quantity: '15g', proteins: 4, carbs: 3, fats: 8, calories: 89 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 207, items: [
-    { food: 'Skyr nature', quantity: '200g', proteins: 22, carbs: 8, fats: 0, calories: 120 },
-    { food: 'Noix de cajou', quantity: '15g', proteins: 2, carbs: 4, fats: 7, calories: 87 },
-  ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 198, items: [
-    { food: 'Fromage blanc 0%', quantity: '200g', proteins: 16, carbs: 8, fats: 0, calories: 96 },
-    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  { time: '10h30', name: 'Collation matinale', totalCalories: 231, items: [
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
+    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
     { food: 'Miel', quantity: '5g', proteins: 0, carbs: 4, fats: 0, calories: 15 },
   ]},
-  { time: '22h00', name: 'Avant de dormir', totalCalories: 244, items: [
-    { food: 'Yaourt grec 0%', quantity: '200g', proteins: 20, carbs: 8, fats: 0, calories: 113 },
-    { food: 'Noix', quantity: '20g', proteins: 3, carbs: 3, fats: 13, calories: 131 },
+  { time: '10h30', name: 'Collation matinale', totalCalories: 243, items: [
+    { food: 'Yaourt grec 0%', quantity: '150g', proteins: 15, carbs: 6, fats: 0, calories: 85 },
+    { food: 'Myrtilles', quantity: '100g', proteins: 1, carbs: 14, fats: 0, calories: 57 },
+    { food: 'Noix', quantity: '15g', proteins: 2, carbs: 2, fats: 10, calories: 98 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 255, items: [
+    { food: 'Banane', quantity: '1 (120g)', proteins: 1, carbs: 27, fats: 0, calories: 107 },
+    { food: 'Beurre de cacahuète naturel', quantity: '20g', proteins: 5, carbs: 4, fats: 10, calories: 118 },
+    { food: 'Fromage blanc 0%', quantity: '60g', proteins: 5, carbs: 2, fats: 0, calories: 29 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 228, items: [
+    { food: 'Kiwi', quantity: '2 (150g)', proteins: 2, carbs: 18, fats: 0, calories: 90 },
+    { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+    { food: 'Fromage blanc 0%', quantity: '50g', proteins: 4, carbs: 2, fats: 0, calories: 24 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 247, items: [
+    { food: 'Flocons d\'avoine', quantity: '40g', proteins: 5, carbs: 24, fats: 3, calories: 155 },
+    { food: 'Lait demi-écrémé', quantity: '150ml', proteins: 5, carbs: 7, fats: 3, calories: 77 },
+    { food: 'Miel', quantity: '5g', proteins: 0, carbs: 4, fats: 0, calories: 15 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 233, items: [
+    { food: 'Poire', quantity: '1 (180g)', proteins: 1, carbs: 22, fats: 0, calories: 89 },
+    { food: 'Noix de cajou', quantity: '25g', proteins: 4, carbs: 7, fats: 11, calories: 145 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 240, items: [
+    { food: 'Skyr nature', quantity: '150g', proteins: 17, carbs: 6, fats: 0, calories: 90 },
+    { food: 'Fraises', quantity: '150g', proteins: 1, carbs: 12, fats: 0, calories: 48 },
+    { food: 'Amandes', quantity: '15g', proteins: 3, carbs: 4, fats: 8, calories: 87 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 252, items: [
+    { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 6, carbs: 32, fats: 2, calories: 168 },
+    { food: 'Yaourt grec 0%', quantity: '100g', proteins: 10, carbs: 4, fats: 0, calories: 57 },
+    { food: 'Banane', quantity: '0.5 (60g)', proteins: 1, carbs: 14, fats: 0, calories: 53 },
+  ]},
+  { time: '10h30', name: 'Collation matinale', totalCalories: 237, items: [
+    { food: 'Fromage blanc 0%', quantity: '150g', proteins: 12, carbs: 6, fats: 0, calories: 72 },
+    { food: 'Mangue', quantity: '150g', proteins: 1, carbs: 22, fats: 0, calories: 96 },
+    { food: 'Noix', quantity: '10g', proteins: 2, carbs: 1, fats: 6, calories: 65 },
   ]},
 ];
 
@@ -905,7 +916,7 @@ const DINNERS_REST: Meal[] = [
   ]},
 ];
 
-const BEFORE_SLEEP_REST = BEFORE_SLEEP;
+const MORNING_SNACKS_REST = MORNING_SNACKS;
 
 const DAY_NAMES_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
@@ -952,18 +963,18 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
     if (isTrainingDay) {
       meals = [
         BREAKFASTS_TRAINING[dayShift],
+        MORNING_SNACKS[dayShift],
         LUNCHES_TRAINING[dayShift],
         SNACKS_TRAINING[dayShift],
         DINNERS_TRAINING[dayShift],
-        BEFORE_SLEEP[dayShift],
       ];
     } else {
       meals = [
         BREAKFASTS_REST[dayShift],
+        MORNING_SNACKS_REST[dayShift],
         LUNCHES_REST[dayShift],
         SNACKS_REST[dayShift],
         DINNERS_REST[dayShift],
-        BEFORE_SLEEP_REST[dayShift],
       ];
     }
 

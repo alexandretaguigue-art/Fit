@@ -15,21 +15,29 @@ import { toast } from 'sonner';
 
 const MEAL_LABELS: Record<string, string> = {
   breakfast: 'Petit-déjeuner',
+  morning_snack: 'Collation matinale',
   lunch: 'Déjeuner',
-  snack: 'Collation',
+  snack: 'Collation après-midi',
   dinner: 'Dîner',
-  before_sleep: 'Avant de dormir',
+};
+
+const MEAL_ICONS_MAP: Record<string, string> = {
+  breakfast: '🍳',
+  morning_snack: '🍌',
+  lunch: '🍽️',
+  snack: '🍊',
+  dinner: '🌙',
 };
 
 const MEAL_TIMES: Record<string, string> = {
   breakfast: '07h00',
+  morning_snack: '10h30',
   lunch: '12h30',
   snack: '16h00',
   dinner: '19h30',
-  before_sleep: '22h00',
 };
 
-const MEAL_ORDER = ['breakfast', 'lunch', 'snack', 'dinner', 'before_sleep'];
+const MEAL_ORDER = ['breakfast', 'morning_snack', 'lunch', 'snack', 'dinner'];
 
 type ActiveTab = 'journal' | 'plan' | 'recap' | 'courses';
 
@@ -68,6 +76,13 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
   const [selectedFood, setSelectedFood] = useState<typeof programData.foodItems[0] | null>(null);
   const [quantity, setQuantity] = useState(100);
   const [meal, setMeal] = useState<FoodEntry['meal']>(defaultMeal ?? 'lunch');
+  const MODAL_MEAL_LABELS: Record<string, string> = {
+    breakfast: 'Petit-déj.',
+    morning_snack: '10h30',
+    lunch: 'Déjeuner',
+    snack: 'Collation',
+    dinner: 'Dîner',
+  };
 
   const filtered = programData.foodItems.filter(f =>
     f.name.toLowerCase().includes(search.toLowerCase())
@@ -97,7 +112,7 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
               {MEAL_ORDER.map(m => (
                 <button key={m} onClick={() => setMeal(m as FoodEntry['meal'])} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
                   style={{ background: meal === m ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.08)', color: meal === m ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
-                  {MEAL_LABELS[m]}
+                  {MODAL_MEAL_LABELS[m] ?? MEAL_LABELS[m]}
                 </button>
               ))}
             </div>
@@ -235,7 +250,7 @@ function JournalTab() {
   // Valider un repas du plan (l'ajouter automatiquement au journal)
   const handleValidateMeal = (mealKey: string) => {
     const planMeal = dayPlan?.meals.find(m => {
-      const mealKeyMap: Record<string, string> = { 'Petit-déjeuner': 'breakfast', 'Déjeuner': 'lunch', 'Collation': 'snack', 'Dîner': 'dinner', 'Avant de dormir': 'before_sleep' };
+      const mealKeyMap: Record<string, string> = { 'Petit-déjeuner': 'breakfast', 'Collation matinale': 'morning_snack', 'Déjeuner': 'lunch', 'Collation pré-entraînement': 'snack', 'Dîner post-training': 'dinner', 'Dîner': 'dinner' };
       return mealKeyMap[m.name] === mealKey;
     });
     if (!planMeal) return;
@@ -276,6 +291,9 @@ function JournalTab() {
     acc[meal] = dayLog.entries.filter(e => e.meal === meal);
     return acc;
   }, {} as Record<string, FoodEntry[]>);
+
+  // Index du repas actuellement affiché (navigation cards)
+  const [activeMealIdx, setActiveMealIdx] = useState(0);
 
   const statusColors = { optimal: '#22c55e', surplus: '#eab308', deficit: '#3b82f6', protein_low: '#ef4444' };
 
@@ -329,122 +347,202 @@ function JournalTab() {
         </div>
       </div>
 
-      {/* Repas — avec validation du plan et compensation automatique */}
-      {MEAL_ORDER.map(meal => {
+      {/* CARDS REPAS NAVIGABLES */}
+      {(() => {
+        const meal = MEAL_ORDER[activeMealIdx];
         const entries = grouped[meal] ?? [];
         const mealCalories = entries.reduce((acc, e) => acc + e.calories, 0);
         const mealStatus = validatedMeals[meal];
         const adjustment = mealAdjustments[meal];
         const planMeal = dayPlan?.meals.find(m => {
-          const mealKeyMap: Record<string, string> = { 'Petit-déjeuner': 'breakfast', 'Déjeuner': 'lunch', 'Collation': 'snack', 'Dîner': 'dinner', 'Avant de dormir': 'before_sleep' };
+          const mealKeyMap: Record<string, string> = {
+            'Petit-déjeuner': 'breakfast',
+            'Collation matinale': 'morning_snack',
+            'Déjeuner': 'lunch',
+            'Collation pré-entraînement': 'snack',
+            'Dîner post-training': 'dinner',
+            'Dîner': 'dinner',
+          };
           return mealKeyMap[m.name] === meal;
         });
 
+        const borderColor = mealStatus === 'validated' ? 'rgba(34,197,94,0.35)'
+          : mealStatus === 'modified' ? 'rgba(255,107,53,0.35)'
+          : 'rgba(255,255,255,0.1)';
+
         return (
-          <div key={meal} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: mealStatus === 'validated' ? '1px solid rgba(34,197,94,0.25)' : mealStatus === 'modified' ? '1px solid rgba(255,107,53,0.25)' : '1px solid rgba(255,255,255,0.08)' }}>
-            {/* Header repas */}
-            <div className="flex items-center justify-between p-3.5">
-              <div>
-                <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{MEAL_TIMES[meal]}</span>
-                <h4 className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{MEAL_LABELS[meal]}</h4>
+          <div>
+            {/* Sélecteur de repas — pastilles navigables */}
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={() => setActiveMealIdx(i => Math.max(0, i - 1))}
+                disabled={activeMealIdx === 0}
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                style={{ background: activeMealIdx === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)' }}
+              >
+                <ChevronLeft size={16} className={activeMealIdx === 0 ? 'text-white/15' : 'text-white/60'} />
+              </button>
+
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {MEAL_ORDER.map((m, idx) => {
+                  const st = validatedMeals[m];
+                  const isActive = idx === activeMealIdx;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setActiveMealIdx(idx)}
+                      className="flex-shrink-0 flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl transition-all"
+                      style={{
+                        background: isActive ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.05)',
+                        border: isActive ? 'none' : st === 'validated' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                      }}
+                    >
+                      <span className="text-sm">{MEAL_ICONS_MAP[m]}</span>
+                      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: isActive ? 'white' : st === 'validated' ? '#22c55e' : 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', fontSize: '10px' }}>
+                        {MEAL_TIMES[m]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-2">
-                {mealStatus === 'validated' && <span className="text-green-400 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>✓ Validé</span>}
-                {mealStatus === 'modified' && <span className="text-orange-400 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>✎ Modifié</span>}
-                <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{mealCalories > 0 ? `${Math.round(mealCalories)} kcal` : '—'}</span>
+
+              <button
+                onClick={() => setActiveMealIdx(i => Math.min(MEAL_ORDER.length - 1, i + 1))}
+                disabled={activeMealIdx === MEAL_ORDER.length - 1}
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+                style={{ background: activeMealIdx === MEAL_ORDER.length - 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)' }}
+              >
+                <ChevronRight size={16} className={activeMealIdx === MEAL_ORDER.length - 1 ? 'text-white/15' : 'text-white/60'} />
+              </button>
+            </div>
+
+            {/* Card du repas actif */}
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${borderColor}` }}>
+              {/* Header */}
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ background: mealStatus === 'validated' ? 'rgba(34,197,94,0.12)' : 'rgba(255,107,53,0.1)' }}>
+                    {MEAL_ICONS_MAP[meal]}
+                  </div>
+                  <div>
+                    <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{MEAL_TIMES[meal]}</p>
+                    <h4 className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{MEAL_LABELS[meal]}</h4>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {mealStatus === 'validated' && <span className="text-green-400 text-xs font-bold block" style={{ fontFamily: 'Inter, sans-serif' }}>✓ Validé</span>}
+                  {mealStatus === 'modified' && <span className="text-orange-400 text-xs font-bold block" style={{ fontFamily: 'Inter, sans-serif' }}>✎ Modifié</span>}
+                  <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>
+                    {mealCalories > 0 ? `${Math.round(mealCalories)} kcal` : planMeal ? `${planMeal.totalCalories} kcal` : '—'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Plan suggéré */}
+              {!mealStatus && planMeal && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="p-4" style={{ background: 'rgba(255,107,53,0.04)' }}>
+                    <p className="text-orange-400/80 text-xs font-bold mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>PLAN SUGGÉRÉ</p>
+                    <div className="space-y-2 mb-4">
+                      {planMeal.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between py-1.5 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <span className="text-white/75 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
+                          <div className="text-right">
+                            <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleValidateMeal(meal)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                        style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontFamily: 'Inter, sans-serif' }}>
+                        <CheckCircle size={13} /> J'ai mangé ça
+                      </button>
+                      <button onClick={() => handleInvalidateMeal(meal)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                        style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.25)', fontFamily: 'Inter, sans-serif' }}>
+                        <XCircle size={13} /> Autre chose
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ajustement automatique */}
+              {!mealStatus && adjustment && (
+                <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(59,130,246,0.04)' }}>
+                  <p className="text-blue-400/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    🔄 Budget ajusté : <strong>{adjustment.adjustedCalories} kcal</strong> · P:{adjustment.adjustedProteins}g G:{adjustment.adjustedCarbs}g L:{adjustment.adjustedFats}g
+                  </p>
+                  <p className="text-blue-300/50 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{adjustment.message}</p>
+                </div>
+              )}
+
+              {/* Entrées saisies */}
+              {entries.length > 0 && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {entries.map(entry => (
+                    <div key={entry.id} className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      {editingEntry === entry.id ? (
+                        <>
+                          <div className="flex-1 flex items-center gap-2">
+                            <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                            <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))} className="w-16 text-center text-white text-xs rounded-lg py-1.5"
+                              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255, 107, 53, 0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
+                            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>g</span>
+                          </div>
+                          <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34, 197, 94, 0.15)' }}>
+                            <Check size={12} className="text-green-400" />
+                          </button>
+                          <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <span className="text-white/40 text-xs">✕</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-white/80 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.quantity}g</span>
+                            </div>
+                            <div className="flex gap-2 mt-0.5">
+                              <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{Math.round(entry.calories)} kcal</span>
+                              <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
+                            </div>
+                          </div>
+                          <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <Edit3 size={11} className="text-white/40" />
+                          </button>
+                          <button onClick={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239, 68, 68, 0.08)' }}>
+                            <Trash2 size={11} className="text-red-400/60" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bouton ajouter manuellement */}
+              <div className="px-4 py-3" style={{ borderTop: entries.length > 0 ? '1px solid rgba(255,255,255,0.04)' : undefined }}>
+                <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }} className="flex items-center gap-1.5 text-white/35 text-xs hover:text-white/60 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  <Plus size={12} /> Ajouter manuellement
+                </button>
               </div>
             </div>
 
-            {/* Plan suggéré (si pas encore validé) */}
-            {!mealStatus && planMeal && (
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="px-3.5 py-2" style={{ background: 'rgba(255,107,53,0.04)' }}>
-                  <p className="text-orange-400/70 text-xs font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Plan suggéré · {planMeal.totalCalories} kcal</p>
-                  {planMeal.items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between py-0.5">
-                      <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>• {item.food}</span>
-                      <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                    </div>
-                  ))}
-                  {/* Boutons validation */}
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => handleValidateMeal(meal)} className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                      style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)', fontFamily: 'Inter, sans-serif' }}>
-                      <CheckCircle size={12} /> J'ai mangé ça ✓
-                    </button>
-                    <button onClick={() => handleInvalidateMeal(meal)} className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                      style={{ background: 'rgba(255,107,53,0.08)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.2)', fontFamily: 'Inter, sans-serif' }}>
-                      <XCircle size={12} /> J'ai mangé autre chose
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Ajustement automatique (repas restants) */}
-            {!mealStatus && adjustment && (
-              <div className="px-3.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(59,130,246,0.04)' }}>
-                <p className="text-blue-400/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  🔄 Budget ajusté : <strong>{adjustment.adjustedCalories} kcal</strong> · P:{adjustment.adjustedProteins}g G:{adjustment.adjustedCarbs}g L:{adjustment.adjustedFats}g
-                </p>
-                <p className="text-blue-300/50 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{adjustment.message}</p>
-              </div>
-            )}
-
-            {/* Entrées saisies */}
-            {entries.length > 0 && (
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                {entries.map(entry => (
-                  <div key={entry.id} className="flex items-center gap-2 px-3.5 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    {editingEntry === entry.id ? (
-                      <>
-                        <div className="flex-1 flex items-center gap-2">
-                          <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                          <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))} className="w-16 text-center text-white text-xs rounded-lg py-1.5"
-                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255, 107, 53, 0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
-                          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>g</span>
-                        </div>
-                        <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34, 197, 94, 0.15)' }}>
-                          <Check size={12} className="text-green-400" />
-                        </button>
-                        <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <span className="text-white/40 text-xs">✕</span>
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-white/80 text-xs font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.quantity}g</span>
-                          </div>
-                          <div className="flex gap-2 mt-0.5">
-                            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{Math.round(entry.calories)} kcal</span>
-                            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
-                          </div>
-                        </div>
-                        <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <Edit3 size={11} className="text-white/40" />
-                        </button>
-                        <button onClick={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239, 68, 68, 0.08)' }}>
-                          <Trash2 size={11} className="text-red-400/60" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Bouton ajouter manuellement */}
-            <div className="px-3.5 py-2.5" style={{ borderTop: entries.length > 0 ? '1px solid rgba(255,255,255,0.04)' : undefined }}>
-              <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }} className="flex items-center gap-1.5 text-white/30 text-xs hover:text-white/60 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-                <Plus size={12} /> Ajouter manuellement
-              </button>
+            {/* Indicateur de progression (points) */}
+            <div className="flex justify-center gap-1.5 mt-3">
+              {MEAL_ORDER.map((_, idx) => (
+                <button key={idx} onClick={() => setActiveMealIdx(idx)}
+                  className="rounded-full transition-all duration-200"
+                  style={{ width: idx === activeMealIdx ? 20 : 6, height: 6, background: idx === activeMealIdx ? '#FF6B35' : 'rgba(255,255,255,0.15)' }} />
+              ))}
             </div>
           </div>
         );
-      })}
+      })()}
 
       {/* Bouton ajouter global */}
       <button onClick={() => { setAddModalMeal('lunch'); setShowAddModal(true); }} className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"

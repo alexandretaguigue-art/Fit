@@ -250,8 +250,13 @@ function JournalTab() {
   // Valider un repas du plan (l'ajouter automatiquement au journal)
   const handleValidateMeal = (mealKey: string) => {
     const planMeal = dayPlan?.meals.find(m => {
-      const mealKeyMap: Record<string, string> = { 'Petit-déjeuner': 'breakfast', 'Collation matinale': 'morning_snack', 'Déjeuner': 'lunch', 'Collation pré-entraînement': 'snack', 'Dîner post-training': 'dinner', 'Dîner': 'dinner' };
-      return mealKeyMap[m.name] === mealKey;
+      const name = m.name;
+      if (mealKey === 'breakfast') return name === 'Petit-déjeuner';
+      if (mealKey === 'morning_snack') return name === 'Collation matinale';
+      if (mealKey === 'lunch') return name === 'Déjeuner';
+      if (mealKey === 'snack') return name === 'Collation' || name.startsWith('Collation');
+      if (mealKey === 'dinner') return name === 'Dîner' || name.startsWith('Dîner');
+      return false;
     });
     if (!planMeal) return;
 
@@ -355,15 +360,14 @@ function JournalTab() {
         const mealStatus = validatedMeals[meal];
         const adjustment = mealAdjustments[meal];
         const planMeal = dayPlan?.meals.find(m => {
-          const mealKeyMap: Record<string, string> = {
-            'Petit-déjeuner': 'breakfast',
-            'Collation matinale': 'morning_snack',
-            'Déjeuner': 'lunch',
-            'Collation pré-entraînement': 'snack',
-            'Dîner post-training': 'dinner',
-            'Dîner': 'dinner',
-          };
-          return mealKeyMap[m.name] === meal;
+          // Normalisation : on mappe le nom du repas vers la clé interne
+          const name = m.name;
+          if (meal === 'breakfast') return name === 'Petit-déjeuner';
+          if (meal === 'morning_snack') return name === 'Collation matinale';
+          if (meal === 'lunch') return name === 'Déjeuner';
+          if (meal === 'snack') return name === 'Collation' || name === 'Collation pré-entraînement' || name.startsWith('Collation');
+          if (meal === 'dinner') return name === 'Dîner' || name === 'Dîner post-training' || name.startsWith('Dîner');
+          return false;
         });
 
         const borderColor = mealStatus === 'validated' ? 'rgba(34,197,94,0.35)'

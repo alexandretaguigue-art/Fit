@@ -21,6 +21,7 @@ import {
   computeWeeklyCarryover,
   generateWeeklyMealPlan,
   generateShoppingList,
+  toLocalDateKey,
   type DayLog,
   type FoodEntry,
   type WeeklyMealPlan,
@@ -331,7 +332,7 @@ export function useFitnessTracker() {
   // ============================================================
 
   const getTodayKey = useCallback((): string => {
-    return new Date().toISOString().split('T')[0];
+    return toLocalDateKey(new Date());
   }, []);
 
   const getDayLog = useCallback((dateKey: string): DayLog => {
@@ -412,7 +413,7 @@ export function useFitnessTracker() {
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const key = d.toISOString().split('T')[0];
+      const key = toLocalDateKey(d);
       if (data.nutritionLogs[key]) {
         logs.push(data.nutritionLogs[key]);
       }
@@ -599,7 +600,7 @@ export function useFitnessTracker() {
 
   const updateDraftExercise = useCallback((sessionId: string, exerciseId: string, sets: WorkoutDraftSet[]) => {
     setData(prev => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       const existing = prev.workoutDraft;
       // Si le draft est d'une autre séance ou d'un autre jour, on repart de zéro
       if (!existing || existing.sessionId !== sessionId || existing.date !== today) {
@@ -636,7 +637,7 @@ export function useFitnessTracker() {
   }, []);
 
   const getWorkoutDraft = useCallback((sessionId: string): WorkoutDraft | null => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateKey(new Date());
     const draft = data.workoutDraft;
     if (draft && draft.sessionId === sessionId && draft.date === today) return draft;
     return null;

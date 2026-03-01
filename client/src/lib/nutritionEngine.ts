@@ -10,6 +10,14 @@
 // 12 semaines de rotation — jamais les mêmes plats 2 semaines de suite
 // ============================================================
 
+// Utilitaire : date locale YYYY-MM-DD (évite les décalages UTC)
+export function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export interface FoodEntry {
   id: string;
   foodId: string;
@@ -999,7 +1007,7 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
     };
 
     days.push({
-      date: date.toISOString().split('T')[0],
+      date: toLocalDateKey(date),
       dayName: DAY_NAMES_FR[dayOfWeek],
       isTrainingDay,
       sessionName: sessionName ?? undefined,
@@ -1009,7 +1017,7 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
   }
 
   return {
-    weekStartDate: weekStartMonday.toISOString().split('T')[0],
+    weekStartDate: toLocalDateKey(weekStartMonday),
     days,
     weeklyTotals,
   };

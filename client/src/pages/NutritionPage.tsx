@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData } from '../lib/programData';
-import { computeFoodMacros, MACRO_TARGETS, generateWeeklyMealPlan } from '../lib/nutritionEngine';
+import { computeFoodMacros, MACRO_TARGETS, generateWeeklyMealPlan, toLocalDateKey } from '../lib/nutritionEngine';
 import type { FoodEntry } from '../lib/nutritionEngine';
 import { toast } from 'sonner';
 
@@ -185,18 +185,23 @@ function JournalTab() {
   const dateKey = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + dateOffset);
-    return d.toISOString().split('T')[0];
+    return toLocalDateKey(d);
   }, [dateOffset]);
 
   const dayLog = getDayLog(dateKey);
   const balance = getDayBalance(dateKey);
 
-  // Plan du jour (repas suggérés)
+  // Plan du jour (repas suggérés) — calcul robuste basé sur la date locale
   const weekMonday = useMemo(() => {
-    const monday = getCurrentWeekMonday();
-    if (dateOffset < 0) monday.setDate(monday.getDate() + Math.floor(dateOffset / 7) * 7);
+    // Calculer le lundi de la semaine qui contient dateKey
+    const d = new Date(dateKey + 'T12:00:00');
+    const dow = d.getDay();
+    const daysBack = dow === 0 ? 6 : dow - 1;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - daysBack);
+    monday.setHours(0, 0, 0, 0);
     return monday;
-  }, [dateOffset, getCurrentWeekMonday]);
+  }, [dateKey]);
 
   const weekPlan = useMemo(() => getWeeklyMealPlan(weekMonday), [weekMonday, getWeeklyMealPlan]);
   const dayPlan = useMemo(() => weekPlan.days.find(d => d.date === dateKey), [weekPlan, dateKey]);
@@ -575,10 +580,10 @@ function PlanTab() {
   }, [weekOffset, getCurrentWeekMonday]);
 
   const plan = useMemo(() => getWeeklyMealPlan(weekMonday), [weekMonday, getWeeklyMealPlan]);
-  const weekStartKey = weekMonday.toISOString().split('T')[0];
+  const weekStartKey = toLocalDateKey(weekMonday);
   const summary = getWeeklyNutritionSummary(weekStartKey);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
 
   const weekLabel = weekOffset === 0 ? 'Cette semaine'
     : weekOffset === 1 ? 'Semaine prochaine'

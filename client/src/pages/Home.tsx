@@ -271,7 +271,7 @@ export default function Home() {
                 ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000
                 : null;
               const sessionDateKey = sessionDateMs
-                ? new Date(sessionDateMs).toISOString().split('T')[0]
+                ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
                 : null;
               const isCompleted = sessionDateKey
                 ? Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey))

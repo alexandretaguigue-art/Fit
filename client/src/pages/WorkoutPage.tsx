@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import ScoreRing from '../components/ScoreRing';
+import SessionTimeline from '../components/SessionTimeline';
 import type { SessionLog, WorkoutSession, Exercise, FootballDrill } from '../lib/programData';
 import { toast } from 'sonner';
 
@@ -1013,9 +1014,38 @@ export default function WorkoutPage() {
             </div>
           </div>
         </div>
-        {selectedSession.type === 'gym' && <GymSessionView session={selectedSession} />}
-        {selectedSession.type === 'football' && <FootballView session={selectedSession} />}
-        {(selectedSession.type === 'running' || selectedSession.type === 'cycling') && <CardioView session={selectedSession} />}
+        {selectedSession.type === 'gym' && (
+          <>
+            <GymSessionView session={selectedSession} />
+            <div className="px-4 pb-6">
+              <SessionTimeline session={selectedSession} domain="gym" />
+            </div>
+          </>
+        )}
+        {selectedSession.type === 'football' && (
+          <>
+            <FootballView session={selectedSession} />
+            <div className="px-4 pb-6">
+              <SessionTimeline session={selectedSession} domain="football" />
+            </div>
+          </>
+        )}
+        {(selectedSession.type === 'running') && (
+          <>
+            <CardioView session={selectedSession} />
+            <div className="px-4 pb-6">
+              <SessionTimeline session={selectedSession} domain="running" />
+            </div>
+          </>
+        )}
+        {(selectedSession.type === 'cycling') && (
+          <>
+            <CardioView session={selectedSession} />
+            <div className="px-4 pb-6">
+              <SessionTimeline session={selectedSession} domain="cycling" />
+            </div>
+          </>
+        )}
         {selectedSession.type === 'rest' && (
           <div className="p-4">
             <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>

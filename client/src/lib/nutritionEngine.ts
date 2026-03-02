@@ -363,7 +363,7 @@ const LUNCHES_TRAINING: Meal[] = [
   { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
     { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
     { food: 'Pâtes complètes cuites', quantity: '230g', proteins: 8, carbs: 57, fats: 2, calories: 281 },
-    { food: 'Champignons sautés', quantity: '100g', proteins: 3, carbs: 4, fats: 0, calories: 22 },
+    { food: 'Courgette sautée', quantity: '100g', proteins: 2, carbs: 4, fats: 0, calories: 18 },
     { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
   { time: '12h30', name: 'Déjeuner', totalCalories: 564, items: [
@@ -451,81 +451,93 @@ const SNACKS_TRAINING: Meal[] = [
 // DÎNERS TRAINING — 12 variantes
 // ============================================================
 const DINNERS_TRAINING: Meal[] = [
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 858, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 978, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
     { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
     { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 826, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 946, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
     { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
     { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 722, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 842, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
     { food: 'Pâtes complètes cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
     { food: 'Brocoli vapeur', quantity: '150g', proteins: 4, carbs: 7, fats: 0, calories: 51 },
     { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 794, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 914, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
     { food: 'Patate douce cuite', quantity: '300g', proteins: 4, carbs: 60, fats: 0, calories: 258 },
     { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 812, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 932, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
     { food: 'Riz complet cuit', quantity: '280g', proteins: 6, carbs: 61, fats: 2, calories: 289 },
     { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 815, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 935, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
     { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
+    { food: 'Poivrons grillsé', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 669, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 789, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Thon au naturel (boîte)', quantity: '160g', proteins: 37, carbs: 0, fats: 2, calories: 169 },
     { food: 'Pâtes complètes cuites', quantity: '270g', proteins: 10, carbs: 67, fats: 2, calories: 330 },
     { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 827, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 947, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
     { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
-    { food: 'Champignons sautés', quantity: '150g', proteins: 5, carbs: 6, fats: 0, calories: 33 },
+    { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 847, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 967, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
     { food: 'Patate douce cuite', quantity: '280g', proteins: 4, carbs: 56, fats: 0, calories: 241 },
     { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 684, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 804, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
     { food: 'Pâtes complètes cuites', quantity: '260g', proteins: 9, carbs: 65, fats: 2, calories: 318 },
     { food: 'Brocoli vapeur', quantity: '200g', proteins: 5, carbs: 9, fats: 0, calories: 68 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 842, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 962, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
     { food: 'Quinoa cuit', quantity: '250g', proteins: 10, carbs: 57, fats: 5, calories: 310 },
     { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 830, items: [
+  { time: '19h30', name: 'Dîner post-training', totalCalories: 950, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
     { food: 'Riz basmati cuit', quantity: '270g', proteins: 6, carbs: 70, fats: 0, calories: 303 },
     { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
@@ -730,7 +742,7 @@ const LUNCHES_REST: Meal[] = [
   { time: '12h30', name: 'Déjeuner', totalCalories: 530, items: [
     { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 2, calories: 130 },
     { food: 'Pâtes complètes cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
-    { food: 'Champignons sautés', quantity: '100g', proteins: 3, carbs: 4, fats: 0, calories: 22 },
+    { food: 'Poivrons grillés', quantity: '100g', proteins: 1, carbs: 7, fats: 0, calories: 32 },
     { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
   { time: '12h30', name: 'Déjeuner', totalCalories: 519, items: [
@@ -842,7 +854,7 @@ const DINNERS_REST: Meal[] = [
     { food: 'Épinards sautés', quantity: '150g', proteins: 4, carbs: 5, fats: 2, calories: 55 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
-    { food: 'Avocat', quantity: '50g', proteins: 1, carbs: 2, fats: 8, calories: 80 },
+    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 8, carbs: 4, fats: 0, calories: 48 },
   ]},
   { time: '19h30', name: 'Dîner', totalCalories: 783, items: [
     { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
@@ -889,7 +901,7 @@ const DINNERS_REST: Meal[] = [
   { time: '19h30', name: 'Dîner', totalCalories: 756, items: [
     { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
     { food: 'Riz basmati cuit', quantity: '260g', proteins: 5, carbs: 68, fats: 0, calories: 291 },
-    { food: 'Champignons sautés', quantity: '150g', proteins: 5, carbs: 6, fats: 0, calories: 33 },
+    { food: 'Courgette sautée', quantity: '150g', proteins: 2, carbs: 6, fats: 0, calories: 27 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
@@ -920,7 +932,7 @@ const DINNERS_REST: Meal[] = [
     { food: 'Haricots verts vapeur', quantity: '150g', proteins: 3, carbs: 8, fats: 0, calories: 45 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
     { food: 'Pain complet', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
-    { food: 'Avocat', quantity: '50g', proteins: 1, carbs: 2, fats: 8, calories: 80 },
+    { food: 'Yaourt grec 0%', quantity: '100g', proteins: 10, carbs: 4, fats: 0, calories: 57 },
   ]},
 ];
 

@@ -67,15 +67,49 @@ function MacroBar({ label, consumed, target, color }: {
 // ============================================================
 // COMPOSANT AJOUT D'ALIMENT
 // ============================================================
+// Clé localStorage pour les aliments personnalisés
+const CUSTOM_FOODS_KEY = 'fitpro_custom_foods';
+
+interface CustomFood {
+  id: string;
+  name: string;
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fats: number;
+}
+
+function getCustomFoods(): CustomFood[] {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_FOODS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveCustomFood(food: CustomFood) {
+  const foods = getCustomFoods();
+  if (!foods.find(f => f.id === food.id)) {
+    localStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify([...foods, food]));
+  }
+}
+
 function AddFoodModal({ onAdd, onClose, defaultMeal }: {
   onAdd: (entry: Omit<FoodEntry, 'id'>) => void;
   onClose: () => void;
   defaultMeal?: FoodEntry['meal'];
 }) {
+  const [tab, setTab] = useState<'search' | 'manual'>('search');
   const [search, setSearch] = useState('');
-  const [selectedFood, setSelectedFood] = useState<typeof programData.foodItems[0] | null>(null);
+  type AnyFood = typeof programData.foodItems[0] | { id: string; name: string; per100g: { proteins: number; carbs: number; fats: number; calories: number }; category: string; relevanceScore?: number; relevanceReason?: string; tips?: string };
+  const [selectedFood, setSelectedFood] = useState<AnyFood | null>(null);
   const [quantity, setQuantity] = useState(100);
   const [meal, setMeal] = useState<FoodEntry['meal']>(defaultMeal ?? 'lunch');
+  // Saisie manuelle
+  const [manualName, setManualName] = useState('');
+  const [manualCalories, setManualCalories] = useState('');
+  const [manualProteins, setManualProteins] = useState('');
+  const [manualCarbs, setManualCarbs] = useState('');
+  const [manualFats, setManualFats] = useState('');
+  const [saveCustom, setSaveCustom] = useState(true);
+  const [customFoods] = useState<CustomFood[]>(() => getCustomFoods());
+
   const MODAL_MEAL_LABELS: Record<string, string> = {
     breakfast: 'Petit-déj.',
     morning_snack: '10h30',
@@ -84,7 +118,17 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
     dinner: 'Dîner',
   };
 
-  const filtered = programData.foodItems.filter(f =>
+  const allFoods = [
+    ...programData.foodItems,
+    ...customFoods.map(cf => ({
+      id: cf.id,
+      name: cf.name,
+      per100g: { proteins: cf.proteins, carbs: cf.carbs, fats: cf.fats, calories: cf.calories },
+      category: 'Mes aliments',
+    })),
+  ];
+
+  const filtered = allFoods.filter(f =>
     f.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -98,6 +142,27 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
     onClose();
   };
 
+  const handleManualAdd = () => {
+    const name = manualName.trim();
+    const kcal = parseFloat(manualCalories);
+    const prot = parseFloat(manualProteins) || 0;
+    const carb = parseFloat(manualCarbs) || 0;
+    const fat = parseFloat(manualFats) || 0;
+    if (!name || isNaN(kcal) || kcal <= 0) {
+      toast.error('Nom et calories obligatoires');
+      return;
+    }
+    const id = `custom_${Date.now()}`;
+    if (saveCustom) {
+      saveCustomFood({ id, name, calories: kcal, proteins: prot, carbs: carb, fats: fat });
+    }
+    onAdd({ foodId: id, foodName: name, quantity: 1, meal, proteins: prot, carbs: carb, fats: fat, calories: kcal });
+    toast.success(`${name} ajouté !`);
+    onClose();
+  };
+
+  const inputStyle = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif', color: 'white' };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
       <div className="flex-1 overflow-y-auto mt-16 mx-4 mb-4 rounded-2xl" style={{ background: '#1A1A22', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -106,6 +171,20 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
             <h3 className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>Ajouter un aliment</h3>
             <button onClick={onClose} className="text-white/50 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Fermer</button>
           </div>
+
+          {/* Onglets Recherche / Saisie manuelle */}
+          <div className="flex gap-2 mb-4 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <button onClick={() => setTab('search')} className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+              style={{ background: tab === 'search' ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'transparent', color: tab === 'search' ? 'white' : 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif' }}>
+              🔍 Rechercher
+            </button>
+            <button onClick={() => setTab('manual')} className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+              style={{ background: tab === 'manual' ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'transparent', color: tab === 'manual' ? 'white' : 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif' }}>
+              ✏️ Saisie manuelle
+            </button>
+          </div>
+
+          {/* Sélecteur de repas */}
           <div className="mb-4">
             <p className="text-white/50 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Repas</p>
             <div className="flex flex-wrap gap-2">
@@ -117,40 +196,97 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
               ))}
             </div>
           </div>
-          <div className="mb-3">
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un aliment..."
-              className="w-full text-white text-sm rounded-xl py-3 px-4"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif' }} autoFocus />
-          </div>
-          {!selectedFood && (
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {filtered.map(food => (
-                <button key={food.id} onClick={() => setSelectedFood(food)} className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span className="text-white text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{food.name}</span>
-                  <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{food.per100g.proteins}g P · {food.per100g.calories} kcal</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {selectedFood && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255, 107, 53, 0.08)', border: '1px solid rgba(255, 107, 53, 0.2)' }}>
-                <span className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{selectedFood.name}</span>
-                <button onClick={() => setSelectedFood(null)} className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Changer</button>
+
+          {/* ONGLET RECHERCHE */}
+          {tab === 'search' && (
+            <>
+              <div className="mb-3">
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un aliment..."
+                  className="w-full text-white text-sm rounded-xl py-3 px-4"
+                  style={inputStyle} autoFocus />
               </div>
+              {!selectedFood && (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {filtered.map(food => (
+                    <button key={food.id} onClick={() => setSelectedFood(food)} className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <span className="text-white text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{food.name}</span>
+                        {food.category === 'Mes aliments' && <span className="ml-2 text-orange-400 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>★ Perso</span>}
+                      </div>
+                      <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{food.per100g.proteins}g P · {food.per100g.calories} kcal</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedFood && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'rgba(255, 107, 53, 0.08)', border: '1px solid rgba(255, 107, 53, 0.2)' }}>
+                    <span className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{selectedFood.name}</span>
+                    <button onClick={() => setSelectedFood(null)} className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Changer</button>
+                  </div>
+                  <div>
+                    <p className="text-white/50 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Quantité (g)</p>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setQuantity(q => Math.max(10, q - 10))} className="w-10 h-10 rounded-xl text-white font-bold" style={{ background: 'rgba(255,255,255,0.08)' }}>−</button>
+                      <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="flex-1 text-center text-white font-bold text-lg rounded-xl py-2"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
+                      <button onClick={() => setQuantity(q => q + 10)} className="w-10 h-10 rounded-xl text-white font-bold" style={{ background: 'rgba(255,255,255,0.08)' }}>+</button>
+                    </div>
+                  </div>
+                  {preview && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {[{ label: 'Kcal', value: preview.calories, color: '#FF6B35' }, { label: 'Prot.', value: `${preview.proteins}g`, color: '#FF6B35' }, { label: 'Gluc.', value: `${preview.carbs}g`, color: '#3b82f6' }, { label: 'Lip.', value: `${preview.fats}g`, color: '#a855f7' }].map(({ label, value, color }) => (
+                        <div key={label} className="text-center p-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <div className="font-bold text-sm" style={{ color, fontFamily: 'Syne, sans-serif' }}>{value}</div>
+                          <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={handleAdd} className="w-full py-3 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)', fontFamily: 'Syne, sans-serif' }}>
+                    Ajouter au journal
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ONGLET SAISIE MANUELLE */}
+          {tab === 'manual' && (
+            <div className="space-y-3">
               <div>
-                <p className="text-white/50 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Quantité (g)</p>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setQuantity(q => Math.max(10, q - 10))} className="w-10 h-10 rounded-xl text-white font-bold" style={{ background: 'rgba(255,255,255,0.08)' }}>−</button>
-                  <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="flex-1 text-center text-white font-bold text-lg rounded-xl py-2"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
-                  <button onClick={() => setQuantity(q => q + 10)} className="w-10 h-10 rounded-xl text-white font-bold" style={{ background: 'rgba(255,255,255,0.08)' }}>+</button>
+                <p className="text-white/50 text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>Nom de l’aliment *</p>
+                <input type="text" value={manualName} onChange={e => setManualName(e.target.value)}
+                  placeholder="Ex: Pizza maison, Repas restaurant..."
+                  className="w-full text-white text-sm rounded-xl py-3 px-4" style={inputStyle} autoFocus />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-white/50 text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>Calories (kcal) *</p>
+                  <input type="number" value={manualCalories} onChange={e => setManualCalories(e.target.value)}
+                    placeholder="Ex: 450" className="w-full text-white text-sm rounded-xl py-3 px-4" style={inputStyle} min="0" />
+                </div>
+                <div>
+                  <p className="text-white/50 text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>Protéines (g)</p>
+                  <input type="number" value={manualProteins} onChange={e => setManualProteins(e.target.value)}
+                    placeholder="Ex: 30" className="w-full text-white text-sm rounded-xl py-3 px-4" style={inputStyle} min="0" />
+                </div>
+                <div>
+                  <p className="text-white/50 text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>Glucides (g)</p>
+                  <input type="number" value={manualCarbs} onChange={e => setManualCarbs(e.target.value)}
+                    placeholder="Ex: 50" className="w-full text-white text-sm rounded-xl py-3 px-4" style={inputStyle} min="0" />
+                </div>
+                <div>
+                  <p className="text-white/50 text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>Lipides (g)</p>
+                  <input type="number" value={manualFats} onChange={e => setManualFats(e.target.value)}
+                    placeholder="Ex: 15" className="w-full text-white text-sm rounded-xl py-3 px-4" style={inputStyle} min="0" />
                 </div>
               </div>
-              {preview && (
+              {/* Aperçu */}
+              {manualCalories && (
                 <div className="grid grid-cols-4 gap-2">
-                  {[{ label: 'Kcal', value: preview.calories, color: '#FF6B35' }, { label: 'Prot.', value: `${preview.proteins}g`, color: '#FF6B35' }, { label: 'Gluc.', value: `${preview.carbs}g`, color: '#3b82f6' }, { label: 'Lip.', value: `${preview.fats}g`, color: '#a855f7' }].map(({ label, value, color }) => (
+                  {[{ label: 'Kcal', value: manualCalories, color: '#FF6B35' }, { label: 'Prot.', value: `${manualProteins || 0}g`, color: '#FF6B35' }, { label: 'Gluc.', value: `${manualCarbs || 0}g`, color: '#3b82f6' }, { label: 'Lip.', value: `${manualFats || 0}g`, color: '#a855f7' }].map(({ label, value, color }) => (
                     <div key={label} className="text-center p-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
                       <div className="font-bold text-sm" style={{ color, fontFamily: 'Syne, sans-serif' }}>{value}</div>
                       <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</div>
@@ -158,7 +294,15 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
                   ))}
                 </div>
               )}
-              <button onClick={handleAdd} className="w-full py-3 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)', fontFamily: 'Syne, sans-serif' }}>
+              {/* Option enregistrer */}
+              <button onClick={() => setSaveCustom(s => !s)} className="flex items-center gap-2 py-2">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
+                  style={{ background: saveCustom ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.1)', border: saveCustom ? 'none' : '1px solid rgba(255,255,255,0.2)' }}>
+                  {saveCustom && <Check size={12} className="text-white" />}
+                </div>
+                <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Enregistrer dans mes aliments pour réutiliser</span>
+              </button>
+              <button onClick={handleManualAdd} className="w-full py-3 rounded-xl font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)', fontFamily: 'Syne, sans-serif' }}>
                 Ajouter au journal
               </button>
             </div>

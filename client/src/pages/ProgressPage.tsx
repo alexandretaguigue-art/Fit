@@ -37,6 +37,259 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 // ============================================================
+// NORMES RELATIVES PAR EXERCICE (ratio charge / poids de corps)
+// Source : Strength Level, Layne Norton, Jeff Nippard
+// Adapté pour 68kg, intermédiaire
+// Attention : les exercices de jambes (squat, presse) ont naturellement
+// des charges plus élevées que les exercices de bras — c'est normal.
+// ============================================================
+const EXERCISE_NORMS: Record<string, {
+  name: string;
+  group: string;
+  color: string;
+  // Ratio charge max / poids de corps pour un intermédiaire (68kg)
+  // Ex : squat à 1.2 = 68 × 1.2 = ~82 kg est un niveau intermédiaire
+  beginnerRatio: number;
+  intermediateRatio: number;
+  advancedRatio: number;
+  // Contexte : certains exercices sont naturellement plus lourds
+  context: string;
+}> = {
+  developpe_couche:       { name: 'Développé couché',    group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.25, context: 'Exercice de référence haut du corps' },
+  developpe_halteres:     { name: 'Dév. haltères',        group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.2, intermediateRatio: 0.35, advancedRatio: 0.5,  context: 'Par haltère — diviser par 2 pour comparer au DC' },
+  squat:                  { name: 'Squat',                 group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.75, intermediateRatio: 1.25, advancedRatio: 1.75, context: 'Naturellement plus lourd que les exos haut du corps' },
+  presse_cuisse:          { name: 'Presse cuisse',         group: 'Jambes',     color: '#22C55E', beginnerRatio: 1.5, intermediateRatio: 2.5, advancedRatio: 3.5,  context: 'Presse : charge élevée normale (levier mécanique)' },
+  souleve_de_terre:       { name: 'Soulevé de terre',     group: 'Postérieur', color: '#8B5CF6', beginnerRatio: 0.75, intermediateRatio: 1.4, advancedRatio: 2.0,  context: 'Exercice roi du postérieur de cuisse + dos' },
+  sdt_roumain:            { name: 'SDT roumain',           group: 'Ischio',     color: '#8B5CF6', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.3,  context: 'Ischio-jambiers — charge inférieure au SDT classique' },
+  fentes_marche:          { name: 'Fentes marchées',      group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.3, intermediateRatio: 0.6, advancedRatio: 0.9,  context: 'Par haltère — unilatéral, charge relative plus faible' },
+  hip_thrust:             { name: 'Hip thrust',            group: 'Fessiers',   color: '#EC4899', beginnerRatio: 0.8, intermediateRatio: 1.5, advancedRatio: 2.2,  context: 'Fessiers — charge naturellement élevée' },
+  tractions:              { name: 'Tractions',             group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.0, intermediateRatio: 0.1, advancedRatio: 0.3,  context: 'Lest ajouté au poids de corps (0 = poids de corps)' },
+  rowing_barre:           { name: 'Rowing barre',          group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.3,  context: 'Dos épais — comparable au DC' },
+  curl_barre:             { name: 'Curl barre',            group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.2, intermediateRatio: 0.35, advancedRatio: 0.5,  context: 'Biceps — charges faibles normales vs jambes' },
+  curl_incline:           { name: 'Curl incliné',         group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.3,  context: 'Par haltère — étirement maximal biceps' },
+  curl_marteau:           { name: 'Curl marteau',          group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.15, intermediateRatio: 0.25, advancedRatio: 0.4,  context: 'Brachial + biceps — souvent plus lourd que curl classique' },
+  dips:                   { name: 'Dips',                  group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.0, intermediateRatio: 0.15, advancedRatio: 0.4,  context: 'Lest ajouté au poids de corps' },
+  extension_triceps_poulie: { name: 'Extension triceps',  group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.35, context: 'Poulie haute — isolation triceps' },
+  face_pull:              { name: 'Face pull',             group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.35, context: 'Deltoïdes postérieurs — charge légère normale' },
+  elevation_laterale:     { name: 'Élév. latérales',       group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.05, intermediateRatio: 0.1, advancedRatio: 0.18, context: 'Deltoïdes latéraux — toujours léger, c’est normal' },
+  leg_extension:          { name: 'Leg extension',         group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.4, intermediateRatio: 0.7, advancedRatio: 1.0,  context: 'Isolation quadriceps' },
+  leg_curl:               { name: 'Leg curl',              group: 'Ischio',     color: '#8B5CF6', beginnerRatio: 0.3, intermediateRatio: 0.5, advancedRatio: 0.75, context: 'Isolation ischio-jambiers' },
+  mollets:                { name: 'Mollets',               group: 'Mollets',    color: '#06B6D4', beginnerRatio: 0.8, intermediateRatio: 1.5, advancedRatio: 2.5,  context: 'Mollets — charge élevée normale (muscle endurance)' },
+};
+
+function getStrengthLevel(exerciseId: string, maxWeight: number, bodyWeight = 68): {
+  level: 'debutant' | 'intermediaire' | 'avance' | 'elite';
+  label: string;
+  color: string;
+  ratio: number;
+  nextTarget: number;
+  gap: number;
+} {
+  const norm = EXERCISE_NORMS[exerciseId];
+  if (!norm) return { level: 'intermediaire', label: 'Intermédiaire', color: '#3b82f6', ratio: 0, nextTarget: 0, gap: 0 };
+  const ratio = maxWeight / bodyWeight;
+  if (ratio < norm.beginnerRatio) {
+    const nextTarget = Math.round(norm.beginnerRatio * bodyWeight);
+    return { level: 'debutant', label: 'Débutant', color: '#ef4444', ratio, nextTarget, gap: nextTarget - maxWeight };
+  } else if (ratio < norm.intermediateRatio) {
+    const nextTarget = Math.round(norm.intermediateRatio * bodyWeight);
+    return { level: 'intermediaire', label: 'Intermédiaire', color: '#f59e0b', ratio, nextTarget, gap: nextTarget - maxWeight };
+  } else if (ratio < norm.advancedRatio) {
+    const nextTarget = Math.round(norm.advancedRatio * bodyWeight);
+    return { level: 'avance', label: 'Avancé', color: '#22c55e', ratio, nextTarget, gap: nextTarget - maxWeight };
+  } else {
+    return { level: 'elite', label: 'Élite', color: '#a855f7', ratio, nextTarget: 0, gap: 0 };
+  }
+}
+
+function ExercisesTab({ getExerciseProgress, totalSessions }: {
+  getExerciseProgress: (id: string) => Array<{ maxWeight: number; totalVolume: number; date: string }> | null;
+  totalSessions: number;
+}) {
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+
+  const EXERCISE_LIST = Object.entries(EXERCISE_NORMS).map(([id, norm]) => ({ id, ...norm }));
+  const GROUPS = ['all', ...Array.from(new Set(EXERCISE_LIST.map(e => e.group)))];
+
+  const exercisesWithData = EXERCISE_LIST.map(ex => {
+    const progress = getExerciseProgress(ex.id);
+    if (!progress || progress.length === 0) return null;
+    const lastWeight = progress[progress.length - 1].maxWeight;
+    const firstWeight = progress[0].maxWeight;
+    const strengthInfo = getStrengthLevel(ex.id, lastWeight);
+    return { ...ex, progress, lastWeight, firstWeight, strengthInfo };
+  }).filter(Boolean) as Array<{
+    id: string; name: string; group: string; color: string; context: string;
+    progress: Array<{ maxWeight: number; totalVolume: number; date: string }>;
+    lastWeight: number; firstWeight: number;
+    strengthInfo: ReturnType<typeof getStrengthLevel>;
+  }>;
+
+  // Analyse globale : points forts et faibles
+  const strengths = exercisesWithData
+    .filter(e => e.strengthInfo.level === 'avance' || e.strengthInfo.level === 'elite')
+    .sort((a, b) => b.strengthInfo.ratio - a.strengthInfo.ratio);
+  const weaknesses = exercisesWithData
+    .filter(e => e.strengthInfo.level === 'debutant')
+    .sort((a, b) => a.strengthInfo.ratio - b.strengthInfo.ratio);
+
+  const filtered = selectedGroup === 'all' ? exercisesWithData : exercisesWithData.filter(e => e.group === selectedGroup);
+
+  if (totalSessions === 0) {
+    return (
+      <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+        <Zap size={32} className="text-white/20 mx-auto mb-3" />
+        <p className="text-white/40 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Les graphiques de charges apparaîtront après tes premières séances</p>
+        <p className="text-white/25 text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>Enregistre tes charges dans chaque séance pour voir ta progression</p>
+      </div>
+    );
+  }
+
+  if (exercisesWithData.length === 0) {
+    return (
+      <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+        <Zap size={32} className="text-white/20 mx-auto mb-3" />
+        <p className="text-white/40 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Aucune donnée de charge enregistrée</p>
+        <p className="text-white/25 text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>Enregistre tes charges dans chaque séance pour voir ta progression</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Analyse globale points forts / faibles */}
+      {(strengths.length > 0 || weaknesses.length > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {strengths.length > 0 && (
+            <div className="p-3 rounded-2xl" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
+              <p className="text-green-400 text-xs font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>💪 POINTS FORTS</p>
+              {strengths.slice(0, 3).map(e => (
+                <div key={e.id} className="mb-1.5">
+                  <p className="text-white/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{e.name}</p>
+                  <p className="text-green-400/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{e.lastWeight} kg · {e.strengthInfo.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {weaknesses.length > 0 && (
+            <div className="p-3 rounded-2xl" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <p className="text-red-400 text-xs font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>🎯 À TRAVAILLER</p>
+              {weaknesses.slice(0, 3).map(e => (
+                <div key={e.id} className="mb-1.5">
+                  <p className="text-white/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{e.name}</p>
+                  <p className="text-red-400/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif : +{e.strengthInfo.gap} kg</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Note importante sur les charges relatives */}
+      <div className="p-3 rounded-2xl" style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.12)' }}>
+        <p className="text-blue-300/70 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+          ℹ️ <strong>Charges relatives</strong> — Normal de mettre plus lourd sur les jambes que les bras. L’analyse compare chaque exercice à ses propres normes (ex : squat intermédiaire = 1.25× poids de corps, curl intermédiaire = 0.35×).
+        </p>
+      </div>
+
+      {/* Filtre par groupe musculaire */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {GROUPS.map(g => (
+          <button key={g} onClick={() => setSelectedGroup(g)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+            style={{
+              background: selectedGroup === g ? 'rgba(255,107,53,0.2)' : 'rgba(255,255,255,0.05)',
+              color: selectedGroup === g ? '#FF6B35' : 'rgba(255,255,255,0.4)',
+              border: selectedGroup === g ? '1px solid rgba(255,107,53,0.3)' : '1px solid transparent',
+              fontFamily: 'Inter, sans-serif',
+            }}>
+            {g === 'all' ? 'Tous' : g}
+          </button>
+        ))}
+      </div>
+
+      {/* Graphiques par exercice */}
+      {filtered.map(ex => {
+        const chartData = ex.progress.map((p, i) => ({
+          name: `S${i + 1}`,
+          'Charge (kg)': p.maxWeight,
+        }));
+        const gain = ex.lastWeight - ex.firstWeight;
+        const gainPct = ex.firstWeight > 0 ? Math.round((gain / ex.firstWeight) * 100) : 0;
+        const { level, label, color: levelColor, nextTarget, gap } = ex.strengthInfo;
+        const levelBarPct = Math.min(
+          level === 'debutant' ? Math.round((ex.lastWeight / (EXERCISE_NORMS[ex.id].beginnerRatio * 68)) * 100)
+          : level === 'intermediaire' ? Math.round(((ex.lastWeight - EXERCISE_NORMS[ex.id].beginnerRatio * 68) / ((EXERCISE_NORMS[ex.id].intermediateRatio - EXERCISE_NORMS[ex.id].beginnerRatio) * 68)) * 100)
+          : level === 'avance' ? Math.round(((ex.lastWeight - EXERCISE_NORMS[ex.id].intermediateRatio * 68) / ((EXERCISE_NORMS[ex.id].advancedRatio - EXERCISE_NORMS[ex.id].intermediateRatio) * 68)) * 100)
+          : 100, 100
+        );
+
+        return (
+          <div key={ex.id} className="p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${ex.color}20` }}>
+            {/* Header */}
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{ex.name}</h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${ex.color}15`, color: ex.color, fontFamily: 'Inter, sans-serif' }}>{ex.group}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${levelColor}15`, color: levelColor, fontFamily: 'Inter, sans-serif' }}>{label}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif', color: ex.color }}>{ex.lastWeight} kg</div>
+                {gain !== 0 && (
+                  <div className="text-xs font-semibold" style={{ color: gain > 0 ? '#22c55e' : '#ef4444', fontFamily: 'Inter, sans-serif' }}>
+                    {gain > 0 ? '+' : ''}{gain} kg ({gainPct > 0 ? '+' : ''}{gainPct}%)
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Barre de niveau */}
+            <div className="mb-3">
+              <div className="flex justify-between mb-1">
+                <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Niveau {label}</span>
+                {level !== 'elite' && <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Prochain palier : {nextTarget} kg (+{gap} kg)</span>}
+                {level === 'elite' && <span className="text-purple-400 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Élite ★</span>}
+              </div>
+              <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: `${levelBarPct}%`, background: levelColor }} />
+              </div>
+            </div>
+
+            {/* Graphique */}
+            {ex.progress.length > 1 && (
+              <ResponsiveContainer width="100%" height={100}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id={`grad-${ex.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={ex.color} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={ex.color} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area type="monotone" dataKey="Charge (kg)" stroke={ex.color} strokeWidth={2} fill={`url(#grad-${ex.id})`} dot={{ fill: ex.color, r: 3 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+
+            {/* Contexte coach */}
+            <p className="text-white/25 text-xs mt-2 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{ex.context}</p>
+
+            <div className="flex justify-between mt-1">
+              <span className="text-white/25 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Début : {ex.firstWeight} kg</span>
+              <span className="text-white/25 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{ex.progress.length} séances</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
 // COMPOSANT PRINCIPAL
 // ============================================================
 
@@ -247,6 +500,17 @@ export default function ProgressPage() {
                 >
                   Enregistrer les mesures
                 </button>
+              </div>
+            )}
+
+            {/* Rappel pesée lundi 7h */}
+            {new Date().getDay() === 1 && (
+              <div className="p-3 rounded-2xl flex items-center gap-3" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.25)' }}>
+                <span className="text-2xl">⚖️</span>
+                <div>
+                  <p className="text-orange-400 text-xs font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>C'est lundi — Jour de pesée !</p>
+                  <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Pèse-toi à jeun et enregistre ton poids ci-dessous. L'app ajustera tes calories en conséquence.</p>
+                </div>
               </div>
             )}
 
@@ -512,79 +776,7 @@ export default function ProgressPage() {
         {/* ONGLET CHARGES */}
         {/* ============================================================ */}
         {activeTab === 'exercises' && (
-          <>
-            {stats.totalSessions === 0 ? (
-              <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <Zap size={32} className="text-white/20 mx-auto mb-3" />
-                <p className="text-white/40 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Les graphiques de charges apparaîtront après tes premières séances</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {[
-                  { id: 'developpe_couche', name: 'Développé couché', group: 'Pectoraux', color: '#FF6B35' },
-                  { id: 'developpe_incline', name: 'Développé incliné', group: 'Pectoraux', color: '#FF6B35' },
-                  { id: 'squat', name: 'Squat', group: 'Jambes', color: '#22C55E' },
-                  { id: 'presse_cuisse', name: 'Presse cuisse', group: 'Jambes', color: '#22C55E' },
-                  { id: 'tractions', name: 'Tractions', group: 'Dos', color: '#3B82F6' },
-                  { id: 'rowing_barre', name: 'Rowing barre', group: 'Dos', color: '#3B82F6' },
-                  { id: 'souleve_de_terre', name: 'Soulevé de terre', group: 'Ischio/Dos', color: '#8B5CF6' },
-                  { id: 'curl_incline', name: 'Curl incliné', group: 'Biceps', color: '#F59E0B' },
-                  { id: 'curl_marteau', name: 'Curl marteau', group: 'Biceps', color: '#F59E0B' },
-                  { id: 'extension_triceps_poulie', name: 'Extension triceps', group: 'Triceps', color: '#EF4444' },
-                  { id: 'dips', name: 'Dips', group: 'Triceps', color: '#EF4444' },
-                  { id: 'fentes_marche', name: 'Fentes marchées', group: 'Jambes', color: '#22C55E' },
-                ].map(({ id: exerciseId, name: exerciseName, group, color }) => {
-                  const progress = getExerciseProgress(exerciseId);
-                  if (!progress || progress.length === 0) return null;
-                  const chartData = progress.map((p, i) => ({
-                    name: `S${i + 1}`,
-                    'Charge (kg)': p.maxWeight,
-                    'Volume': Math.round(p.totalVolume / 10),
-                  }));
-                  const firstWeight = progress[0]?.maxWeight ?? 0;
-                  const lastWeight = progress[progress.length - 1]?.maxWeight ?? 0;
-                  const gain = lastWeight - firstWeight;
-                  const gainPct = firstWeight > 0 ? Math.round((gain / firstWeight) * 100) : 0;
-                  return (
-                    <div key={exerciseId} className="p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${color}20` }}>
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{exerciseName}</h3>
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${color}15`, color, fontFamily: 'Inter, sans-serif' }}>{group}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif', color }}>{lastWeight} kg</div>
-                          {gain !== 0 && (
-                            <div className="text-xs font-semibold" style={{ color: gain > 0 ? '#22c55e' : '#ef4444', fontFamily: 'Inter, sans-serif' }}>
-                              {gain > 0 ? '+' : ''}{gain} kg ({gainPct > 0 ? '+' : ''}{gainPct}%)
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <ResponsiveContainer width="100%" height={110}>
-                        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id={`grad-${exerciseId}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                              <stop offset="95%" stopColor={color} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }} axisLine={false} tickLine={false} />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="Charge (kg)" stroke={color} strokeWidth={2} fill={`url(#grad-${exerciseId})`} dot={{ fill: color, r: 3 }} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                      <div className="flex justify-between mt-2">
-                        <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Début : {firstWeight} kg</span>
-                        <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{progress.length} séances</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          <ExercisesTab getExerciseProgress={getExerciseProgress} totalSessions={stats.totalSessions} />
         )}
       </div>
     </div>

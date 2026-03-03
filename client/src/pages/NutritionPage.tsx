@@ -456,6 +456,45 @@ function JournalTab() {
   // Index du repas actuellement affiché (navigation cards)
   const [activeMealIdx, setActiveMealIdx] = useState(0);
 
+  // Repas ajustés (Prompt Ultime — ajustement quantités à la demande)
+  const [adjustedMeals, setAdjustedMeals] = useState<Record<string, Array<{ food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }> | null>>({});
+
+  const handleAdjustMeal = (mealKey: string, planMeal: { items: Array<{ food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }>; totalCalories: number }) => {
+    // Calcule le budget restant pour ce repas
+    const mealIdx = MEAL_ORDER.indexOf(mealKey);
+    const mealsLeftFromNow = MEAL_ORDER.length - mealIdx;
+    const consumed = dayLog.entries.reduce((acc, e) => ({
+      proteins: acc.proteins + e.proteins, carbs: acc.carbs + e.carbs, fats: acc.fats + e.fats, calories: acc.calories + e.calories
+    }), { proteins: 0, carbs: 0, fats: 0, calories: 0 });
+    const targetKey = dayLog.sessionType ?? (dayLog.isTrainingDay ? 'training' : 'rest');
+    const target = MACRO_TARGETS[targetKey as keyof typeof MACRO_TARGETS] ?? MACRO_TARGETS.rest;
+    const remainingCals = Math.max(target.calories - consumed.calories, 0);
+    const mealBudget = Math.round(remainingCals / mealsLeftFromNow);
+    if (mealBudget <= 0 || planMeal.totalCalories <= 0) {
+      toast.info('Pas d\'ajustement nécessaire — tu es déjà à l\'objectif');
+      return;
+    }
+    // Ajuster les quantités proportionnellement
+    const ratio = mealBudget / planMeal.totalCalories;
+    const adjusted = planMeal.items.map(item => {
+      const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
+      const originalQty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
+      const unit = item.quantity.replace(/[\d.]+/, '').trim();
+      const newQty = Math.round(originalQty * ratio / 5) * 5; // arrondi à 5g
+      const newQtyStr = `${newQty}${unit}`;
+      return {
+        food: item.food,
+        quantity: newQtyStr,
+        proteins: Math.round(item.proteins * ratio * 10) / 10,
+        carbs: Math.round(item.carbs * ratio * 10) / 10,
+        fats: Math.round(item.fats * ratio * 10) / 10,
+        calories: Math.round(item.calories * ratio),
+      };
+    });
+    setAdjustedMeals(prev => ({ ...prev, [mealKey]: adjusted }));
+    toast.success(`Repas ajusté pour ${mealBudget} kcal`);
+  };
+
   const statusColors = { optimal: '#22c55e', surplus: '#eab308', deficit: '#3b82f6', protein_low: '#ef4444' };
 
   return (
@@ -625,34 +664,73 @@ function JournalTab() {
               </div>
 
               {/* Plan suggéré */}
-              {!mealStatus && planMeal && (
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="p-4" style={{ background: 'rgba(255,107,53,0.04)' }}>
-                    <p className="text-orange-400/80 text-xs font-bold mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>PLAN SUGGÉRÉ</p>
-                    <div className="space-y-2 mb-4">
-                      {planMeal.items.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between py-1.5 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                          <span className="text-white/75 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                          <div className="text-right">
-                            <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                            <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
+              {!mealStatus && planMeal && (() => {
+                const displayItems = adjustedMeals[meal] ?? planMeal.items;
+                const isAdjusted = !!adjustedMeals[meal];
+                return (
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="p-4" style={{ background: isAdjusted ? 'rgba(59,130,246,0.04)' : 'rgba(255,107,53,0.04)' }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-bold" style={{ fontFamily: 'Inter, sans-serif', color: isAdjusted ? '#60a5fa' : 'rgba(255,107,53,0.8)' }}>
+                          {isAdjusted ? '🔄 REPAS AJUSTÉ' : 'PLAN SUGGÉRÉ'}
+                        </p>
+                        {!isAdjusted && (
+                          <button
+                            onClick={() => handleAdjustMeal(meal, planMeal)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all active:scale-95"
+                            style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)', fontFamily: 'Inter, sans-serif' }}
+                          >
+                            ⚖️ Ajuster mes repas
+                          </button>
+                        )}
+                        {isAdjusted && (
+                          <button
+                            onClick={() => setAdjustedMeals(prev => ({ ...prev, [meal]: null }))}
+                            className="text-xs" style={{ color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, sans-serif' }}
+                          >
+                            Annuler
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-2 mb-4">
+                        {displayItems.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between py-1.5 px-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                            <span className="text-white/75 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
+                            <div className="text-right">
+                              <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                              <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleValidateMeal(meal)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                        style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontFamily: 'Inter, sans-serif' }}>
-                        <CheckCircle size={13} /> J'ai mangé ça
-                      </button>
-                      <button onClick={() => handleInvalidateMeal(meal)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                        style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.25)', fontFamily: 'Inter, sans-serif' }}>
-                        <XCircle size={13} /> Autre chose
-                      </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // Valider avec les items affichés (ajustés ou originaux)
+                            const itemsToValidate = adjustedMeals[meal] ?? planMeal.items;
+                            dayLog.entries.filter(e => e.meal === meal).forEach(e => deleteFoodEntry(dateKey, e.id));
+                            itemsToValidate.forEach(item => {
+                              const food = programData.foodItems.find(f => f.name.toLowerCase().includes(item.food.toLowerCase().split(' ')[0]));
+                              const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/); const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
+                              if (food) { const macros = computeFoodMacros(food.id, food.name, qty, food.per100g); addFoodEntry(dateKey, { ...macros, meal: meal as FoodEntry['meal'], id: nanoid() }); }
+                              else { addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: meal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories }); }
+                            });
+                            setValidatedMeals(prev => ({ ...prev, [meal]: 'validated' }));
+                            toast.success(`${MEAL_LABELS[meal]} validé ✓`);
+                          }}
+                          className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                          style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontFamily: 'Inter, sans-serif' }}>
+                          <CheckCircle size={13} /> J'ai mangé ça
+                        </button>
+                        <button onClick={() => handleInvalidateMeal(meal)} className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                          style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.25)', fontFamily: 'Inter, sans-serif' }}>
+                          <XCircle size={13} /> Autre chose
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Ajustement automatique */}
               {!mealStatus && adjustment && (

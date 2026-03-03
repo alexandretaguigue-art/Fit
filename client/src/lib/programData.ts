@@ -1429,136 +1429,218 @@ const exerciseDatabasePhase3: Record<string, Exercise> = {
 // ============================================================
 
 const sessionsPhase2: WorkoutSession[] = [
+  // Phase 2 (S5-S8) : +1 série biceps, +1 série triceps, +1 série quadriceps
+  // Rest-pause dernière série bras | Augmentation charges si haut de fourchette atteint
   {
     id: "upper_a_p2",
     day: 1, type: "gym" as const,
-    name: "Haut du corps A -- Phase 2",
-    focus: "Pectoraux superieurs . Epaules . Triceps",
+    name: "Haut A — Phase 2 (Surcharge)",
+    focus: "Pectoraux · Épaules · Triceps +1 série",
     durationMin: 70,
     exercises: [
-      exerciseDatabasePhase2.developpe_halteres_incline,
-      exerciseDatabasePhase2.developpe_arnold,
-      exerciseDatabasePhase2.skull_crusher,
-      exerciseDatabasePhase2.cable_fly,
-      exerciseDatabase.elevations_laterales,
-      exerciseDatabase.extension_triceps_poulie,
+      // DC 4x6-8 (inchangé)
+      { ...exerciseDatabase.developpe_couche, sets: 4, repsMin: 6, repsMax: 8 },
+      // DM haltères 3x8-10 (inchangé)
+      { ...exerciseDatabase.developpe_militaire, sets: 3, repsMin: 8, repsMax: 10 },
+      // Dips 3x8-12 (inchangé)
+      { ...exerciseDatabase.dips, sets: 3, repsMin: 8, repsMax: 12 },
+      // Élév. latérales 4x15 (inchangé)
+      { ...exerciseDatabase.elevations_laterales, sets: 4, repsMin: 15, repsMax: 15 },
+      // Triceps poulie 4x12 (+1 série vs Phase 1 — PDF)
+      { ...exerciseDatabase.extension_triceps_poulie, sets: 4, repsMin: 12, repsMax: 12,
+        weightProgression: "Phase 2 : +1 série. Dernière série en REST-PAUSE : va à l'échec, pause 15s, encore 3-5 reps."
+      },
+      // Skull crusher 3x10-12 (ajout Phase 2 pour triceps)
+      { ...exerciseDatabasePhase2.skull_crusher, sets: 3, repsMin: 10, repsMax: 12 },
     ],
-    coachNote: "Phase 2 : on monte en intensite. Le developpe incline halteres cible les pectoraux superieurs -- la partie qui donne du relief. Le skull crusher est ton arme secrete pour des triceps massifs. Augmente les charges par rapport a la phase 1.",
+    coachNote: "Phase 2 PDF — Haut A. Mêmes exercices qu'en Phase 1 + 1 série triceps. Skull crusher ajouté pour le chef long du triceps. REST-PAUSE sur la dernière série de triceps poulie. Augmente les charges si tu atteins le haut de la fourchette.",
   },
   {
     id: "lower_a_p2",
-    day: 3, type: "gym" as const,
-    name: "Bas du corps A -- Phase 2",
-    focus: "Quadriceps . Fessiers . Abdos",
+    day: 2, type: "gym" as const,
+    name: "Bas A — Phase 2 (Surcharge)",
+    focus: "Quadriceps · Fessiers · Mollets +1 série",
     durationMin: 75,
     exercises: [
-      exerciseDatabasePhase2.hack_squat,
-      exerciseDatabasePhase2.squat_bulgare_p2,
-      exerciseDatabase.leg_extension,
-      exerciseDatabase.hip_thrust,
-      exerciseDatabase.releve_jambes,
-      exerciseDatabase.gainage,
+      // Squat 4x6-8 (inchangé)
+      { ...exerciseDatabase.squat, sets: 4, repsMin: 6, repsMax: 8 },
+      // Presse 3x10 (inchangé)
+      { ...exerciseDatabase.presse_cuisses, sets: 3, repsMin: 10, repsMax: 10 },
+      // Fentes 3x10 (inchangé)
+      { ...exerciseDatabase.fentes_bulgares, sets: 3, repsMin: 10, repsMax: 10 },
+      // Leg ext 4x12 (+1 série quadriceps — PDF)
+      { ...exerciseDatabase.leg_extension, sets: 4, repsMin: 12, repsMax: 12,
+        weightProgression: "Phase 2 : +1 série. Augmente la charge si tu atteins 4x12 facilement."
+      },
+      // Mollets 4x15 (inchangé)
+      { ...exerciseDatabase.extensions_mollets, sets: 4, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Phase 2 : le hack squat remplace le squat barre pour cibler davantage les quadriceps. Le squat bulgare corrige les desequilibres. Volume plus eleve qu'en phase 1.",
+    coachNote: "Phase 2 PDF — Bas A. +1 série de leg extension (quadriceps). Augmente les charges sur le squat et la presse si tu atteins le haut de la fourchette. Objectif : 14-18 séries quadriceps/semaine.",
   },
   {
     id: "upper_b_p2",
     day: 4, type: "gym" as const,
-    name: "Haut du corps B -- Phase 2",
-    focus: "Dos . Epaules . Biceps",
+    name: "Haut B — Phase 2 (Surcharge)",
+    focus: "Dos · Biceps +1 série",
     durationMin: 70,
     exercises: [
-      exerciseDatabasePhase2.tirage_vertical_prise_serree,
-      exerciseDatabasePhase2.rowing_haltere,
-      exerciseDatabase.tirage_horizontal,
-      exerciseDatabase.face_pull,
-      exerciseDatabasePhase2.curl_barre_ez,
-      exerciseDatabase.curl_marteau,
+      // Tractions 4x6-8 (inchangé)
+      { ...exerciseDatabase.tractions, sets: 4, repsMin: 6, repsMax: 8 },
+      // Rowing barre 3x8-10 (inchangé)
+      { ...exerciseDatabase.rowing_barre, sets: 3, repsMin: 8, repsMax: 10 },
+      // Curl barre 4x8-10 (+1 série biceps — PDF)
+      { ...exerciseDatabase.curl_barre_debout, sets: 4, repsMin: 8, repsMax: 10,
+        weightProgression: "Phase 2 : +1 série. Dernière série en REST-PAUSE : va à l'échec, pause 15s, encore 3-5 reps."
+      },
+      // Curl incliné 3x12 (inchangé)
+      { ...exerciseDatabase.curl_incline, sets: 3, repsMin: 12, repsMax: 12 },
+      // Curl marteau 3x12 (ajout Phase 2 pour biceps)
+      { ...exerciseDatabase.curl_marteau, sets: 3, repsMin: 12, repsMax: 12 },
+      // Face pull 3x15 (inchangé)
+      { ...exerciseDatabase.face_pull, sets: 3, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Phase 2 : tirage prise serree pour le grand dorsal inferieur, rowing haltere unilateral pour corriger les desequilibres. Curl barre EZ pour charger plus lourd sur les biceps.",
+    coachNote: "Phase 2 PDF — Haut B. +1 série biceps (curl barre passe de 3 à 4 séries). REST-PAUSE sur la dernière série de curl barre. Curl marteau ajouté pour l'épaisseur du bras. Objectif : 12-16 séries biceps/semaine.",
   },
   {
     id: "lower_b_p2",
-    day: 8, type: "gym" as const,
-    name: "Bas du corps B -- Phase 2",
-    focus: "Ischio-jambiers . Mollets . Abdos",
+    day: 6, type: "gym" as const,
+    name: "Bas B — Phase 2 (Surcharge)",
+    focus: "Ischio-jambiers · Mollets · Superset bras",
     durationMin: 70,
     exercises: [
-      exerciseDatabasePhase2.rdl_halteres,
-      exerciseDatabasePhase2.nordic_hamstring,
-      exerciseDatabase.fentes_bulgares,
-      exerciseDatabase.extensions_mollets,
-      exerciseDatabase.crunches_poulie,
-      exerciseDatabase.russian_twist,
+      // SDT roumain 4x8 (inchangé)
+      { ...exerciseDatabase.souleve_de_terre, sets: 4, repsMin: 8, repsMax: 8,
+        name: 'Soulevé de terre roumain' },
+      // Hip thrust 3x8-10 (inchangé)
+      { ...exerciseDatabase.hip_thrust, sets: 3, repsMin: 8, repsMax: 10 },
+      // Leg curl 3x12 (inchangé)
+      { ...exerciseDatabase.leg_curl, sets: 3, repsMin: 12, repsMax: 12 },
+      // Mollets 4x15 (inchangé)
+      { ...exerciseDatabase.extensions_mollets, sets: 4, repsMin: 15, repsMax: 15 },
+      // Superset bras 4x15 (+1 série — Phase 2)
+      { ...exerciseDatabase.curl_marteau, sets: 4, repsMin: 15, repsMax: 15,
+        name: 'Superset Bras Phase 2 : Curl + Extension (REST-PAUSE)',
+        tips: [
+          "SUPERSET : curl marteau + extension triceps poulie sans repos entre les deux.",
+          "Phase 2 : 4 séries au lieu de 3. Dernière série en REST-PAUSE.",
+          "REST-PAUSE : va à l'échec, pause 15 secondes, encore 3-5 reps.",
+          "Augmente les charges si tu atteins 4x15 facilement.",
+        ]
+      },
     ],
-    coachNote: "Phase 2 : RDL halteres pour un etirement maximal des ischio-jambiers. Nordic Hamstring Curls -- l'exercice le plus important pour prevenir les blessures au foot. Indispensable.",
+    coachNote: "Phase 2 PDF — Bas B. Mêmes exercices qu'en Phase 1 + 1 série superset bras. REST-PAUSE sur la dernière série du superset bras. Augmente les charges si haut de fourchette atteint.",
   },
 ];
 
 const sessionsPhase3: WorkoutSession[] = [
+  // Phase 3 (S9-S11) : Top set lourd 4-6 reps + back-off 8-12 reps
+  // Drop sets bras | Tempo 3 secondes descente | Congestion maximale bras en fin séance
   {
     id: "upper_a_p3",
     day: 1, type: "gym" as const,
-    name: "Haut du corps A -- Phase 3",
-    focus: "Pectoraux . Triceps . Intensification",
+    name: "Haut A — Phase 3 (Intensification)",
+    focus: "Pectoraux · Épaules · Triceps — Top Set + Drop Sets",
     durationMin: 75,
     exercises: [
-      exerciseDatabase.developpe_couche,
-      exerciseDatabasePhase3.developpe_couche_prise_serree,
-      exerciseDatabasePhase3.dips_lestes_avances,
-      exerciseDatabasePhase2.cable_fly,
-      exerciseDatabase.elevations_laterales,
-      exerciseDatabase.extension_triceps_poulie,
+      // DC : Top set 4-6 reps + back-off 8-12 reps (PDF)
+      { ...exerciseDatabase.developpe_couche, sets: 4, repsMin: 4, repsMax: 6,
+        weightProgression: "Phase 3 : TOP SET 4-6 reps à charge maximale, puis BACK-OFF 8-12 reps à 80% de la charge. Tempo 3 secondes descente."
+      },
+      // DM haltères 3x8-10 (inchangé)
+      { ...exerciseDatabase.developpe_militaire, sets: 3, repsMin: 8, repsMax: 10 },
+      // Dips 3x8-12 (inchangé)
+      { ...exerciseDatabase.dips, sets: 3, repsMin: 8, repsMax: 12 },
+      // Élév. latérales 4x15 (inchangé)
+      { ...exerciseDatabase.elevations_laterales, sets: 4, repsMin: 15, repsMax: 15 },
+      // Triceps poulie 4x12 + DROP SET (PDF — drop sets bras)
+      { ...exerciseDatabase.extension_triceps_poulie, sets: 4, repsMin: 10, repsMax: 12,
+        weightProgression: "Phase 3 : DROP SET sur la dernière série. Va à l'échec, réduis de 20%, continue. Congestion maximale."
+      },
+      // Skull crusher 3x10-12 + DROP SET (PDF — congestion maximale bras)
+      { ...exerciseDatabasePhase2.skull_crusher, sets: 3, repsMin: 10, repsMax: 12,
+        weightProgression: "Phase 3 : DROP SET dernière série. Tempo 3 secondes descente obligatoire."
+      },
     ],
-    coachNote: "Phase 3 : intensite maximale. Developpe couche lourd + prise serree = double attaque sur les triceps. Dips lestes en REST-PAUSE pour depasser tes limites. Drop sets sur les cables.",
+    coachNote: "Phase 3 PDF — Haut A. DC en TOP SET (4-6 reps lourd) + BACK-OFF (8-12 reps). Tempo 3 secondes descente sur tous les exercices. DROP SETS sur triceps poulie et skull crusher. Congestion maximale bras en fin de séance.",
   },
   {
     id: "lower_a_p3",
-    day: 3, type: "gym" as const,
-    name: "Bas du corps A -- Phase 3",
-    focus: "Quadriceps . Fessiers . Force explosive",
+    day: 2, type: "gym" as const,
+    name: "Bas A — Phase 3 (Intensification)",
+    focus: "Quadriceps · Fessiers · Mollets — Top Set",
     durationMin: 80,
     exercises: [
-      exerciseDatabasePhase3.squat_pause,
-      exerciseDatabasePhase2.hack_squat,
-      exerciseDatabase.leg_extension,
-      exerciseDatabase.hip_thrust,
-      exerciseDatabase.releve_jambes,
-      exerciseDatabase.gainage,
+      // Squat : Top set 4-6 reps + back-off 8-12 reps (PDF)
+      { ...exerciseDatabase.squat, sets: 4, repsMin: 4, repsMax: 6,
+        weightProgression: "Phase 3 : TOP SET 4-6 reps à charge maximale, puis BACK-OFF 8-12 reps à 80%. Tempo 3 secondes descente."
+      },
+      // Presse 3x10 (inchangé)
+      { ...exerciseDatabase.presse_cuisses, sets: 3, repsMin: 10, repsMax: 10 },
+      // Fentes 3x10 (inchangé)
+      { ...exerciseDatabase.fentes_bulgares, sets: 3, repsMin: 10, repsMax: 10 },
+      // Leg ext 4x12 (inchangé)
+      { ...exerciseDatabase.leg_extension, sets: 4, repsMin: 12, repsMax: 12 },
+      // Mollets 4x15 (inchangé)
+      { ...exerciseDatabase.extensions_mollets, sets: 4, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Phase 3 : squat pause pour eliminer le rebond et recruter 100% des fibres. Technique avancee qui developpe une force explosive directement transferable au football.",
+    coachNote: "Phase 3 PDF — Bas A. Squat en TOP SET (4-6 reps lourd) + BACK-OFF (8-12 reps). Tempo 3 secondes descente. Objectif : charges maximales sur le squat et la presse.",
   },
   {
     id: "upper_b_p3",
     day: 4, type: "gym" as const,
-    name: "Haut du corps B -- Phase 3",
-    focus: "Dos . Biceps . Techniques avancees",
+    name: "Haut B — Phase 3 (Intensification)",
+    focus: "Dos · Biceps — Top Set + Drop Sets",
     durationMin: 75,
     exercises: [
-      exerciseDatabasePhase3.tractions_lestees_avancees,
-      exerciseDatabase.rowing_barre,
-      exerciseDatabasePhase2.tirage_vertical_prise_serree,
-      exerciseDatabase.face_pull,
-      exerciseDatabasePhase3.curl_concentration,
-      exerciseDatabase.curl_marteau,
+      // Tractions : Top set 4-6 reps + back-off 8-12 reps (PDF)
+      { ...exerciseDatabase.tractions, sets: 4, repsMin: 4, repsMax: 6,
+        weightProgression: "Phase 3 : TOP SET 4-6 reps lesté, puis BACK-OFF 8-12 reps poids de corps. Tempo 3 secondes descente."
+      },
+      // Rowing barre 3x8-10 (inchangé)
+      { ...exerciseDatabase.rowing_barre, sets: 3, repsMin: 8, repsMax: 10 },
+      // Curl barre 4x8-10 + DROP SET (PDF — drop sets bras)
+      { ...exerciseDatabase.curl_barre_debout, sets: 4, repsMin: 8, repsMax: 10,
+        weightProgression: "Phase 3 : DROP SET dernière série. Va à l'échec, réduis de 20%, continue. Congestion maximale biceps."
+      },
+      // Curl incliné 3x12 + DROP SET (PDF — congestion maximale bras)
+      { ...exerciseDatabase.curl_incline, sets: 3, repsMin: 12, repsMax: 12,
+        weightProgression: "Phase 3 : DROP SET dernière série. Tempo 3-4 secondes descente obligatoire."
+      },
+      // Curl marteau 3x12 (inchangé)
+      { ...exerciseDatabase.curl_marteau, sets: 3, repsMin: 12, repsMax: 12 },
+      // Face pull 3x15 (inchangé)
+      { ...exerciseDatabase.face_pull, sets: 3, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Phase 3 : tractions lestees en DROP SET -- la technique la plus efficace pour maximiser le volume sur les biceps et le dos en une seule serie. Curl concentration pour le pic du biceps.",
+    coachNote: "Phase 3 PDF — Haut B. Tractions en TOP SET (4-6 reps lesté) + BACK-OFF (8-12 reps). DROP SETS sur curl barre et curl incliné. Congestion maximale biceps en fin de séance. Tempo 3 secondes descente.",
   },
   {
     id: "lower_b_p3",
-    day: 8, type: "gym" as const,
-    name: "Bas du corps B -- Phase 3",
-    focus: "Ischio-jambiers . Adducteurs . Mollets",
+    day: 6, type: "gym" as const,
+    name: "Bas B — Phase 3 (Intensification)",
+    focus: "Ischio-jambiers · Mollets · Superset bras DROP SET",
     durationMin: 75,
     exercises: [
-      exerciseDatabasePhase3.souleve_sumo,
-      exerciseDatabasePhase2.nordic_hamstring,
-      exerciseDatabase.leg_curl,
-      exerciseDatabasePhase3.mollets_drop_set,
-      exerciseDatabase.crunches_poulie,
-      exerciseDatabase.russian_twist,
+      // SDT roumain 4x8 (inchangé)
+      { ...exerciseDatabase.souleve_de_terre, sets: 4, repsMin: 8, repsMax: 8,
+        name: 'Soulevé de terre roumain' },
+      // Hip thrust 3x8-10 (inchangé)
+      { ...exerciseDatabase.hip_thrust, sets: 3, repsMin: 8, repsMax: 10 },
+      // Leg curl 3x12 (inchangé)
+      { ...exerciseDatabase.leg_curl, sets: 3, repsMin: 12, repsMax: 12 },
+      // Mollets DROP SET (Phase 3)
+      { ...exerciseDatabasePhase3.mollets_drop_set, sets: 4, repsMin: 12, repsMax: 15 },
+      // Superset bras 4x15 + DROP SET (Phase 3 — congestion maximale)
+      { ...exerciseDatabase.curl_marteau, sets: 4, repsMin: 15, repsMax: 15,
+        name: 'Superset Bras Phase 3 : DROP SET Curl + Extension',
+        tips: [
+          "SUPERSET DROP SET : curl marteau + extension triceps poulie.",
+          "Phase 3 : dernière série en DROP SET. Réduis de 20% et continue immédiatement.",
+          "Tempo 3 secondes descente sur chaque rep.",
+          "Congestion maximale bras en fin de séance — objectif du PDF.",
+        ]
+      },
     ],
-    coachNote: "Phase 3 : souleve sumo pour les adducteurs et fessiers -- variation essentielle. Triple drop set sur les mollets pour les forcer a grandir. Nordic Hamstring obligatoire pour le football.",
+    coachNote: "Phase 3 PDF — Bas B. SDT roumain + Hip thrust + Leg curl inchangés. Mollets en DROP SET triple. Superset bras en DROP SET pour congestion maximale. Tempo 3 secondes descente obligatoire sur tous les exercices.",
   },
 ];
 
@@ -1755,73 +1837,109 @@ const footballScores: FootballScore[] = [
 // ============================================================
 
 const sessions: WorkoutSession[] = [
+  // ============================================================
+  // SÉANCES PROGRAMME ELITE — BASÉES SUR LE PDF
+  // Structure : Lundi Haut A | Mardi Bas A | Jeudi Haut B | Samedi Bas B
+  // ============================================================
   {
     id: 'upper_a',
     day: 1,
     type: 'gym' as const,
-    name: 'Haut du corps A',
-    focus: 'Pectoraux · Épaules · Triceps',
+    name: 'Haut A — Pec / Épaules / Triceps',
+    focus: 'Pectoraux · Deltoïdes · Triceps',
     durationMin: 65,
     exercises: [
-      exerciseDatabase.developpe_couche,
-      exerciseDatabase.developpe_militaire,
-      exerciseDatabase.dips,
-      exerciseDatabase.ecarte_incline,
-      exerciseDatabase.elevations_laterales,
-      exerciseDatabase.extension_triceps_poulie,
+      // DC 4x6-8 (PDF exact)
+      { ...exerciseDatabase.developpe_couche, sets: 4, repsMin: 6, repsMax: 8 },
+      // DM haltères 3x8-10 (PDF exact)
+      { ...exerciseDatabase.developpe_militaire, sets: 3, repsMin: 8, repsMax: 10 },
+      // Dips 3x8-12 (PDF exact)
+      { ...exerciseDatabase.dips, sets: 3, repsMin: 8, repsMax: 12 },
+      // Élév. latérales 4x15 (PDF exact)
+      { ...exerciseDatabase.elevations_laterales, sets: 4, repsMin: 15, repsMax: 15 },
+      // Triceps poulie 3x12 (PDF exact)
+      { ...exerciseDatabase.extension_triceps_poulie, sets: 3, repsMin: 12, repsMax: 12 },
     ],
-    coachNote: "Commence par t'échauffer 10 min : vélo léger + 2 séries légères de développé couché. Les triceps représentent 2/3 du volume du bras — ne néglige pas les dips et les extensions. Concentre-toi sur la connexion esprit-muscle.",
+    coachNote: "Programme Elite PDF — Haut A. DC 4x6-8 : priorité absolue, double progression RIR 2→1→0. DM haltères pour les épaules. Dips pour les triceps (2/3 du volume du bras). Élév. latérales 4x15 pour la largeur. Triceps poulie en finition. Échauffement 10 min obligatoire.",
   },
   {
     id: 'lower_a',
-    day: 3,
+    day: 2,
     type: 'gym' as const,
-    name: 'Bas du corps A',
-    focus: 'Quadriceps · Fessiers · Abdos',
+    name: 'Bas A — Quadriceps / Fessiers',
+    focus: 'Quadriceps · Fessiers · Mollets',
     durationMin: 70,
     exercises: [
-      exerciseDatabase.squat,
-      exerciseDatabase.presse_cuisses,
-      exerciseDatabase.leg_extension,
-      exerciseDatabase.hip_thrust,
-      exerciseDatabase.releve_jambes,
-      exerciseDatabase.gainage,
+      // Squat 4x6-8 (PDF exact)
+      { ...exerciseDatabase.squat, sets: 4, repsMin: 6, repsMax: 8 },
+      // Presse 3x10 (PDF exact)
+      { ...exerciseDatabase.presse_cuisses, sets: 3, repsMin: 10, repsMax: 10 },
+      // Fentes 3x10 (PDF exact)
+      { ...exerciseDatabase.fentes_bulgares, sets: 3, repsMin: 10, repsMax: 10 },
+      // Leg ext 3x12 (PDF exact)
+      { ...exerciseDatabase.leg_extension, sets: 3, repsMin: 12, repsMax: 12 },
+      // Mollets 4x15 (PDF exact)
+      { ...exerciseDatabase.extensions_mollets, sets: 4, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Le squat est LA priorité de cette séance. Prends le temps de bien t'échauffer (10 min cardio + squats progressifs). Si tu as des douleurs aux genoux, remplace le leg extension par des fentes. Les abdos se font à la fin, jamais au début.",
+    coachNote: "Programme Elite PDF — Bas A. Squat 4x6-8 : roi des exercices, double progression. Presse 3x10 pour le volume quadriceps. Fentes 3x10 pour corriger les déséquilibres. Leg ext 3x12 en isolation. Mollets 4x15 en amplitude complète. Objectif : 14-18 séries quadriceps/semaine.",
   },
   {
     id: 'upper_b',
     day: 4,
     type: 'gym' as const,
-    name: 'Haut du corps B',
-    focus: 'Dos · Épaules · Biceps',
+    name: 'Haut B — Dos / Biceps',
+    focus: 'Grand dorsal · Rhomboïdes · Biceps',
     durationMin: 65,
     exercises: [
-      exerciseDatabase.tractions,
-      exerciseDatabase.rowing_barre,
-      exerciseDatabase.tirage_horizontal,
-      exerciseDatabase.face_pull,
-      exerciseDatabase.curl_incline,
-      exerciseDatabase.curl_marteau,
+      // Tractions 4x6-8 (PDF exact)
+      { ...exerciseDatabase.tractions, sets: 4, repsMin: 6, repsMax: 8 },
+      // Rowing barre 3x8-10 (PDF exact)
+      { ...exerciseDatabase.rowing_barre, sets: 3, repsMin: 8, repsMax: 10 },
+      // Curl barre 3x8-10 (PDF exact)
+      { ...exerciseDatabase.curl_barre_debout, sets: 3, repsMin: 8, repsMax: 10 },
+      // Curl incliné 3x12 (PDF exact)
+      { ...exerciseDatabase.curl_incline, sets: 3, repsMin: 12, repsMax: 12 },
+      // Face pull 3x15 (PDF exact)
+      { ...exerciseDatabase.face_pull, sets: 3, repsMin: 15, repsMax: 15 },
     ],
-    coachNote: "Les tractions sont l'exercice le plus important pour les bras — elles développent les biceps ET le dos. Le curl incliné est ton arme secrète pour des biceps massifs. Face pull en fin de séance pour protéger tes épaules sur le long terme.",
+    coachNote: "Programme Elite PDF — Haut B. Tractions 4x6-8 : exercice roi pour le dos ET les biceps. Rowing barre 3x8-10 pour l'épaisseur du dos. Curl barre 3x8-10 : charge lourde sur les biceps. Curl incliné 3x12 : étirement maximal des biceps. Face pull 3x15 : santé des épaules obligatoire. Objectif : 12-16 séries biceps/semaine.",
   },
   {
     id: 'lower_b',
-    day: 8,
+    day: 6,
     type: 'gym' as const,
-    name: 'Bas du corps B',
-    focus: 'Ischio-jambiers · Mollets · Abdos',
-    durationMin: 65,
+    name: 'Bas B — Ischio / Mollets / Bras',
+    focus: 'Ischio-jambiers · Mollets · Superset bras',
+    durationMin: 70,
     exercises: [
-      exerciseDatabase.souleve_de_terre,
-      exerciseDatabase.fentes_bulgares,
-      exerciseDatabase.leg_curl,
-      exerciseDatabase.extensions_mollets,
-      exerciseDatabase.crunches_poulie,
-      exerciseDatabase.russian_twist,
+      // SDT roumain 4x8 (PDF exact)
+      { ...exerciseDatabase.souleve_de_terre, sets: 4, repsMin: 8, repsMax: 8,
+        name: 'Soulevé de terre roumain',
+        tips: [
+          "Hanches vers l'arrière, dos plat — ne fléchis pas les genoux.",
+          "Descends les haltères/barre le long des tibias jusqu'à sentir l'étirement.",
+          "Barre ou haltères — amplitude maximale pour les ischio-jambiers.",
+          "Tempo 3 secondes descente pour maximiser le temps sous tension.",
+        ]
+      },
+      // Hip thrust 3x8-10 (PDF exact)
+      { ...exerciseDatabase.hip_thrust, sets: 3, repsMin: 8, repsMax: 10 },
+      // Leg curl 3x12 (PDF exact)
+      { ...exerciseDatabase.leg_curl, sets: 3, repsMin: 12, repsMax: 12 },
+      // Mollets 4x15 (PDF exact)
+      { ...exerciseDatabase.extensions_mollets, sets: 4, repsMin: 15, repsMax: 15 },
+      // Superset bras 3x15 (PDF exact — curl + extension en superset)
+      { ...exerciseDatabase.curl_marteau, sets: 3, repsMin: 15, repsMax: 15,
+        name: 'Superset Bras : Curl marteau + Extension poulie',
+        tips: [
+          "SUPERSET : enchaîne curl marteau + extension triceps poulie sans repos entre les deux.",
+          "15 reps de curl marteau, puis immédiatement 15 reps d'extension triceps.",
+          "2 minutes de repos entre chaque superset.",
+          "Poids modéré — l'objectif est la congestion maximale des bras en fin de séance.",
+        ]
+      },
     ],
-    coachNote: "Le soulevé de terre est l'exercice le plus complet qui soit. Priorité absolue à la technique — un mauvais dos peut te mettre hors service des semaines. Les mollets nécessitent un volume élevé (5 séries) et une amplitude complète pour progresser.",
+    coachNote: "Programme Elite PDF — Bas B. SDT roumain 4x8 : étirement maximal des ischio-jambiers, dos plat, hanches vers l'arrière. Hip thrust 3x8-10 pour les fessiers. Leg curl 3x12 en isolation. Mollets 4x15 en amplitude complète. SUPERSET BRAS 3x15 en fin de séance : curl marteau + extension poulie enchaînés pour la congestion maximale.",
   },
   // --- SÉANCE FOOTBALL ---
   {
@@ -1980,20 +2098,23 @@ const sessions: WorkoutSession[] = [
 // ============================================================
 
 export const cycle14Days: Cycle14Day[] = [
-  { dayNumber: 1,  sessionId: 'arms_a',             label: 'Bras A',                type: 'gym',      icon: '💪', colorClass: 'orange' },
-  { dayNumber: 2,  sessionId: 'running_endurance',  label: 'Course — Endurance',    type: 'running',  icon: '🏃', colorClass: 'blue' },
-  { dayNumber: 3,  sessionId: 'lower_a',            label: 'Jambes A',              type: 'gym',      icon: '🦵', colorClass: 'orange' },
-  { dayNumber: 4,  sessionId: 'arms_b',             label: 'Bras B',                type: 'gym',      icon: '💪', colorClass: 'orange' },
-  { dayNumber: 5,  sessionId: 'football',           label: 'Séance Football',       type: 'football', icon: '⚽', colorClass: 'green' },
-  { dayNumber: 6,  sessionId: 'running_intervals',  label: 'Course — Fractioné',   type: 'running',  icon: '⚡', colorClass: 'blue' },
-  { dayNumber: 7,  sessionId: 'cycling',            label: 'Vélo',                  type: 'cycling',  icon: '🚴', colorClass: 'teal' },
-  { dayNumber: 8,  sessionId: 'lower_b',            label: 'Jambes B',              type: 'gym',      icon: '🦵', colorClass: 'orange' },
-  { dayNumber: 9,  sessionId: 'upper_full',         label: 'Haut du corps',         type: 'gym',      icon: '🏋️', colorClass: 'purple' },
-  { dayNumber: 10, sessionId: 'running_endurance',  label: 'Course — Endurance',    type: 'running',  icon: '🏃', colorClass: 'blue' },
-  { dayNumber: 11, sessionId: 'arms_a',             label: 'Bras A',                type: 'gym',      icon: '💪', colorClass: 'orange' },
-  { dayNumber: 12, sessionId: 'lower_a',            label: 'Jambes A',              type: 'gym',      icon: '🦵', colorClass: 'orange' },
-  { dayNumber: 13, sessionId: 'football',           label: 'Séance Football',       type: 'football', icon: '⚽', colorClass: 'green' },
-  { dayNumber: 14, sessionId: 'rest',               label: 'Repos Total',           type: 'rest',     icon: '😴', colorClass: 'gray' },
+  // Semaine 1 — Programme Elite PDF
+  // Lundi : Haut A | Mardi : Bas A | Mercredi : Course | Jeudi : Haut B | Vendredi : Vélo | Samedi : Bas B | Dimanche : Football/Repos
+  { dayNumber: 1,  sessionId: 'upper_a',            label: 'Haut A — Pec/Épaules/Triceps', type: 'gym',      icon: '🏋️', colorClass: 'orange' },
+  { dayNumber: 2,  sessionId: 'lower_a',            label: 'Bas A — Quadriceps/Fessiers',  type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 3,  sessionId: 'running_endurance',  label: 'Course — Endurance',           type: 'running',  icon: '🏃', colorClass: 'blue' },
+  { dayNumber: 4,  sessionId: 'upper_b',            label: 'Haut B — Dos/Biceps',          type: 'gym',      icon: '💪', colorClass: 'purple' },
+  { dayNumber: 5,  sessionId: 'cycling',            label: 'Vélo — Récupération active',   type: 'cycling',  icon: '🚴', colorClass: 'teal' },
+  { dayNumber: 6,  sessionId: 'lower_b',            label: 'Bas B — Ischio/Mollets/Bras',  type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 7,  sessionId: 'football',           label: 'Football (optionnel)',          type: 'football', icon: '⚽', colorClass: 'green' },
+  // Semaine 2 — Répétition du cycle
+  { dayNumber: 8,  sessionId: 'upper_a',            label: 'Haut A — Pec/Épaules/Triceps', type: 'gym',      icon: '🏋️', colorClass: 'orange' },
+  { dayNumber: 9,  sessionId: 'lower_a',            label: 'Bas A — Quadriceps/Fessiers',  type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 10, sessionId: 'running_intervals',  label: 'Course — Fractionné',          type: 'running',  icon: '⚡', colorClass: 'blue' },
+  { dayNumber: 11, sessionId: 'upper_b',            label: 'Haut B — Dos/Biceps',          type: 'gym',      icon: '💪', colorClass: 'purple' },
+  { dayNumber: 12, sessionId: 'cycling',            label: 'Vélo — Récupération active',   type: 'cycling',  icon: '🚴', colorClass: 'teal' },
+  { dayNumber: 13, sessionId: 'lower_b',            label: 'Bas B — Ischio/Mollets/Bras',  type: 'gym',      icon: '🦵', colorClass: 'orange' },
+  { dayNumber: 14, sessionId: 'rest',               label: 'Repos Total',                  type: 'rest',     icon: '😴', colorClass: 'gray' },
 ];
 
 // Retourne la séance correspondant à un jour du cycle
@@ -2014,33 +2135,34 @@ export function getCycleDayForDate(date: Date, programStartDate: Date): number {
 // PHASES DU PROGRAMME SUR 3 MOIS
 // ============================================================
 
+// Phases selon le PDF — Programme Elite 12 semaines
 export const phases = [
   {
     id: 'phase1',
-    name: 'Phase 1 — Fondation',
+    name: 'Phase 1 — Base Mécanique',
     weeks: '1 à 4',
     weekRange: [1, 4],
-    description: "Apprentissage des mouvements, mise en place des habitudes. Charges modérées pour maîtriser la technique. Objectif : finir chaque séance avec la sensation d'avoir pu faire 1-2 reps de plus.",
+    description: "Double progression RIR 2→1→0. Maîtrise des mouvements fondamentaux. Haut A + Bas A + Haut B + Bas B. Objectif : établir les charges de base et la connexion esprit-muscle sur chaque exercice.",
     color: '#FF6B35',
-    keyFocus: ['Maîtrise technique', 'Connexion esprit-muscle', 'Établir les charges de base'],
+    keyFocus: ['Double progression (RIR 2→1→0)', 'Maîtrise technique', 'Établir les charges de base'],
   },
   {
     id: 'phase2',
-    name: 'Phase 2 — Développement',
+    name: 'Phase 2 — Surcharge Progressive',
     weeks: '5 à 8',
     weekRange: [5, 8],
-    description: "Augmentation progressive du volume et des charges. Les bases sont solides, il est temps de pousser. Chaque séance doit être légèrement plus difficile que la précédente.",
+    description: "+1 série biceps, +1 série triceps, +1 série quadriceps par rapport à la Phase 1. Rest-pause sur la dernière série bras. Augmentation des charges si haut de fourchette atteint.",
     color: '#FF3366',
-    keyFocus: ['Surcharge progressive systématique', 'Augmentation du volume', 'Optimisation de la nutrition'],
+    keyFocus: ['+1 série bras et jambes', 'Rest-pause dernière série bras', 'Augmentation charges systématique'],
   },
   {
     id: 'phase3',
-    name: 'Phase 3 — Intensification',
-    weeks: '9 à 12',
-    weekRange: [9, 12],
-    description: "Intensité maximale. Introduction de techniques avancées (drop sets, rest-pause). Semaine 12 = semaine de décharge (volume réduit de 40%) pour permettre une super-compensation.",
+    name: 'Phase 3 — Intensification Maximale',
+    weeks: '9 à 11',
+    weekRange: [9, 11],
+    description: "Top set lourd 4-6 reps + back-off 8-12 reps. Drop sets bras. Tempo 3 secondes descente. Congestion maximale bras en fin de séance. Semaine 12 = Deload stratégique (volume -40%, charges -10%, RIR 3).",
     color: '#CC2255',
-    keyFocus: ['Intensité maximale', 'Techniques avancées', 'Semaine de décharge (S12)'],
+    keyFocus: ['Top set lourd + back-off', 'Drop sets bras', 'Tempo 3s descente', 'Deload S12'],
   },
 ];
 
@@ -2232,12 +2354,18 @@ export const foodItems: FoodItem[] = [
 // MACROS CIBLES
 // ============================================================
 
+// Macros selon le PDF : 150g protéines fixes (2.2g/kg), 70-80g lipides, glucides variables
 export const macroTargets = {
-  calories: 2900,
-  proteins: 140,
-  carbs: 430,
-  fats: 70,
-  proteinPerKg: 2.0, // g/kg de poids de corps
+  calories: 2700,       // Jour musculation (PDF)
+  proteins: 150,        // 150g fixes (2.2g/kg × 68kg) — PDF exact
+  carbs: 350,           // Variable selon type de jour
+  fats: 75,             // 70-80g — PDF exact
+  proteinPerKg: 2.2,    // g/kg de poids de corps — PDF exact
+  // Calories par type de jour (PDF)
+  caloriesGym: 2700,
+  caloriesGymCardio: 2800,
+  caloriesCycling: 2600,
+  caloriesRest: 2500,
 };
 
 // ============================================================

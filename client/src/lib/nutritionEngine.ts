@@ -100,17 +100,22 @@ export interface DayBalance {
 //   Lipides   : 83g (25% des calories — minimum hormonal)
 //   Glucides  : 432g (reste — carburant principal musculation + cardio)
 // ============================================================
-export const MACRO_TARGETS = {
-  training:  { calories: 3000, proteins: 130, carbs: 432, fats: 83 },
-  running:   { calories: 3050, proteins: 130, carbs: 450, fats: 83 },
-  football:  { calories: 3150, proteins: 130, carbs: 475, fats: 85 },
-  rest:      { calories: 2700, proteins: 130, carbs: 355, fats: 80 },
-  cycling:   { calories: 2750, proteins: 130, carbs: 370, fats: 80 },
-};
-
 // ============================================================
 // CALCUL DES MACROS D'UN ALIMENT
 // ============================================================
+
+// Macros selon le PDF Programme Elite :
+// Protéines : 150g fixes (2.2g/kg × 68kg)
+// Lipides : 70-80g (25-28% des calories)
+// Glucides : variables selon type de jour
+// Jours musculation : 2700 kcal | Jours course : 2800 kcal | Football : 2900 kcal | Repos/Vélo : 2500 kcal
+export const MACRO_TARGETS = {
+  training:  { calories: 2700, proteins: 150, carbs: 305, fats: 75 },
+  running:   { calories: 2800, proteins: 150, carbs: 330, fats: 75 },
+  football:  { calories: 2900, proteins: 150, carbs: 355, fats: 78 },
+  rest:      { calories: 2500, proteins: 150, carbs: 255, fats: 72 },
+  cycling:   { calories: 2550, proteins: 150, carbs: 268, fats: 72 },
+};
 
 export function computeFoodMacros(
   foodId: string,

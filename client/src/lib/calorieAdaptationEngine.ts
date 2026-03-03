@@ -43,16 +43,18 @@ export interface CalorieAdaptation {
 // Lipides : 0.8g/kg poids total = ~55g minimum, cible 65g
 // Glucides : reste des calories
 
+// Calories selon le PDF Prompt Ultime :
+// Jour musculation : 2700 kcal | Vélo : 2600 kcal | Repos : 2500 kcal
 export const BASE_CALORIES = {
-  training: 2550,  // TDEE + 200 kcal surplus
-  rest: 2250,      // TDEE - 300 kcal (légère restriction les jours off)
+  training: 2700,  // PDF : jour musculation
+  rest: 2500,      // PDF : jour repos
 };
 
 export const BASE_MACROS = {
-  proteins: 150,   // g/jour (2.2g/kg masse maigre ~59kg)
-  fats: 65,        // g/jour
-  carbsTraining: Math.round((BASE_CALORIES.training - 150 * 4 - 65 * 9) / 4), // ~288g
-  carbsRest: Math.round((BASE_CALORIES.rest - 150 * 4 - 65 * 9) / 4),         // ~213g
+  proteins: 150,   // g/jour (2.2g/kg × 68kg)
+  fats: 75,        // g/jour (70-80g selon PDF)
+  carbsTraining: Math.round((BASE_CALORIES.training - 150 * 4 - 75 * 9) / 4), // ~263g
+  carbsRest: Math.round((BASE_CALORIES.rest - 150 * 4 - 75 * 9) / 4),         // ~213g
 };
 
 // ============================================================
@@ -65,10 +67,12 @@ export const BASE_MACROS = {
 // - Si prise < 0.15 kg/sem : trop lente → muscle insuffisant → augmenter 150 kcal
 // - Si prise 0.15-0.6 kg/sem : optimal → maintenir
 
+// Règles du Prompt Ultime :
+// Si prise < 0.15 kg → +150 kcal | Si prise > 0.35 kg → -150 kcal | Sinon maintenir
 const WEIGHT_GAIN_OPTIMAL_MIN = 0.15; // kg/semaine
-const WEIGHT_GAIN_OPTIMAL_MAX = 0.60; // kg/semaine
-const CALORIE_ADJUSTMENT_STEP = 150;  // kcal d'ajustement
-const MAX_CALORIE_INCREASE = 400;     // kcal max au-dessus de la base
+const WEIGHT_GAIN_OPTIMAL_MAX = 0.35; // kg/semaine (PDF : 0.35 kg max)
+const CALORIE_ADJUSTMENT_STEP = 150;  // kcal d'ajustement (PDF)
+const MAX_CALORIE_INCREASE = 450;     // kcal max au-dessus de la base
 const MAX_CALORIE_DECREASE = 300;     // kcal max en dessous de la base
 
 export function computeCalorieAdaptation(

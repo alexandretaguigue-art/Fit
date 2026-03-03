@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData } from '../lib/programData';
-import { computeFoodMacros, MACRO_TARGETS, generateWeeklyMealPlan, toLocalDateKey } from '../lib/nutritionEngine';
+import { computeFoodMacros, MACRO_TARGETS, generateWeeklyMealPlan, toLocalDateKey, computeRemainingMacros } from '../lib/nutritionEngine';
 import type { FoodEntry } from '../lib/nutritionEngine';
 import { toast } from 'sonner';
 
@@ -446,6 +446,13 @@ function JournalTab() {
     return acc;
   }, {} as Record<string, FoodEntry[]>);
 
+  // Macros restantes (Prompt Ultime — ajustement automatique)
+  const mealsConsumedCount = Object.values(validatedMeals).filter(v => v !== null).length;
+  const remainingMacros = useMemo(() =>
+    computeRemainingMacros(dayLog, mealsConsumedCount, 5),
+    [dayLog, mealsConsumedCount]
+  );
+
   // Index du repas actuellement affiché (navigation cards)
   const [activeMealIdx, setActiveMealIdx] = useState(0);
 
@@ -500,6 +507,31 @@ function JournalTab() {
           <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{balance.recommendation}</p>
         </div>
       </div>
+
+      {/* BANDEAU MACROS RESTANTES (Prompt Ultime) */}
+      {mealsConsumedCount > 0 && remainingMacros.mealsLeft > 0 && (
+        <div className="rounded-2xl p-3" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-blue-400 text-xs font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>BUDGET RESTANT — {remainingMacros.mealsLeft} repas</span>
+            <span className="text-blue-300/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{remainingMacros.calories} kcal</span>
+          </div>
+          <div className="flex gap-3 mb-2">
+            <div className="text-center">
+              <div className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{remainingMacros.proteins}g</div>
+              <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Prot.</div>
+            </div>
+            <div className="text-center">
+              <div className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{remainingMacros.carbs}g</div>
+              <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Gluc.</div>
+            </div>
+            <div className="text-center">
+              <div className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{remainingMacros.fats}g</div>
+              <div className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Lip.</div>
+            </div>
+          </div>
+          <p className="text-blue-300/70 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{remainingMacros.adjustmentMessage}</p>
+        </div>
+      )}
 
       {/* CARDS REPAS NAVIGABLES */}
       {(() => {

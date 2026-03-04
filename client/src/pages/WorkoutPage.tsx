@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import React from 'react';
-import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target, Trash2, Plus, X } from 'lucide-react';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import ScoreRing from '../components/ScoreRing';
@@ -13,6 +13,178 @@ import type { SessionLog, WorkoutSession, Exercise, FootballDrill } from '../lib
 import { toast } from 'sonner';
 
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
+
+// ============================================================
+// HOOK : gestion des exercices custom et supprimés par session
+// ============================================================
+
+function useSessionExercises(sessionId: string, baseExercises: Exercise[]) {
+  const storageKey = `session_exercises_${sessionId}`;
+
+  const [state, setState] = useState<{ removed: string[]; custom: Exercise[] }>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : { removed: [], custom: [] };
+    } catch {
+      return { removed: [], custom: [] };
+    }
+  });
+
+  const save = (next: { removed: string[]; custom: Exercise[] }) => {
+    setState(next);
+    localStorage.setItem(storageKey, JSON.stringify(next));
+  };
+
+  const removeExercise = (id: string) => {
+    save({ ...state, removed: [...state.removed, id] });
+  };
+
+  const addCustomExercise = (ex: Exercise) => {
+    save({ ...state, custom: [...state.custom, ex] });
+  };
+
+  const resetExercises = () => {
+    save({ removed: [], custom: [] });
+    localStorage.removeItem(storageKey);
+  };
+
+  const exercises = [
+    ...baseExercises.filter(e => !state.removed.includes(e.id)),
+    ...state.custom.filter(e => !state.removed.includes(e.id)),
+  ];
+
+  return { exercises, removeExercise, addCustomExercise, resetExercises, customCount: state.custom.length, removedCount: state.removed.length };
+}
+
+// ============================================================
+// MODAL : Ajouter un exercice personnalisé
+// ============================================================
+
+function AddExerciseModal({ onAdd, onClose }: { onAdd: (ex: Exercise) => void; onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [muscles, setMuscles] = useState('');
+  const [sets, setSets] = useState(3);
+  const [repsMin, setRepsMin] = useState(8);
+  const [repsMax, setRepsMax] = useState<number | ''>(12);
+  const [weight, setWeight] = useState<number | ''>(0);
+
+  const handleSubmit = () => {
+    if (!name.trim()) { toast.error('Donne un nom à l\'exercice'); return; }
+    const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const ex: Exercise = {
+      id,
+      name: name.trim(),
+      sets,
+      repsMin,
+      repsMax: repsMax === '' ? repsMin : Number(repsMax),
+      restSeconds: 90,
+      relevanceScore: 80,
+      relevanceReason: 'Exercice personnalisé',
+      alternatives: [],
+      tips: [],
+      muscleGroups: muscles.split(',').map(m => m.trim()).filter(Boolean),
+      defaultWeight: weight === '' ? 0 : Number(weight),
+      weightProgression: 'Augmente de 2.5 kg quand toutes les séries sont complètes',
+    };
+    onAdd(ex);
+    toast.success(`${ex.name} ajouté à la séance !`);
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div
+        style={{
+          width: '100%', maxWidth: 480,
+          background: '#16161E',
+          borderRadius: '24px 24px 0 0',
+          padding: '24px 20px 40px',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Ajouter un exercice</h3>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <X size={16} color="rgba(255,255,255,0.6)" />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Nom */}
+          <div>
+            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Nom de l'exercice *</label>
+            <input
+              autoFocus
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Ex : Curl marteau, Dips..."
+              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Muscles */}
+          <div>
+            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Muscles ciblés (séparés par virgule)</label>
+            <input
+              value={muscles}
+              onChange={e => setMuscles(e.target.value)}
+              placeholder="Ex : Biceps, Avant-bras"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {/* Séries + Reps */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Séries</label>
+              <input type="number" min={1} max={10} value={sets} onChange={e => setSets(Number(e.target.value))}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
+            </div>
+            <div>
+              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Reps min</label>
+              <input type="number" min={1} max={50} value={repsMin} onChange={e => setRepsMin(Number(e.target.value))}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
+            </div>
+            <div>
+              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Reps max</label>
+              <input type="number" min={1} max={50} value={repsMax} onChange={e => setRepsMax(e.target.value === '' ? '' : Number(e.target.value))}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
+            </div>
+          </div>
+
+          {/* Poids */}
+          <div>
+            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Poids de départ (kg)</label>
+            <input type="number" min={0} step={2.5} value={weight} onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="0 = poids du corps"
+              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }} />
+          </div>
+
+          {/* Bouton */}
+          <button
+            onClick={handleSubmit}
+            style={{
+              width: '100%', padding: '14px', borderRadius: 16,
+              background: 'linear-gradient(135deg, #FF6B35, #FF3366)',
+              border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+              fontFamily: 'Syne, sans-serif', cursor: 'pointer',
+              boxShadow: '0 6px 24px rgba(255,107,53,0.3)',
+              marginTop: 4,
+            }}
+          >
+            Ajouter à la séance
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 const LEGS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/legs-workout-FPHHWKCXVWXNSCVHGWmz2h.webp";
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
 
@@ -1039,7 +1211,7 @@ function CardioView({ session }: { session: WorkoutSession }) {
 // ============================================================
 
 function ExerciseCarousel({
-  exercises, exerciseLogs, getExerciseAdaptation, draft, handleExerciseLog, handleDraftChange,
+  exercises, exerciseLogs, getExerciseAdaptation, draft, handleExerciseLog, handleDraftChange, onRemoveExercise,
 }: {
   exercises: Exercise[];
   exerciseLogs: ExerciseLog[];
@@ -1047,6 +1219,7 @@ function ExerciseCarousel({
   draft: { exercises: Record<string, SetData[]> } | null;
   handleExerciseLog: (log: ExerciseLog) => void;
   handleDraftChange: (exerciseId: string, sets: SetData[]) => void;
+  onRemoveExercise?: (id: string) => void;
 }) {
   // Vue : 'list' (verticale) ou 'carousel' (horizontal)
   const [viewMode, setViewMode] = useState<'list' | 'carousel'>(() => {
@@ -1336,6 +1509,25 @@ function ExerciseCarousel({
                 transform: dragging !== null && dragOverIdx.current === i && dragging !== i ? 'translateY(-4px)' : 'none',
               }}
             >
+              {/* Bouton supprimer */}
+              {onRemoveExercise && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveExercise(exercise.id);
+                    toast.success(`${exercise.name} retiré de la séance`);
+                  }}
+                  style={{
+                    position: 'absolute', top: 12, right: 48, zIndex: 10,
+                    width: 28, height: 28, borderRadius: 8,
+                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Trash2 size={12} color="#ef4444" />
+                </button>
+              )}
               {/* Poignée de réordonnancement */}
               <div style={{
                 position: 'absolute', top: 12, right: 12, zIndex: 10,
@@ -1421,6 +1613,10 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
   const { logSession, analyzeSession, getSuggestedWeight, getCurrentWeek, getExerciseAdaptation, getFatigueScore, updateDraftExercise, updateDraftMeta, clearWorkoutDraft, getWorkoutDraft } = useFitnessTracker();
   const fatigueScore = getFatigueScore();
   const currentWeek = getCurrentWeek();
+
+  // Gestion des exercices custom et supprimés
+  const { exercises: sessionExercises, removeExercise, addCustomExercise, resetExercises, customCount, removedCount } = useSessionExercises(session.id, session.exercises);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Restaurer le draft persisté au montage
   const draft = getWorkoutDraft(session.id);
@@ -1524,13 +1720,52 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
         </div>
       )}
       <ExerciseCarousel
-        exercises={session.exercises}
+        exercises={sessionExercises}
         exerciseLogs={exerciseLogs}
         getExerciseAdaptation={getExerciseAdaptation}
         draft={draft}
         handleExerciseLog={handleExerciseLog}
         handleDraftChange={handleDraftChange}
+        onRemoveExercise={removeExercise}
       />
+
+      {/* Barre d'actions : Ajouter un exercice + Réinitialiser */}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '13px', borderRadius: 16,
+            background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)',
+            color: '#FF6B35', fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+          }}
+        >
+          <Plus size={16} /> Ajouter un exercice
+        </button>
+        {(customCount > 0 || removedCount > 0) && (
+          <button
+            onClick={() => { resetExercises(); toast.success('Séance réinitialisée'); }}
+            style={{
+              padding: '13px 16px', borderRadius: 16,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'Inter, sans-serif',
+              cursor: 'pointer',
+            }}
+          >
+            Réinit.
+          </button>
+        )}
+      </div>
+
+      {/* Modal d'ajout */}
+      {showAddModal && (
+        <AddExerciseModal
+          onAdd={addCustomExercise}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+
       <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <p className="text-white/70 font-semibold text-sm mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>Évaluation de la séance</p>
         <div className="space-y-4">

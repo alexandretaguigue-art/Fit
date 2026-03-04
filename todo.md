@@ -20,3 +20,4 @@
 - [x] Remplacer le SVG anatomique 2D par un vrai modèle 3D anatomique GLB (Z-Anatomy, CC BY-SA 4.0) avec React Three Fiber, éclairage PBR, rotation automatique et coloration musculaire dynamique
 - [x] Restructurer section "Analyse musculaire" : modèle 3D à gauche (grand), infos musculaires à droite, fond uni, layout deux colonnes
 - [x] Redesign bloc Analyse musculaire : fond noir uni sans démarcation, typo soignée, score récupération, layout deux colonnes propre
+- [x] Ajouter et supprimer des exercices dans une séance (WorkoutPage : bouton + pour ajouter un exo custom, bouton poubelle pour supprimer, persistance localStorage)

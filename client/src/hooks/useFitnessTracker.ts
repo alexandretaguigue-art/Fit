@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { SessionLog, ProgressEntry } from '../lib/programData';
-import { programData } from '../lib/programData';
+import { programData, cycle14Days, getCycleDayForDate } from '../lib/programData';
 import {
   computeAdaptation,
   computeFatigueScore,
@@ -21,6 +21,7 @@ import {
   computeWeeklyCarryover,
   generateWeeklyMealPlan,
   generateShoppingList,
+  sessionIdToNutritionType,
   toLocalDateKey,
   type DayLog,
   type FoodEntry,
@@ -335,25 +336,59 @@ export function useFitnessTracker() {
     return toLocalDateKey(new Date());
   }, []);
 
+  /**
+   * Retourne le DayLog pour une date donnée.
+   * Si aucun log n'existe encore, construit un log vide avec le bon sessionType
+   * en consultant dans l'ordre :
+   *   1. Les overrides du calendrier (cycle_day_X ou dateKey direct)
+   *   2. Le cycle 14 jours du programme (si démarré)
+   *   3. Le jour de la semaine par défaut (lun/mar/jeu/ven = training)
+   */
   const getDayLog = useCallback((dateKey: string): DayLog => {
-    const dayOfWeek = new Date(dateKey + 'T12:00:00').getDay();
-    const trainingDays = [1, 2, 4, 5]; // lun, mar, jeu, ven
-    const isTrainingDay = trainingDays.includes(dayOfWeek);
+    // Si un log existe déjà avec un sessionType explicite, le retourner tel quel
+    const existingLog = data.nutritionLogs[dateKey];
+    if (existingLog?.sessionType) return existingLog;
 
-    return data.nutritionLogs[dateKey] ?? {
-      date: dateKey,
-      entries: [],
-      isTrainingDay,
-    };
-  }, [data.nutritionLogs]);
+    // Chercher un override direct par dateKey (YYYY-MM-DD)
+    let resolvedSessionId: string | null = null;
+
+    if (data.scheduleOverrides[dateKey]) {
+      resolvedSessionId = data.scheduleOverrides[dateKey];
+    } else if (data.startDate) {
+      // Chercher un override par cycle_day_X
+      const programStart = new Date(data.startDate);
+      const targetDate = new Date(dateKey + 'T12:00:00');
+      const cycleDay = getCycleDayForDate(targetDate, programStart);
+      const cycleDayKey = `cycle_day_${cycleDay}`;
+      if (data.scheduleOverrides[cycleDayKey]) {
+        resolvedSessionId = data.scheduleOverrides[cycleDayKey];
+      } else {
+        // Pas d'override : utiliser le sessionId du cycle 14 jours
+        const cycleEntry = cycle14Days.find(d => d.dayNumber === cycleDay);
+        if (cycleEntry) resolvedSessionId = cycleEntry.sessionId;
+      }
+    }
+
+    // Si on a un sessionId résolu, calculer le sessionType
+    if (resolvedSessionId) {
+      const sessionType = sessionIdToNutritionType(resolvedSessionId);
+      const isTrainingDay = sessionType !== 'rest';
+      return existingLog
+        ? { ...existingLog, sessionType, isTrainingDay, sessionId: resolvedSessionId }
+        : { date: dateKey, entries: [], isTrainingDay, sessionType, sessionId: resolvedSessionId };
+    }
+
+    // Fallback : jour de la semaine (lun/mar/jeu/ven = training)
+    const dayOfWeek = new Date(dateKey + 'T12:00:00').getDay();
+    const isTrainingDay = [1, 2, 4, 5].includes(dayOfWeek);
+    return existingLog ?? { date: dateKey, entries: [], isTrainingDay };
+  }, [data.nutritionLogs, data.scheduleOverrides, data.startDate]);
 
   const addFoodEntry = useCallback((dateKey: string, entry: FoodEntry) => {
+    // Utiliser getDayLog pour avoir le bon sessionType (overrides + cycle 14j)
+    const baseLog = getDayLog(dateKey);
     setData(prev => {
-      const existing = prev.nutritionLogs[dateKey] ?? {
-        date: dateKey,
-        entries: [],
-        isTrainingDay: [1, 2, 4, 5].includes(new Date(dateKey + 'T12:00:00').getDay()),
-      };
+      const existing = prev.nutritionLogs[dateKey] ?? baseLog;
       return {
         ...prev,
         nutritionLogs: {
@@ -365,7 +400,7 @@ export function useFitnessTracker() {
         },
       };
     });
-  }, []);
+  }, [getDayLog]);
 
   const updateFoodEntry = useCallback((dateKey: string, entryId: string, updates: Partial<FoodEntry>) => {
     setData(prev => {

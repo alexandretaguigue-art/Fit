@@ -6,3 +6,4 @@
 - [x] Fix : bloquer le scroll horizontal du calendrier pendant le drag & drop, et ne permettre le défilement automatique qu'aux extrémités gauche/droite
 - [x] Fix : bloquer le scroll vertical de la page pendant le drag & drop calendrier
 - [x] Fix : le plan alimentaire (onglet Nutrition) doit afficher les calories correspondant au type de séance du jour (précision à 80 kcal près)
+- [x] Fix : getDayLog retourne toujours "repos" quand aucun repas n'est enregistré, sans consulter les overrides du calendrier ni le cycle 14 jours

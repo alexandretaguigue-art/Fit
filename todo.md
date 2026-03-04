@@ -24,3 +24,5 @@
 - [x] Synchronisation automatique calories/repas/proportions lors du changement de séance dans le calendrier (swap, annulation, override)
 - [x] Remplacer le formulaire libre d'ajout d'exercice par une sélection depuis une base de données d'exercices enrichie (150+ exercices par groupe musculaire)
 - [x] Swipe gauche pour supprimer une série dans WorkoutPage + bouton ajouter série (comme les repas dans NutritionPage)
+- [x] Corriger swipe bloquant dans SwipeToDeleteSet : auto-reset si swipe insuffisant (< seuil)
+- [x] Bouton "Enregistrer ma séance personnalisée" : créer un preset nommé (ex. "Bras A") applicable à toutes les séances du même type

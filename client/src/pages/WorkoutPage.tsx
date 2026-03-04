@@ -41,8 +41,8 @@ function SwipeToDeleteSet({ children, onDelete }: { children: React.ReactNode; o
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 14 }}>
-      {/* Fond rouge — action supprimer */}
-      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 90, background: 'rgba(239,68,68,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Fond rouge — action supprimer (visible uniquement au swipe) */}
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 90, background: 'rgba(239,68,68,0.85)', display: offsetX < 0 || swiped ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center' }}>
         <button onClick={onDelete} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
           <Trash2 size={16} />
           <span style={{ fontSize: 10, fontFamily: 'Inter, sans-serif' }}>Supprimer</span>

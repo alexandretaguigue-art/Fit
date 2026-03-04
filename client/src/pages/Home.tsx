@@ -1,7 +1,7 @@
 // DESIGN: "Coach Nocturne" — Dark Mode Premium Fitness
 // Hero section avec image, stats du programme, cycle 14 jours, séance du jour
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
@@ -76,6 +76,16 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, adaptNutritionForSession } = useFitnessTracker();
   const [calendarOffset, setCalendarOffset] = useState(0);
+  const [pendingStart, setPendingStart] = useState(false);
+
+  // Naviguer vers /workout seulement après que startDate est effectivement persisté dans le state
+  useEffect(() => {
+    if (pendingStart && data.startDate) {
+      setPendingStart(false);
+      toast.success('🏋️ Programme démarré ! Jour 1 — c\'est parti !', { duration: 3000 });
+      navigate('/workout');
+    }
+  }, [pendingStart, data.startDate, navigate]);
 
   // Modal de confirmation avant swap avec adaptation nutritionnelle
   const [swapConfirm, setSwapConfirm] = useState<{
@@ -880,7 +890,10 @@ export default function Home() {
         {/* CTA si programme non démarré */}
         {!data.startDate && (
           <button
-            onClick={() => { startProgram(); navigate('/workout'); }}
+            onClick={() => {
+              startProgram();
+              setPendingStart(true);
+            }}
             className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 hover:opacity-90 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #FF6B35, #FF3366)',

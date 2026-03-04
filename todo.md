@@ -13,5 +13,7 @@
 - [x] Fix : bouton "Démarrer mon programme" ne fixe pas la date de démarrage — redirige juste vers les séances sans retour visuel
 - [x] Corps hologramme SVG animé orange sur l'accueil avec zones musculaires actives selon le type de séance du jour
 - [x] Mise en évidence orange des modifications nutritionnelles (quantités et aliments changés) dans NutritionPage
-- [ ] Hologramme 3D avec Three.js : modèle anatomique 3D avec couleurs par muscle (rouge = fatigué, vert = récupéré) basé sur les séances enregistrées
-- [ ] Moteur de récupération musculaire : calcul du niveau de fatigue/récupération de chaque groupe musculaire en fonction du temps écoulé depuis la dernière séance
+- [x] Hologramme 3D avec Three.js : modèle anatomique 3D avec couleurs par muscle (rouge = fatigué, vert = récupéré) basé sur les séances enregistrées
+- [x] Moteur de récupération musculaire : calcul du niveau de fatigue/récupération de chaque groupe musculaire en fonction du temps écoulé depuis la dernière séance
+- [ ] Remplacer le hologramme géométrique par un vrai modèle anatomique humain GLTF/GLB avec groupes musculaires colorables
+- [ ] Enrichir le moteur de récupération : prendre en compte repos, nutrition, fréquence des séances

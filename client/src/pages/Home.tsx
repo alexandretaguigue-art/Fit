@@ -5,7 +5,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
-import { BodyHologram } from '../components/BodyHologram';
+import BodyHologram3D from '../components/BodyHologram3D';
+import { computeMuscleStates, type SessionRecord } from '../lib/muscleRecovery';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
 import { useAuth } from '../_core/hooks/useAuth';
@@ -701,60 +702,67 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Analyse corporelle + Stats rapides */}
+        {/* Hologramme 3D de récupération musculaire */}
         <div
-          className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="rounded-2xl overflow-hidden"
+          style={{ background: 'rgba(0,8,30,0.85)', border: '1px solid rgba(0,68,255,0.25)' }}
         >
-          <p className="text-white/50 text-xs uppercase tracking-wider mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Analyse musculaire du jour
-          </p>
-          <div className="flex items-start gap-4">
-            {/* Hologramme corps */}
-            <div className="flex-shrink-0">
-              <BodyHologram sessionId={todaySessionId} />
+          {/* Header */}
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <div>
+              <p className="text-white/50 text-xs uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Analyse musculaire
+              </p>
+              <p className="text-white font-bold text-sm mt-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>
+                {todaySession?.name || 'Repos'}
+              </p>
             </div>
-
-            {/* Stats à droite */}
-            <div className="flex-1 flex flex-col justify-between h-full gap-3 pt-2">
-              {/* Titre séance */}
-              <div>
-                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Séance du jour</p>
-                <p className="text-white font-bold text-sm mt-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  {todaySession?.name || 'Repos'}
-                </p>
-              </div>
-
-              {/* Stats numériques */}
-              {data.startDate && (
-                <div className="space-y-2">
-                  {[
-                    { label: 'Séances complétées', value: stats.totalSessions, unit: '' },
-                    { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm' },
-                    { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm' },
-                  ].map(({ label, value, unit }) => (
-                    <div key={label} className="flex items-center justify-between">
-                      <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</span>
-                      <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: '#FF6B35' }}>
-                        {value}<span className="text-xs ml-0.5" style={{ color: 'rgba(255,107,53,0.6)' }}>{unit}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Objectif calorique */}
-              <div
-                className="rounded-xl p-2.5"
-                style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}
-              >
-                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique</p>
-                <p className="font-bold text-lg leading-none mt-0.5" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>
-                  {SESSION_CALORIES_EAT[todaySessionId]?.kcal ?? 2500} <span className="text-xs font-normal" style={{ color: 'rgba(255,107,53,0.6)' }}>kcal</span>
-                </p>
-              </div>
+            {/* Objectif calorique */}
+            <div
+              className="rounded-xl px-3 py-2 text-right"
+              style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.25)' }}
+            >
+              <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif</p>
+              <p className="font-bold text-base leading-none mt-0.5" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>
+                {SESSION_CALORIES_EAT[todaySessionId]?.kcal ?? 2500}<span className="text-xs font-normal ml-0.5" style={{ color: 'rgba(255,107,53,0.6)' }}>kcal</span>
+              </p>
             </div>
           </div>
+
+          {/* Hologramme 3D */}
+          {(() => {
+            // Construire les SessionRecords depuis les sessionLogs
+            const sessionRecords: SessionRecord[] = data.sessionLogs.map(log => ({
+              sessionId: log.sessionId,
+              dateKey: log.date.split('T')[0],
+              completedAt: new Date(log.date).getTime(),
+            }));
+            const muscleStates = computeMuscleStates(sessionRecords);
+            return (
+              <BodyHologram3D
+                muscleStates={muscleStates}
+                height={340}
+              />
+            );
+          })()}
+
+          {/* Stats en bas */}
+          {data.startDate && (
+            <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+              {[
+                { label: 'Séances', value: stats.totalSessions, unit: '' },
+                { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm' },
+                { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm' },
+              ].map(({ label, value, unit }) => (
+                <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif', color: '#FF6B35' }}>
+                    {value}<span className="text-xs ml-0.5" style={{ color: 'rgba(255,107,53,0.5)' }}>{unit}</span>
+                  </p>
+                  <p className="text-white/35 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Phase actuelle */}

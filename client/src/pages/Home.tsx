@@ -25,11 +25,24 @@ const SESSION_IMAGES: Record<string, string> = {
   rest: '',
 };
 
-// Calories estimées par session
-const SESSION_CALORIES: Record<string, number> = {
+// Calories brûlées estimées par session
+const SESSION_CALORIES_BURNED: Record<string, number> = {
   upper_a: 420, upper_b: 400, lower_a: 520, lower_b: 480,
   football: 650, running_endurance: 580, running_intervals: 620,
   cycling: 380, rest: 0,
+};
+
+// Calories à MANGER par session (apport journalier recommandé)
+const SESSION_CALORIES_EAT: Record<string, { kcal: number; color: string; label: string }> = {
+  upper_a:           { kcal: 2700, color: '#A855F7', label: '2700 kcal' },
+  upper_b:           { kcal: 2700, color: '#A855F7', label: '2700 kcal' },
+  lower_a:           { kcal: 2800, color: '#EC4899', label: '2800 kcal' },
+  lower_b:           { kcal: 2800, color: '#EC4899', label: '2800 kcal' },
+  football:          { kcal: 2900, color: '#F97316', label: '2900 kcal' },
+  running_endurance: { kcal: 2750, color: '#3B82F6', label: '2750 kcal' },
+  running_intervals: { kcal: 2750, color: '#3B82F6', label: '2750 kcal' },
+  cycling:           { kcal: 2500, color: '#22C55E', label: '2500 kcal' },
+  rest:              { kcal: 2300, color: '#22C55E', label: '2300 kcal' },
 };
 
 const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -279,129 +292,128 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Semaine 1 */}
-          <p className="text-white/30 text-xs uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Semaine 1</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 16 }}>
-            {cycle14Days.slice(0, 7).map(day => {
-              const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
-              const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
-              const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
-              const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
-              const colors = SESSION_TYPE_COLORS[day.type];
-              const sessionImg = SESSION_IMAGES[day.sessionId];
-              const calories = SESSION_CALORIES[day.sessionId] ?? 0;
-              const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
-              const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
-              const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
+          {/* Grille calendrier — 7 colonnes, 2 rangées, grandes cards */}
+          {(['Semaine 1', 'Semaine 2'] as const).map((weekLabel, weekIdx) => (
+            <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 10 : 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 6 }}>{weekLabel}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+                {cycle14Days.slice(weekIdx * 7, weekIdx * 7 + 7).map(day => {
+                  const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
+                  const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
+                  const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
+                  const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
+                  const colors = SESSION_TYPE_COLORS[day.type];
+                  const sessionImg = SESSION_IMAGES[day.sessionId];
+                  const eatInfo = SESSION_CALORIES_EAT[day.sessionId];
+                  const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
+                  const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
+                  const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
 
-              return (
-                <button
-                  key={day.dayNumber}
-                  onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
-                  style={{
-                    position: 'relative', borderRadius: 12, overflow: 'hidden',
-                    aspectRatio: '3/4', border: isToday ? `2px solid ${colors.text}` : isEditing ? '2px solid rgba(255,255,255,0.4)' : isCompleted ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.07)',
-                    opacity: isPast && !isCompleted && !isToday ? 0.5 : 1,
-                    cursor: 'pointer', background: '#111',
-                    boxShadow: isToday ? `0 0 12px ${colors.text}40` : 'none',
-                    transition: 'all 0.2s',
-                    padding: 0,
-                  }}
-                >
-                  {/* Photo de fond */}
-                  {sessionImg ? (
-                    <img src={sessionImg} alt={day.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: isPast && !isCompleted ? 'brightness(0.25) grayscale(0.6)' : 'brightness(0.35)' }} />
-                  ) : (
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.03)' }} />
-                  )}
-                  {/* Overlay gradient */}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.85) 100%)' }} />
-                  {/* Badge complété */}
-                  {isCompleted && (
-                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'rgba(34,197,94,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={9} color="#fff" />
-                    </div>
-                  )}
-                  {/* Contenu bas */}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 4px 5px' }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>J{absoluteDayNumber}</div>
-                    {day.type === 'rest' ? (
-                      <div style={{ fontSize: 13, lineHeight: 1.1, marginTop: 2 }}>😴</div>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 8, fontWeight: 600, color: colors.text, fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {day.label.split(' — ')[0]}
-                        </div>
-                        <div style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1 }}>
-                          ~{calories} kcal
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  return (
+                    <button
+                      key={day.dayNumber}
+                      onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
+                      style={{
+                        position: 'relative',
+                        borderRadius: 10,
+                        overflow: 'hidden',
+                        aspectRatio: '1/1.45',
+                        border: isToday
+                          ? `2px solid ${colors.text}`
+                          : isEditing
+                          ? '2px solid rgba(255,255,255,0.5)'
+                          : isCompleted
+                          ? '1px solid rgba(34,197,94,0.5)'
+                          : '1px solid rgba(255,255,255,0.06)',
+                        opacity: isPast && !isCompleted && !isToday ? 0.45 : 1,
+                        cursor: 'pointer',
+                        background: '#0e0e14',
+                        boxShadow: isToday ? `0 0 16px ${colors.text}55` : 'none',
+                        transition: 'all 0.2s',
+                        padding: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      {/* Photo de fond — prend toute la hauteur sauf la barre calories */}
+                      <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+                        {sessionImg ? (
+                          <img
+                            src={sessionImg}
+                            alt={day.label}
+                            style={{
+                              position: 'absolute', inset: 0, width: '100%', height: '100%',
+                              objectFit: 'cover',
+                              filter: isPast && !isCompleted ? 'brightness(0.22) grayscale(0.7)' : 'brightness(0.55)',
+                            }}
+                          />
+                        ) : (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.02)' }} />
+                        )}
+                        {/* Gradient sombre vers le bas */}
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.82) 100%)' }} />
 
-          {/* Semaine 2 */}
-          <p className="text-white/30 text-xs uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Semaine 2</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
-            {cycle14Days.slice(7, 14).map(day => {
-              const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
-              const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
-              const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
-              const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
-              const colors = SESSION_TYPE_COLORS[day.type];
-              const sessionImg = SESSION_IMAGES[day.sessionId];
-              const calories = SESSION_CALORIES[day.sessionId] ?? 0;
-              const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
-              const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
-              const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
+                        {/* Badge complété */}
+                        {isCompleted && (
+                          <div style={{
+                            position: 'absolute', top: 4, right: 4, width: 14, height: 14,
+                            borderRadius: '50%', background: 'rgba(34,197,94,0.95)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Check size={8} color="#fff" />
+                          </div>
+                        )}
 
-              return (
-                <button
-                  key={day.dayNumber}
-                  onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
-                  style={{
-                    position: 'relative', borderRadius: 12, overflow: 'hidden',
-                    aspectRatio: '3/4', border: isToday ? `2px solid ${colors.text}` : isEditing ? '2px solid rgba(255,255,255,0.4)' : isCompleted ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.07)',
-                    opacity: isPast && !isCompleted && !isToday ? 0.5 : 1,
-                    cursor: 'pointer', background: '#111',
-                    boxShadow: isToday ? `0 0 12px ${colors.text}40` : 'none',
-                    transition: 'all 0.2s',
-                    padding: 0,
-                  }}
-                >
-                  {sessionImg ? (
-                    <img src={sessionImg} alt={day.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: isPast && !isCompleted ? 'brightness(0.25) grayscale(0.6)' : 'brightness(0.35)' }} />
-                  ) : (
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.03)' }} />
-                  )}
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.85) 100%)' }} />
-                  {isCompleted && (
-                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'rgba(34,197,94,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={9} color="#fff" />
-                    </div>
-                  )}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 4px 5px' }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>J{absoluteDayNumber}</div>
-                    {day.type === 'rest' ? (
-                      <div style={{ fontSize: 13, lineHeight: 1.1, marginTop: 2 }}>😴</div>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 8, fontWeight: 600, color: colors.text, fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {day.label.split(' — ')[0]}
+                        {/* Numéro de jour + label séance */}
+                        <div style={{ position: 'absolute', bottom: 5, left: 0, right: 0, padding: '0 4px' }}>
+                          <div style={{
+                            fontSize: 10, fontWeight: 800, lineHeight: 1,
+                            color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.6)',
+                            fontFamily: 'Syne, sans-serif',
+                          }}>J{absoluteDayNumber}</div>
+                          {day.type === 'rest' ? (
+                            <div style={{ fontSize: 14, lineHeight: 1, marginTop: 1 }}>😴</div>
+                          ) : (
+                            <div style={{
+                              fontSize: 7.5, fontWeight: 700, lineHeight: 1.1, marginTop: 2,
+                              color: colors.text,
+                              fontFamily: 'Inter, sans-serif',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>
+                              {day.label.split(' — ')[0]}
+                            </div>
+                          )}
                         </div>
-                        <div style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1 }}>
-                          ~{calories} kcal
+                      </div>
+
+                      {/* Barre calories à manger — couleur selon le niveau */}
+                      <div style={{
+                        background: `${eatInfo?.color ?? '#22C55E'}18`,
+                        borderTop: `1.5px solid ${eatInfo?.color ?? '#22C55E'}60`,
+                        padding: '3px 4px 4px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                      }}>
+                        <div style={{
+                          fontSize: 7, fontWeight: 700, lineHeight: 1,
+                          color: eatInfo?.color ?? '#22C55E',
+                          fontFamily: 'Inter, sans-serif',
+                          letterSpacing: '-0.01em',
+                        }}>
+                          {eatInfo?.kcal ?? 2300}
                         </div>
-                      </>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                        <div style={{
+                          fontSize: 5.5, fontWeight: 500, lineHeight: 1,
+                          color: `${eatInfo?.color ?? '#22C55E'}99`,
+                          fontFamily: 'Inter, sans-serif',
+                          textTransform: 'uppercase', letterSpacing: '0.04em',
+                        }}>kcal</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {/* Panneau de modification du jour sélectionné */}
           {editingDay !== null && (

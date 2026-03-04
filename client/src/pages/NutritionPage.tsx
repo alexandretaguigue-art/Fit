@@ -620,7 +620,14 @@ function JournalTab() {
         </button>
         <div className="text-center">
           <p className="text-white font-semibold text-sm capitalize" style={{ fontFamily: 'Syne, sans-serif' }}>{dateLabel}</p>
-          <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{dayLog.isTrainingDay ? '🏋️ Jour training' : '😴 Jour de repos'}</p>
+          <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {dayLog.sessionType === 'football' ? '⚽ Football' :
+             dayLog.sessionType === 'running' ? '🏃 Course' :
+             dayLog.sessionType === 'cycling' ? '🚴 Vélo' :
+             dayLog.sessionType === 'training' ? '🏋️ Musculation' :
+             dayLog.sessionType === 'rest' ? '😴 Repos' :
+             dayLog.isTrainingDay ? '🏋️ Jour training' : '😴 Jour de repos'}
+          </p>
         </div>
         <button onClick={() => setDateOffset(d => Math.min(d + 1, 0))} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }} disabled={dateOffset === 0}>
           <ChevronRight size={16} className={dateOffset === 0 ? 'text-white/20' : 'text-white/60'} />

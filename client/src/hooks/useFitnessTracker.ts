@@ -354,11 +354,25 @@ export function useFitnessTracker() {
 
     if (data.scheduleOverrides[dateKey]) {
       resolvedSessionId = data.scheduleOverrides[dateKey];
-    } else if (data.startDate) {
-      // Chercher un override par cycle_day_X
-      const programStart = new Date(data.startDate);
+    } else {
+      // Résoudre le jour du cycle :
+      // - Si le programme a démarré : calculer depuis la date de démarrage
+      // - Sinon : utiliser aujourd'hui comme Jour 1 du cycle (pour que les overrides cycle_day_X fonctionnent)
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const programStart = data.startDate
+        ? new Date(data.startDate)
+        : (() => {
+            // Trouver le Jour 1 virtuel : aujourd'hui = Jour 1
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return today;
+          })();
+
       const targetDate = new Date(dateKey + 'T12:00:00');
-      const cycleDay = getCycleDayForDate(targetDate, programStart);
+      const daysSinceStart = Math.floor((targetDate.getTime() - programStart.getTime()) / msPerDay);
+      // cycleDay entre 1 et 14 (modulo 14)
+      const cycleDay = ((daysSinceStart % 14) + 14) % 14 + 1;
+
       const cycleDayKey = `cycle_day_${cycleDay}`;
       if (data.scheduleOverrides[cycleDayKey]) {
         resolvedSessionId = data.scheduleOverrides[cycleDayKey];
@@ -378,7 +392,7 @@ export function useFitnessTracker() {
         : { date: dateKey, entries: [], isTrainingDay, sessionType, sessionId: resolvedSessionId };
     }
 
-    // Fallback : jour de la semaine (lun/mar/jeu/ven = training)
+    // Fallback ultime : jour de la semaine (lun/mar/jeu/ven = training)
     const dayOfWeek = new Date(dateKey + 'T12:00:00').getDay();
     const isTrainingDay = [1, 2, 4, 5].includes(dayOfWeek);
     return existingLog ?? { date: dateKey, entries: [], isTrainingDay };
@@ -471,23 +485,26 @@ export function useFitnessTracker() {
     const result: Record<string, string> = {};
     if (!data.scheduleOverrides) return result;
 
+    const msPerDay = 24 * 60 * 60 * 1000;
+    // Référence du Jour 1 du cycle :
+    // - Si le programme a démarré : date de démarrage
+    // - Sinon : aujourd'hui = Jour 1 (pour que les overrides fonctionnent sans démarrage)
+    const programStart = data.startDate
+      ? new Date(data.startDate)
+      : (() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; })();
+
     for (const [key, sessionId] of Object.entries(data.scheduleOverrides)) {
       if (key.startsWith('cycle_day_')) {
-        // Clé cycle_day_X : convertir en dateKey si le programme a démarré
-        if (data.startDate) {
-          const cycleDay = parseInt(key.replace('cycle_day_', ''), 10);
-          if (!isNaN(cycleDay) && cycleDay >= 1 && cycleDay <= 14) {
-            // Calculer la date réelle du jour de cycle courant
-            const programStart = new Date(data.startDate);
-            const today = new Date();
-            const msPerDay = 24 * 60 * 60 * 1000;
-            const daysSinceStart = Math.floor((today.getTime() - programStart.getTime()) / msPerDay);
-            const currentCycleStart = Math.floor(daysSinceStart / 14) * 14;
-            const targetDayOffset = currentCycleStart + (cycleDay - 1);
-            const targetDate = new Date(programStart.getTime() + targetDayOffset * msPerDay);
-            const dateKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}-${String(targetDate.getDate()).padStart(2,'0')}`;
-            result[dateKey] = sessionId;
-          }
+        const cycleDay = parseInt(key.replace('cycle_day_', ''), 10);
+        if (!isNaN(cycleDay) && cycleDay >= 1 && cycleDay <= 14) {
+          // Calculer la date réelle du jour de cycle dans le cycle courant
+          const today = new Date();
+          const daysSinceStart = Math.floor((today.getTime() - programStart.getTime()) / msPerDay);
+          const currentCycleStart = Math.floor(daysSinceStart / 14) * 14;
+          const targetDayOffset = currentCycleStart + (cycleDay - 1);
+          const targetDate = new Date(programStart.getTime() + targetDayOffset * msPerDay);
+          const dateKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}-${String(targetDate.getDate()).padStart(2,'0')}`;
+          result[dateKey] = sessionId;
         }
       } else {
         // Clé dateKey directe (YYYY-MM-DD) — utilisée par adaptNutritionForSession

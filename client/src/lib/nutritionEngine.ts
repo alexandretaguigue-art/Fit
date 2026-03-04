@@ -1081,26 +1081,86 @@ export function sessionIdToNutritionType(
   return 'training'; // upper_a, upper_b, lower_a, lower_b
 }
 
+// Clés d'aliments glucidiques (ajustés en priorité pour atteindre la cible calorique)
+const CARB_FOODS = [
+  'riz', 'pâtes', 'pain', 'patate', 'pomme de terre', 'pommes de terre', 'flocons',
+  'tortilla', 'banane', 'farine', 'avoine', 'quinoa',
+];
+// Clés d'aliments lipidiques (ajustés en second)
+const FAT_FOODS = ['huile', 'beurre', 'noix', 'amandes', 'cajou', 'avocat'];
+// Clés d'aliments protéiques (plafondés pour rester réalistes)
+const PROTEIN_FOODS = [
+  'poulet', 'dinde', 'boeuf', 'steak', 'thon', 'saumon', 'cabillaud', 'oeuf',
+  'whey', 'skyr', 'yaourt', 'fromage blanc', 'mozzarella', 'parmesan',
+];
+
 /**
- * Ajuste proportionnellement les quantités et macros d'un repas
- * pour atteindre une cible calorique donnée (à ±80 kcal près).
+ * Ajuste les quantités d'un repas pour atteindre une cible calorique (±80 kcal).
+ * Stratégie : ajuster en priorité les glucides, puis les lipides.
+ * Les protéines ne dépassent pas 250g par item (réalisme).
+ * Les glucides sont plafonnés à 400g par item, les lipides à 40ml.
  */
 function scaleMealToCalories(meal: Meal, targetCalories: number): Meal {
   if (meal.totalCalories <= 0) return meal;
-  const ratio = targetCalories / meal.totalCalories;
-  const scaledItems: MealItem[] = meal.items.map(item => ({
-    ...item,
-    proteins: Math.round(item.proteins * ratio * 10) / 10,
-    carbs: Math.round(item.carbs * ratio * 10) / 10,
-    fats: Math.round(item.fats * ratio * 10) / 10,
-    calories: Math.round(item.calories * ratio),
-    // Ajuster la quantité numérique dans la chaîne (ex: "100g" → "107g")
-    quantity: item.quantity.replace(/(\d+(?:\.\d+)?)/, (match) => {
-      const originalQty = parseFloat(match);
-      const newQty = Math.round(originalQty * ratio);
-      return String(newQty);
-    }),
-  }));
+  const delta = targetCalories - meal.totalCalories;
+  if (Math.abs(delta) <= 80) return meal;
+
+  const isCarb = (name: string) => CARB_FOODS.some(k => name.toLowerCase().includes(k));
+  const isFat = (name: string) => FAT_FOODS.some(k => name.toLowerCase().includes(k));
+
+  // Calories actuelles des glucides et lipides dans le repas
+  const carbCalories = meal.items.filter(i => isCarb(i.food)).reduce((s, i) => s + i.calories, 0);
+  const fatCalories = meal.items.filter(i => isFat(i.food)).reduce((s, i) => s + i.calories, 0);
+
+  // Distribuer le delta : 70% sur glucides, 30% sur lipides (si disponibles)
+  let carbDelta = delta;
+  let fatDelta = 0;
+  if (fatCalories > 0 && carbCalories > 0) {
+    carbDelta = Math.round(delta * 0.70);
+    fatDelta = delta - carbDelta;
+  } else if (carbCalories <= 0 && fatCalories > 0) {
+    carbDelta = 0;
+    fatDelta = delta;
+  }
+
+  const scaledItems: MealItem[] = meal.items.map(item => {
+    let itemDelta = 0;
+    if (isCarb(item.food) && carbCalories > 0) {
+      // Proportionnel à la contribution de cet item aux glucides totaux
+      itemDelta = Math.round(carbDelta * (item.calories / carbCalories));
+    } else if (isFat(item.food) && fatCalories > 0) {
+      itemDelta = Math.round(fatDelta * (item.calories / fatCalories));
+    }
+
+    if (itemDelta === 0) return item;
+
+    const ratio = (item.calories + itemDelta) / item.calories;
+    // Extraire la première valeur numérique de la chaîne de quantité
+    const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
+    const originalQty = qtyMatch ? parseFloat(qtyMatch[1]) : 0;
+    const newQty = Math.round(originalQty * ratio);
+
+    // Plafonds réalistes : glucides max 400g, lipides max 40ml
+    const clampedQty = isCarb(item.food)
+      ? Math.min(newQty, 400)
+      : isFat(item.food)
+      ? Math.min(newQty, 40)
+      : newQty;
+
+    const clampedRatio = originalQty > 0 ? clampedQty / originalQty : ratio;
+
+    return {
+      ...item,
+      proteins: Math.round(item.proteins * clampedRatio * 10) / 10,
+      carbs: Math.round(item.carbs * clampedRatio * 10) / 10,
+      fats: Math.round(item.fats * clampedRatio * 10) / 10,
+      calories: Math.round(item.calories * clampedRatio),
+      quantity: qtyMatch
+        ? item.quantity.replace(/(\d+(?:\.\d+)?)/, String(clampedQty))
+        : item.quantity,
+    };
+  });
+
   const newTotal = scaledItems.reduce((s, i) => s + i.calories, 0);
   return { ...meal, items: scaledItems, totalCalories: newTotal };
 }

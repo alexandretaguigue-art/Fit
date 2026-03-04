@@ -248,26 +248,63 @@ interface Meal {
   totalCalories: number;
 }
 
+// Nouvelle logique intelligente de scaling (ajuste glucides/lipides, pas proportionnel global)
+const CARB_FOODS_TEST = ['riz', 'pâtes', 'pain', 'patate', 'flocons', 'tortilla', 'banane', 'farine', 'avoine', 'quinoa'];
+const FAT_FOODS_TEST = ['huile', 'beurre', 'noix', 'amandes', 'cajou', 'avocat'];
+
 function scaleMealToCalories(meal: Meal, targetCalories: number): Meal {
   if (meal.totalCalories <= 0) return meal;
-  const ratio = targetCalories / meal.totalCalories;
-  const scaledItems: MealItem[] = meal.items.map(item => ({
-    ...item,
-    proteins: Math.round(item.proteins * ratio * 10) / 10,
-    carbs: Math.round(item.carbs * ratio * 10) / 10,
-    fats: Math.round(item.fats * ratio * 10) / 10,
-    calories: Math.round(item.calories * ratio),
-    quantity: item.quantity.replace(/(\d+(?:\.\d+)?)/, (match) => {
-      const originalQty = parseFloat(match);
-      const newQty = Math.round(originalQty * ratio);
-      return String(newQty);
-    }),
-  }));
+  const delta = targetCalories - meal.totalCalories;
+  if (Math.abs(delta) <= 80) return meal;
+
+  const isCarb = (name: string) => CARB_FOODS_TEST.some(k => name.toLowerCase().includes(k));
+  const isFat = (name: string) => FAT_FOODS_TEST.some(k => name.toLowerCase().includes(k));
+
+  const carbCalories = meal.items.filter(i => isCarb(i.food)).reduce((s, i) => s + i.calories, 0);
+  const fatCalories = meal.items.filter(i => isFat(i.food)).reduce((s, i) => s + i.calories, 0);
+
+  let carbDelta = delta;
+  let fatDelta = 0;
+  if (fatCalories > 0 && carbCalories > 0) {
+    carbDelta = Math.round(delta * 0.70);
+    fatDelta = delta - carbDelta;
+  } else if (carbCalories <= 0 && fatCalories > 0) {
+    carbDelta = 0;
+    fatDelta = delta;
+  }
+
+  const scaledItems: MealItem[] = meal.items.map(item => {
+    let itemDelta = 0;
+    if (isCarb(item.food) && carbCalories > 0) {
+      itemDelta = Math.round(carbDelta * (item.calories / carbCalories));
+    } else if (isFat(item.food) && fatCalories > 0) {
+      itemDelta = Math.round(fatDelta * (item.calories / fatCalories));
+    }
+    if (itemDelta === 0) return item;
+
+    const ratio = (item.calories + itemDelta) / item.calories;
+    const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
+    const originalQty = qtyMatch ? parseFloat(qtyMatch[1]) : 0;
+    const newQty = Math.round(originalQty * ratio);
+    const clampedQty = isCarb(item.food) ? Math.min(newQty, 400) : isFat(item.food) ? Math.min(newQty, 40) : newQty;
+    const clampedRatio = originalQty > 0 ? clampedQty / originalQty : ratio;
+
+    return {
+      ...item,
+      proteins: Math.round(item.proteins * clampedRatio * 10) / 10,
+      carbs: Math.round(item.carbs * clampedRatio * 10) / 10,
+      fats: Math.round(item.fats * clampedRatio * 10) / 10,
+      calories: Math.round(item.calories * clampedRatio),
+      quantity: qtyMatch ? item.quantity.replace(/(\d+(?:\.\d+)?)/, String(clampedQty)) : item.quantity,
+    };
+  });
+
   const newTotal = scaledItems.reduce((s, i) => s + i.calories, 0);
   return { ...meal, items: scaledItems, totalCalories: newTotal };
 }
 
-describe('scaleMealToCalories', () => {
+describe('scaleMealToCalories - logique intelligente', () => {
+  // Repas avec glucides (flocons, banane) et lipides (amandes)
   const baseMeal: Meal = {
     time: '07h00',
     name: 'Petit-déjeuner',
@@ -275,7 +312,7 @@ describe('scaleMealToCalories', () => {
     items: [
       { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
       { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
-      { food: 'Banane', quantity: '1 (150g)', proteins: 2, carbs: 34, fats: 0, calories: 134 },
+      { food: 'Banane', quantity: '150g', proteins: 2, carbs: 34, fats: 0, calories: 134 },
       { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
       { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
     ],
@@ -287,31 +324,69 @@ describe('scaleMealToCalories', () => {
     expect(result).toBe(emptyMeal);
   });
 
-  it('scale vers le haut (800 → 870 kcal pour football)', () => {
-    const result = scaleMealToCalories(baseMeal, 870);
-    expect(result.totalCalories).toBeGreaterThan(800);
-    // Tolérance ±10 kcal due aux arrondis
-    expect(Math.abs(result.totalCalories - 870)).toBeLessThanOrEqual(20);
-  });
-
-  it('scale vers le bas (800 → 750 kcal pour repos)', () => {
-    const result = scaleMealToCalories(baseMeal, 750);
-    expect(result.totalCalories).toBeLessThan(800);
-    expect(Math.abs(result.totalCalories - 750)).toBeLessThanOrEqual(20);
+  it('retourne le repas inchangé si delta ≤ 80 kcal (dans la tolérance)', () => {
+    const result = scaleMealToCalories(baseMeal, 850); // delta = 50 kcal
+    expect(result).toBe(baseMeal);
   });
 
   it('préserve le nombre d\'items après scaling', () => {
-    const result = scaleMealToCalories(baseMeal, 900);
+    const result = scaleMealToCalories(baseMeal, 1000); // delta = 200 kcal
     expect(result.items).toHaveLength(baseMeal.items.length);
   });
 
-  it('les macros scalées sont proportionnelles', () => {
-    const ratio = 870 / 800;
-    const result = scaleMealToCalories(baseMeal, 870);
-    const originalProteins = baseMeal.items.reduce((s, i) => s + i.proteins, 0);
-    const scaledProteins = result.items.reduce((s, i) => s + i.proteins, 0);
-    // Tolérance ±2g due aux arrondis
-    expect(Math.abs(scaledProteins - originalProteins * ratio)).toBeLessThanOrEqual(2);
+  it('les protéines restent inchangées (seuls glucides/lipides sont ajustés)', () => {
+    const result = scaleMealToCalories(baseMeal, 1000);
+    const laitItem = result.items.find(i => i.food === 'Lait demi-écrémé');
+    const originalLait = baseMeal.items.find(i => i.food === 'Lait demi-écrémé');
+    // Le lait n'est ni glucide ni lipide clé → inchangé
+    expect(laitItem?.calories).toBe(originalLait?.calories);
+  });
+
+  it('les flocons d\'avoine (glucide) sont augmentés lors d\'un scale vers le haut', () => {
+    const result = scaleMealToCalories(baseMeal, 1000); // delta = 200 kcal
+    const flocons = result.items.find(i => i.food.includes('Flocons'));
+    const originalFlocons = baseMeal.items.find(i => i.food.includes('Flocons'));
+    expect(flocons!.calories).toBeGreaterThan(originalFlocons!.calories);
+  });
+
+  it('les flocons d\'avoine (glucide) sont réduits lors d\'un scale vers le bas', () => {
+    const result = scaleMealToCalories(baseMeal, 600); // delta = -200 kcal
+    const flocons = result.items.find(i => i.food.includes('Flocons'));
+    const originalFlocons = baseMeal.items.find(i => i.food.includes('Flocons'));
+    expect(flocons!.calories).toBeLessThan(originalFlocons!.calories);
+  });
+
+  it('les amandes (lipide) sont ajustées en second (30% du delta)', () => {
+    const result = scaleMealToCalories(baseMeal, 1000); // delta = 200 kcal
+    const amandes = result.items.find(i => i.food === 'Amandes');
+    const originalAmandes = baseMeal.items.find(i => i.food === 'Amandes');
+    // Les amandes doivent être augmentées (30% du delta = ~60 kcal)
+    expect(amandes!.calories).toBeGreaterThan(originalAmandes!.calories);
+  });
+
+  it('la quantité numérique des flocons est mise à jour dans la chaîne', () => {
+    const result = scaleMealToCalories(baseMeal, 1000);
+    const flocons = result.items.find(i => i.food.includes('Flocons'));
+    // La quantité doit être supérieure à 100g
+    const qty = parseInt(flocons!.quantity.match(/(\d+)/)?.[1] ?? '0', 10);
+    expect(qty).toBeGreaterThan(100);
+  });
+
+  it('les glucides sont plafonnés à 400g (réalisme)', () => {
+    // Repas avec seulement 50g de riz et un delta énorme
+    const smallMeal: Meal = {
+      time: '12h00',
+      name: 'Déjeuner',
+      totalCalories: 200,
+      items: [
+        { food: 'Riz cuit', quantity: '50g', proteins: 3, carbs: 40, fats: 0, calories: 180 },
+        { food: 'Poulet grillé', quantity: '100g', proteins: 25, carbs: 0, fats: 2, calories: 120 },
+      ],
+    };
+    const result = scaleMealToCalories(smallMeal, 2000); // delta énorme
+    const riz = result.items.find(i => i.food.includes('Riz'));
+    const qty = parseInt(riz!.quantity.match(/(\d+)/)?.[1] ?? '0', 10);
+    expect(qty).toBeLessThanOrEqual(400);
   });
 });
 

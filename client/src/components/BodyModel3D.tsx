@@ -1,22 +1,19 @@
 /**
  * BodyModel3D — Visualisation 3D anatomique réelle (Z-Anatomy, CC BY-SA 4.0)
- * Modèle GLB avec muscles individuellement colorés selon l'état de récupération.
  * 
  * Palette de couleurs :
- *   Frais (0%)      → bleu acier #4a9eff (non sollicité)
- *   Récupéré (<20%) → vert émeraude #22c55e
- *   Léger (<40%)    → vert-jaune #84cc16
- *   Modéré (<65%)   → orange #f97316
- *   Fatigué (<85%)  → rouge #ef4444
- *   Épuisé (>85%)   → rouge foncé #dc2626
+ *   Frais      → bleu #4a9eff
+ *   Récupéré   → vert #22c55e
+ *   Léger      → vert-jaune #84cc16
+ *   Modéré     → orange #f97316
+ *   Fatigué    → rouge #ef4444
+ *   Épuisé     → rouge foncé #dc2626
  */
 
-import { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
+import { useRef, useState, useEffect, Suspense, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export type MuscleState = 'fresh' | 'recovered' | 'light' | 'moderate' | 'fatigued' | 'exhausted';
 
@@ -29,7 +26,6 @@ export interface MuscleStatus {
 }
 
 // ─── Mapping MuscleGroup → noms de meshes dans le GLB ────────────────────────
-// Chaque groupe musculaire correspond à plusieurs meshes dans le modèle Z-Anatomy
 const MUSCLE_MESH_MAP: Record<string, string[]> = {
   chest: [
     'Clavicular head of pectoralis major muscle',
@@ -145,9 +141,42 @@ const MUSCLE_MESH_MAP: Record<string, string[]> = {
   ],
 };
 
+// Normalise un nom de mesh : espaces → underscores, supprime les suffixes numériques (.001, .007, etc.)
+// Exemples :
+//   'Clavicular head of pectoralis major muscle' → 'clavicular_head_of_pectoralis_major_muscle'
+//   'Clavicular_head_of_pectoralis_major_muscle001' → 'clavicular_head_of_pectoralis_major_muscle'
+//   '(Abdominal_part_of_pectoralis_major_muscle)003' → '(abdominal_part_of_pectoralis_major_muscle)'
+function normalizeMeshName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '_')       // espaces → underscores
+    .replace(/\.?\d+$/, '');    // supprime le suffixe numérique final (.001, 003, etc.)
+}
+
+// Map inverse meshName normalisé → groupId
+const MESH_TO_GROUP: Record<string, string> = {};
+for (const [group, meshes] of Object.entries(MUSCLE_MESH_MAP)) {
+  for (const mesh of meshes) {
+    MESH_TO_GROUP[normalizeMeshName(mesh)] = group;
+  }
+}
+
+// Mots-clés pour identifier les os (à rendre transparents)
+const BONE_KEYWORDS = [
+  'bone', 'cartilage', 'tooth', 'incisor', 'molar', 'premolar', 'canine',
+  'skull', 'vertebr', 'rib', 'sternum', 'clavicle', 'scapula', 'pelvis',
+  'femur', 'tibia', 'fibula', 'humerus', 'radius', 'ulna', 'patella',
+  'calcaneus', 'mat_bone',
+];
+
+function isBoneMesh(name: string): boolean {
+  const n = name.toLowerCase();
+  return BONE_KEYWORDS.some(k => n.includes(k));
+}
+
 // ─── Couleur selon fatigue ────────────────────────────────────────────────────
 function fatigueToColor(fatigue: number): THREE.Color {
-  if (fatigue < 0.05) return new THREE.Color('#4a9eff'); // bleu acier = frais
+  if (fatigue < 0.05) return new THREE.Color('#4a9eff'); // bleu = frais
   if (fatigue < 0.2)  return new THREE.Color('#22c55e'); // vert = récupéré
   if (fatigue < 0.4)  return new THREE.Color('#84cc16'); // vert-jaune = léger
   if (fatigue < 0.65) return new THREE.Color('#f97316'); // orange = modéré
@@ -155,17 +184,11 @@ function fatigueToColor(fatigue: number): THREE.Color {
   return new THREE.Color('#dc2626');                      // rouge foncé = épuisé
 }
 
-function fatigueToEmissive(fatigue: number): THREE.Color {
-  if (fatigue < 0.05) return new THREE.Color('#001428');
-  if (fatigue < 0.2)  return new THREE.Color('#052e16');
-  if (fatigue < 0.4)  return new THREE.Color('#1a2e05');
-  if (fatigue < 0.65) return new THREE.Color('#431407');
-  if (fatigue < 0.85) return new THREE.Color('#450a0a');
-  return new THREE.Color('#3b0000');
-}
-
-// ─── Composant modèle anatomique ─────────────────────────────────────────────
+// ─── Composant modèle anatomique (interne au Canvas) ─────────────────────────
 const MODEL_URL = 'https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/body_e4b553e2.glb';
+
+// Précharger le modèle
+useGLTF.preload(MODEL_URL);
 
 function AnatomyModel({
   muscleStatuses,
@@ -177,163 +200,144 @@ function AnatomyModel({
   autoRotate: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const [scene, setScene] = useState<THREE.Group | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const { gl } = useThree();
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
-  // Construire la map meshName → MuscleStatus
-  const meshToStatus = new Map<string, MuscleStatus>();
-  for (const status of muscleStatuses) {
-    const meshNames = MUSCLE_MESH_MAP[status.id] ?? [];
-    for (const meshName of meshNames) {
-      meshToStatus.set(meshName, status);
-    }
-  }
+  // Charger le modèle via useGLTF (cache automatique)
+  const { scene: originalScene } = useGLTF(MODEL_URL);
 
-  // Charger le modèle avec DRACO
-  useEffect(() => {
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('/draco/');
-    loader.setDRACOLoader(dracoLoader);
+  // Cloner la scène avec matériaux individuels par mesh
+  const scene = useMemo(() => {
+    // Clonage profond de la scène
+    const cloned = originalScene.clone(true);
 
-    loader.load(
-      MODEL_URL,
-      (gltf) => {
-        const model = gltf.scene;
+    // Centrer et mettre à l'échelle
+    const box = new THREE.Box3().setFromObject(cloned);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 3.5 / maxDim;
+    cloned.scale.setScalar(scale);
+    cloned.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+    // Le modèle Z-Anatomy : pas de rotation initiale, la face est vers la caméra par défaut
+    // cloned.rotation.y = 0; // pas de rotation
 
-        // Centrer et mettre à l'échelle le modèle
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 3.5 / maxDim;
-
-        model.scale.setScalar(scale);
-        model.position.set(
-          -center.x * scale,
-          -center.y * scale,
-          -center.z * scale
-        );
-        // Orienter le modèle face caméra (Z-Anatomy est orienté Y-up)
-        model.rotation.y = 0;
-
-        // Appliquer les matériaux musculaires
-        model.traverse((child) => {
-          if (!(child instanceof THREE.Mesh)) return;
-
-          const status = meshToStatus.get(child.name);
-          const isMuscleMesh = meshToStatus.has(child.name);
-
-          if (isMuscleMesh && status) {
-            // Muscle avec état de récupération → couleur dynamique
-            const color = fatigueToColor(status.fatigue);
-            const emissive = fatigueToEmissive(status.fatigue);
-            child.material = new THREE.MeshStandardMaterial({
-              color,
-              emissive,
-              emissiveIntensity: 0.3 + status.fatigue * 0.4,
-              roughness: 0.6,
-              metalness: 0.0,
-              transparent: false,
-            });
-          } else if (child.name.toLowerCase().includes('bone') || child.name.toLowerCase().includes('cartilage') || child.name.toLowerCase().includes('tooth') || child.name.toLowerCase().includes('incisor') || child.name.toLowerCase().includes('molar') || child.name.toLowerCase().includes('premolar') || child.name.toLowerCase().includes('canine')) {
-            // Os et dents → très discrets
-            child.material = new THREE.MeshStandardMaterial({
-              color: new THREE.Color('#c8b89a'),
-              roughness: 0.8,
-              metalness: 0.0,
-              transparent: true,
-              opacity: 0.08,
-            });
-          } else {
-            // Autres muscles non mappés → rouge anatomique riche
-            child.material = new THREE.MeshStandardMaterial({
-              color: new THREE.Color('#c03525'),
-              emissive: new THREE.Color('#200505'),
-              emissiveIntensity: 0.15,
-              roughness: 0.55,
-              metalness: 0.05,
-              transparent: true,
-              opacity: 0.85,
-            });
-          }
-
-          // Rendre le mesh interactif
-          child.userData.muscleStatus = status;
-          child.castShadow = true;
-          child.receiveShadow = false;
-        });
-
-        setScene(model);
-      },
-      undefined,
-      (error) => console.error('Error loading body.glb:', error)
-    );
-
-    return () => {
-      dracoLoader.dispose();
-    };
-  }, []); // Charger une seule fois
-
-  // Mettre à jour les couleurs quand muscleStatuses change
-  useEffect(() => {
-    if (!scene) return;
-    scene.traverse((child) => {
+    // Assigner des matériaux NEUFS et INDIVIDUELS à chaque mesh
+    // (clone(true) ne clone pas les matériaux, ils restent partagés)
+    cloned.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
-      const status = meshToStatus.get(child.name);
-      if (!status) return;
+      child.castShadow = true;
 
-      const mat = child.material as THREE.MeshStandardMaterial;
-      if (!mat.isMeshStandardMaterial) return;
-
-      const isHovered = hovered === child.name;
-      const color = fatigueToColor(status.fatigue);
-      const emissive = fatigueToEmissive(status.fatigue);
-
-      mat.color.copy(isHovered ? color.clone().multiplyScalar(1.4) : color);
-      mat.emissive.copy(isHovered ? color.clone().multiplyScalar(0.3) : emissive);
-      mat.emissiveIntensity = isHovered ? 0.8 : (0.3 + status.fatigue * 0.4);
-      mat.opacity = 1.0;
-      mat.transparent = false;
-      child.userData.muscleStatus = status;
+      const matName = (child.material as any)?.name ?? '';
+      if (isBoneMesh(child.name) || matName.toLowerCase().includes('bone')) {
+        // Os → transparent
+        child.material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color('#c8b89a'),
+          roughness: 0.8,
+          metalness: 0.0,
+          transparent: true,
+          opacity: 0.05,
+        });
+      } else {
+        // Muscle → matériau individuel neuf
+        // Couleur initiale : bleu si mappé, gris très foncé sinon (pour ne pas distraire)
+        const isMapped = !!MESH_TO_GROUP[normalizeMeshName(child.name)];
+        const mat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(isMapped ? '#4a9eff' : '#1a1a1a'),
+          emissive: new THREE.Color(isMapped ? '#0a2040' : '#080808'),
+          emissiveIntensity: isMapped ? 0.4 : 0.05,
+          roughness: isMapped ? 0.55 : 0.8,
+          metalness: 0.0,
+        });
+        child.material = mat;
+      }
     });
-  }, [muscleStatuses, scene, hovered, meshToStatus]);
 
-  // Rotation automatique lente
+    return cloned;
+  }, [originalScene]);
+
+  // Map groupId → MuscleStatus
+  const groupToStatus = useMemo(() => {
+    const map = new Map<string, MuscleStatus>();
+    for (const s of muscleStatuses) map.set(s.id, s);
+    return map;
+  }, [muscleStatuses]);
+
+  // Mettre à jour les couleurs quand muscleStatuses ou hovered change
+  useEffect(() => {
+    let totalMeshes = 0, mappedMeshes = 0, coloredMeshes = 0;
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) totalMeshes++;
+      if (!(child instanceof THREE.Mesh)) return;
+      const mat = child.material as THREE.MeshStandardMaterial;
+      if (!mat?.isMeshStandardMaterial) return;
+      if (mat.transparent && mat.opacity < 0.1) return; // os, on touche pas
+
+      const groupId = MESH_TO_GROUP[normalizeMeshName(child.name)];
+      const status = groupId ? groupToStatus.get(groupId) : undefined;
+      const isHov = hoveredGroup === groupId && !!groupId;
+
+      if (status) {
+        const col = fatigueToColor(status.fatigue);
+        mat.color.copy(isHov ? col.clone().multiplyScalar(1.6) : col);
+        mat.emissive.copy(isHov ? col.clone().multiplyScalar(0.5) : col.clone().multiplyScalar(0.12));
+        mat.emissiveIntensity = isHov ? 1.2 : 0.7;
+        mat.roughness = 0.5;
+        mat.metalness = 0.0;
+        mat.needsUpdate = true;
+        child.userData.muscleStatus = status;
+      } else if (groupId) {
+        // Muscle mappé mais sans statut → bleu frais (aucune fatigue)
+        mappedMeshes++; coloredMeshes++;
+        mat.color.set('#4a9eff');
+        mat.emissive.set('#0a2040');
+        mat.emissiveIntensity = 0.4;
+        mat.roughness = 0.5;
+        mat.metalness = 0.0;
+        mat.needsUpdate = true;
+        child.userData.muscleStatus = undefined;
+      } else {
+        // Muscle non mappé (os, ligaments, etc.) → gris neutre discret
+        mat.color.set('#3a2020');
+        mat.emissive.set('#1a0a0a');
+        mat.emissiveIntensity = 0.08;
+        mat.roughness = 0.7;
+        mat.metalness = 0.0;
+        mat.needsUpdate = true;
+        child.userData.muscleStatus = undefined;
+      }
+    });
+
+  }, [scene, groupToStatus, hoveredGroup]);
+
+  // Rotation automatique
   useFrame((_, delta) => {
     if (groupRef.current && autoRotate) {
-      groupRef.current.rotation.y += delta * 0.3;
+      groupRef.current.rotation.y += delta * 0.25;
     }
   });
 
-  // Gestion du clic
   const handleClick = (e: any) => {
     e.stopPropagation();
     const status = e.object?.userData?.muscleStatus as MuscleStatus | undefined;
-    if (status && onMuscleClick) {
-      onMuscleClick(status);
-    }
+    if (status && onMuscleClick) onMuscleClick(status);
   };
 
   const handlePointerOver = (e: any) => {
     e.stopPropagation();
-    const name = e.object?.name;
-    if (name && meshToStatus.has(name)) {
-      setHovered(name);
-      gl.domElement.style.cursor = 'pointer';
+    const groupId = MESH_TO_GROUP[normalizeMeshName(e.object?.name ?? '')];
+    if (groupId) {
+      setHoveredGroup(groupId);
+      document.body.style.cursor = 'pointer';
     }
   };
 
   const handlePointerOut = () => {
-    setHovered(null);
-    gl.domElement.style.cursor = 'auto';
+    setHoveredGroup(null);
+    document.body.style.cursor = 'auto';
   };
 
-  if (!scene) return null;
-
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} rotation={[0, Math.PI, 0]}>
       <primitive
         object={scene}
         onClick={handleClick}
@@ -346,21 +350,21 @@ function AnatomyModel({
 
 // ─── Loader skeleton ─────────────────────────────────────────────────────────
 function LoadingFallback() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame((_, delta) => {
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
+  });
   return (
-    <mesh>
-      <boxGeometry args={[0.5, 2, 0.3]} />
-      <meshStandardMaterial color="#1e3a5f" wireframe />
-    </mesh>
+    <group>
+      <mesh ref={meshRef} position={[0, 0.3, 0]}>
+        <capsuleGeometry args={[0.3, 1.8, 8, 16]} />
+        <meshStandardMaterial color="#1e3a5f" wireframe opacity={0.5} transparent />
+      </mesh>
+    </group>
   );
 }
 
-// ─── Composant principal ──────────────────────────────────────────────────────
-interface BodyModel3DProps {
-  muscleStatuses: MuscleStatus[];
-  onMuscleClick?: (muscle: MuscleStatus) => void;
-  height?: number;
-}
-
+// ─── Labels et couleurs d'état ────────────────────────────────────────────────
 const STATE_LABELS: Record<MuscleState, string> = {
   fresh: 'Non sollicité',
   recovered: 'Récupéré ✓',
@@ -379,7 +383,14 @@ const STATE_COLORS: Record<MuscleState, string> = {
   exhausted: '#dc2626',
 };
 
-export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 380 }: BodyModel3DProps) {
+// ─── Composant principal ──────────────────────────────────────────────────────
+interface BodyModel3DProps {
+  muscleStatuses: MuscleStatus[];
+  onMuscleClick?: (muscle: MuscleStatus) => void;
+  height?: number;
+}
+
+export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 400 }: BodyModel3DProps) {
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleStatus | null>(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -391,14 +402,12 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
     timerRef.current = setTimeout(() => {
       setSelectedMuscle(null);
       setAutoRotate(true);
-    }, 4000);
+    }, 5000);
     if (onMuscleClick) onMuscleClick(muscle);
   };
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
   return (
@@ -410,37 +419,29 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
           height,
           borderRadius: 16,
           overflow: 'hidden',
-          background: 'radial-gradient(ellipse at 50% 30%, #0d1f3c 0%, #050d1a 100%)',
-          border: '1px solid rgba(74,158,255,0.15)',
-          boxShadow: '0 0 40px rgba(0,80,200,0.12)',
+          background: 'radial-gradient(ellipse at 50% 20%, #0a1628 0%, #030810 100%)',
+          border: '1px solid rgba(74,158,255,0.12)',
+          boxShadow: 'inset 0 0 60px rgba(0,30,80,0.4)',
         }}
       >
         <Canvas
-          camera={{ position: [0, 0.5, 5.5], fov: 42 }}
-          gl={{ antialias: true, alpha: false }}
-          shadows
+          camera={{ position: [0, 0.3, 5.5], fov: 42 }}
+          gl={{
+            antialias: true,
+            alpha: false,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.3,
+            powerPreference: 'high-performance',
+          }}
         >
-          {/* Éclairage premium */}
-          <ambientLight intensity={0.25} color="#8ab0ff" />
-          <directionalLight
-            position={[2, 8, 5]}
-            intensity={1.8}
-            color="#ffffff"
-            castShadow
-          />
-          <directionalLight
-            position={[-4, 3, -3]}
-            intensity={0.8}
-            color="#4070ff"
-          />
-          <directionalLight
-            position={[0, -3, 3]}
-            intensity={0.4}
-            color="#ff4020"
-          />
-          <pointLight position={[0, 3, 3]} intensity={0.6} color="#ffffff" />
-          <pointLight position={[2, 0, 2]} intensity={0.3} color="#60a0ff" />
-          <pointLight position={[-2, 0, 2]} intensity={0.3} color="#ff6040" />
+          {/* Éclairage équilibré */}
+          <ambientLight intensity={1.4} color="#ffffff" />
+          <directionalLight position={[3, 6, 5]} intensity={2.8} color="#ffffff" />
+          <directionalLight position={[-3, 4, 3]} intensity={1.4} color="#c0d8ff" />
+          <directionalLight position={[0, -2, 4]} intensity={0.9} color="#ffd0b0" />
+          <pointLight position={[0, 4, 2]} intensity={1.2} color="#ffffff" />
+          <pointLight position={[3, 1, 3]} intensity={0.6} color="#80b0ff" />
+          <pointLight position={[-3, 1, 3]} intensity={0.6} color="#ffb080" />
 
           {/* Modèle anatomique */}
           <Suspense fallback={<LoadingFallback />}>
@@ -449,20 +450,12 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
               onMuscleClick={handleMuscleClick}
               autoRotate={autoRotate}
             />
-            <ContactShadows
-              position={[0, -2.2, 0]}
-              opacity={0.3}
-              scale={4}
-              blur={2}
-              far={3}
-              color="#000020"
-            />
           </Suspense>
 
           {/* Contrôles orbitaux */}
           <OrbitControls
             enablePan={false}
-            minDistance={2}
+            minDistance={2.5}
             maxDistance={8}
             minPolarAngle={Math.PI * 0.1}
             maxPolarAngle={Math.PI * 0.9}
@@ -481,27 +474,28 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
         <div
           style={{
             position: 'absolute',
-            bottom: 12,
+            bottom: 56,
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(5,15,35,0.95)',
-            border: `1px solid ${STATE_COLORS[selectedMuscle.state]}50`,
+            background: 'rgba(5,12,28,0.96)',
+            border: `1px solid ${STATE_COLORS[selectedMuscle.state]}60`,
             borderRadius: 12,
-            padding: '10px 16px',
+            padding: '10px 18px',
             textAlign: 'center',
-            backdropFilter: 'blur(8px)',
-            minWidth: 180,
+            backdropFilter: 'blur(12px)',
+            minWidth: 190,
             zIndex: 10,
+            boxShadow: `0 4px 24px ${STATE_COLORS[selectedMuscle.state]}30`,
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 700, color: STATE_COLORS[selectedMuscle.state], marginBottom: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: STATE_COLORS[selectedMuscle.state], marginBottom: 3 }}>
             {selectedMuscle.name}
           </div>
-          <div style={{ fontSize: 11, color: STATE_COLORS[selectedMuscle.state], opacity: 0.85 }}>
+          <div style={{ fontSize: 11, color: STATE_COLORS[selectedMuscle.state], opacity: 0.9 }}>
             {STATE_LABELS[selectedMuscle.state]}
           </div>
           {selectedMuscle.recoveryHoursLeft > 0 && (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
               Récupération dans ~{selectedMuscle.recoveryHoursLeft}h
             </div>
           )}
@@ -509,13 +503,7 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
       )}
 
       {/* Légende */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginTop: 10,
-        justifyContent: 'center',
-      }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10, justifyContent: 'center' }}>
         {[
           { color: '#4a9eff', label: 'Frais' },
           { color: '#22c55e', label: 'Récupéré' },
@@ -523,15 +511,14 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 38
           { color: '#ef4444', label: 'Épuisé' },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 4px ${color}` }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 5px ${color}` }} />
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>{label}</span>
           </div>
         ))}
       </div>
 
-      {/* Hint interaction */}
       <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 4, fontFamily: 'Inter, sans-serif' }}>
-        Glisse pour tourner · Appuie sur un muscle pour les détails
+        Glisse pour tourner · Tape sur un muscle pour les détails
       </p>
     </div>
   );

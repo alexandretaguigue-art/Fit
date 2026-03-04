@@ -1057,6 +1057,38 @@ function ExerciseCarousel({
   const swipeY = useRef<number | null>(null);
   // Alternative choisie par exercice (id exercice → nom alternatif ou null)
   const [selectedAlts, setSelectedAlts] = useState<Record<string, string | null>>({});
+  // Ordre personnalisé des exercices (glisser-déposer)
+  const [orderedExercises, setOrderedExercises] = useState<Exercise[]>(exercises);
+  // Sync si exercises change (changement de séance)
+  const prevExercisesRef = useRef(exercises);
+  useEffect(() => {
+    if (prevExercisesRef.current !== exercises) {
+      setOrderedExercises(exercises);
+      prevExercisesRef.current = exercises;
+    }
+  }, [exercises]);
+  // Drag state
+  const dragIdx = useRef<number | null>(null);
+  const dragOverIdx = useRef<number | null>(null);
+  const [dragging, setDragging] = useState<number | null>(null);
+  // Touch drag state
+  const touchDragIdx = useRef<number | null>(null);
+  const touchDragY = useRef<number | null>(null);
+  const touchDragOverIdx = useRef<number | null>(null);
+
+  const handleDragStart = (i: number) => { dragIdx.current = i; setDragging(i); };
+  const handleDragOver = (e: React.DragEvent, i: number) => { e.preventDefault(); dragOverIdx.current = i; };
+  const handleDrop = () => {
+    if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) {
+      dragIdx.current = null; dragOverIdx.current = null; setDragging(null); return;
+    }
+    const updated = [...orderedExercises];
+    const [moved] = updated.splice(dragIdx.current, 1);
+    updated.splice(dragOverIdx.current, 0, moved);
+    setOrderedExercises(updated);
+    dragIdx.current = null; dragOverIdx.current = null; setDragging(null);
+  };
+  const handleDragEnd = () => { dragIdx.current = null; dragOverIdx.current = null; setDragging(null); };
 
   const switchView = (mode: 'list' | 'carousel') => {
     setViewMode(mode);
@@ -1289,7 +1321,38 @@ function ExerciseCarousel({
       {/* VUE LISTE */}
       {viewMode === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {exercises.map((exercise, i) => renderExerciseCard(exercise, i, false))}
+          {orderedExercises.map((exercise, i) => (
+            <div
+              key={exercise.id}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              style={{
+                position: 'relative',
+                opacity: dragging === i ? 0.45 : 1,
+                transition: 'opacity 0.2s, transform 0.2s',
+                transform: dragging !== null && dragOverIdx.current === i && dragging !== i ? 'translateY(-4px)' : 'none',
+              }}
+            >
+              {/* Poignée de réordonnancement */}
+              <div style={{
+                position: 'absolute', top: 12, right: 12, zIndex: 10,
+                width: 28, height: 28, borderRadius: 8,
+                background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'grab', touchAction: 'none',
+              }}>
+                <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                  <rect y="0" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.5)"/>
+                  <rect y="4" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.5)"/>
+                  <rect y="8" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.5)"/>
+                </svg>
+              </div>
+              {renderExerciseCard(exercise, i, false)}
+            </div>
+          ))}
         </div>
       )}
 

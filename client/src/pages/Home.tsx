@@ -9,6 +9,28 @@ import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } f
 import { toast } from 'sonner';
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
+const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
+const LEGS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/legs-workout-FPHHWKCXVWXNSCVHGWmz2h.webp";
+
+// Image par session ID
+const SESSION_IMAGES: Record<string, string> = {
+  upper_a: ARMS_IMAGE,
+  upper_b: ARMS_IMAGE,
+  lower_a: LEGS_IMAGE,
+  lower_b: LEGS_IMAGE,
+  football: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&q=80',
+  running_endurance: 'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80',
+  running_intervals: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
+  cycling: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+  rest: '',
+};
+
+// Calories estimées par session
+const SESSION_CALORIES: Record<string, number> = {
+  upper_a: 420, upper_b: 400, lower_a: 520, lower_b: 480,
+  football: 650, running_endurance: 580, running_intervals: 620,
+  cycling: 380, rest: 0,
+};
 
 const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   gym:      { bg: 'rgba(255,107,53,0.08)',  border: 'rgba(255,107,53,0.25)',  text: '#FF6B35', badge: 'rgba(255,107,53,0.15)' },
@@ -231,21 +253,21 @@ export default function Home() {
           </div>
         )}
 
-        {/* Planning cycle 14 jours */}
+        {/* Planning cycle 14 jours — nouveau design avec photos */}
         <div
           className="rounded-2xl p-4"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div className="flex items-center justify-between mb-3">
-            <p className="text-white/50 text-xs uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Cycle 14 jours
+            <p className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>
+              Planning 14 jours
             </p>
             <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Appuie sur un jour pour modifier
+              Appuie pour modifier
             </span>
           </div>
           {/* Navigation du cycle */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button onClick={() => setCalendarOffset(o => o - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
               <ChevronLeft size={14} className="text-white/50" />
             </button>
@@ -257,73 +279,126 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1.5">
-            {cycle14Days.map(day => {
-              // Calcul du numéro de jour absolu dans le programme
+          {/* Semaine 1 */}
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Semaine 1</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 16 }}>
+            {cycle14Days.slice(0, 7).map(day => {
               const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
-              const isToday = data.startDate && absoluteDayNumber === cycleDayToday;
-              const isPast = data.startDate && absoluteDayNumber < cycleDayToday;
+              const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
+              const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
               const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
               const colors = SESSION_TYPE_COLORS[day.type];
-
-              // Vérifier si cette séance a été validée (enregistrée)
-              const sessionDateMs = data.startDate
-                ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000
-                : null;
-              const sessionDateKey = sessionDateMs
-                ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
-                : null;
-              const isCompleted = sessionDateKey
-                ? Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey))
-                : false;
+              const sessionImg = SESSION_IMAGES[day.sessionId];
+              const calories = SESSION_CALORIES[day.sessionId] ?? 0;
+              const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
+              const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
+              const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
 
               return (
-                <div
+                <button
                   key={day.dayNumber}
-                  className="flex flex-col items-center gap-1"
-                  title={day.label}
+                  onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
+                  style={{
+                    position: 'relative', borderRadius: 12, overflow: 'hidden',
+                    aspectRatio: '3/4', border: isToday ? `2px solid ${colors.text}` : isEditing ? '2px solid rgba(255,255,255,0.4)' : isCompleted ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.07)',
+                    opacity: isPast && !isCompleted && !isToday ? 0.5 : 1,
+                    cursor: 'pointer', background: '#111',
+                    boxShadow: isToday ? `0 0 12px ${colors.text}40` : 'none',
+                    transition: 'all 0.2s',
+                    padding: 0,
+                  }}
                 >
-                  <button
-                    className="w-full aspect-square rounded-lg flex items-center justify-center text-sm transition-all duration-200 active:scale-90 relative"
-                    style={{
-                      background: isEditing
-                        ? 'rgba(255,255,255,0.15)'
-                        : isToday
-                        ? colors.text
-                        : isCompleted
-                        ? 'rgba(34,197,94,0.12)'
-                        : isPast
-                        ? 'rgba(255,255,255,0.04)'
-                        : colors.bg,
-                      border: isEditing
-                        ? '2px solid rgba(255,255,255,0.4)'
-                        : isToday
-                        ? `2px solid ${colors.text}`
-                        : isCompleted
-                        ? '1px solid rgba(34,197,94,0.35)'
-                        : `1px solid ${colors.border}`,
-                      opacity: isPast && !isCompleted && !isToday ? 0.45 : 1,
-                    }}
-                    onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
-                  >
-                    {isCompleted && !isToday ? (
-                      <span style={{ fontSize: '12px', lineHeight: 1 }}>✅</span>
+                  {/* Photo de fond */}
+                  {sessionImg ? (
+                    <img src={sessionImg} alt={day.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: isPast && !isCompleted ? 'brightness(0.25) grayscale(0.6)' : 'brightness(0.35)' }} />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.03)' }} />
+                  )}
+                  {/* Overlay gradient */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.85) 100%)' }} />
+                  {/* Badge complété */}
+                  {isCompleted && (
+                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'rgba(34,197,94,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Check size={9} color="#fff" />
+                    </div>
+                  )}
+                  {/* Contenu bas */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 4px 5px' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>J{absoluteDayNumber}</div>
+                    {day.type === 'rest' ? (
+                      <div style={{ fontSize: 13, lineHeight: 1.1, marginTop: 2 }}>😴</div>
                     ) : (
-                      <span style={{ fontSize: '14px', lineHeight: 1 }}>{day.icon}</span>
+                      <>
+                        <div style={{ fontSize: 8, fontWeight: 600, color: colors.text, fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {day.label.split(' — ')[0]}
+                        </div>
+                        <div style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1 }}>
+                          ~{calories} kcal
+                        </div>
+                      </>
                     )}
-                  </button>
-                  <span
-                    className="text-center leading-none"
-                    style={{
-                      fontSize: '9px',
-                      color: isToday ? colors.text : isCompleted ? '#22c55e' : isEditing ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
-                      fontFamily: 'Inter, sans-serif',
-                      fontWeight: isToday || isEditing || isCompleted ? 700 : 400,
-                    }}
-                  >
-                    J{absoluteDayNumber}
-                  </span>
-                </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Semaine 2 */}
+          <p className="text-white/30 text-xs uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Semaine 2</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+            {cycle14Days.slice(7, 14).map(day => {
+              const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
+              const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
+              const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
+              const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
+              const colors = SESSION_TYPE_COLORS[day.type];
+              const sessionImg = SESSION_IMAGES[day.sessionId];
+              const calories = SESSION_CALORIES[day.sessionId] ?? 0;
+              const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
+              const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
+              const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
+
+              return (
+                <button
+                  key={day.dayNumber}
+                  onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
+                  style={{
+                    position: 'relative', borderRadius: 12, overflow: 'hidden',
+                    aspectRatio: '3/4', border: isToday ? `2px solid ${colors.text}` : isEditing ? '2px solid rgba(255,255,255,0.4)' : isCompleted ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.07)',
+                    opacity: isPast && !isCompleted && !isToday ? 0.5 : 1,
+                    cursor: 'pointer', background: '#111',
+                    boxShadow: isToday ? `0 0 12px ${colors.text}40` : 'none',
+                    transition: 'all 0.2s',
+                    padding: 0,
+                  }}
+                >
+                  {sessionImg ? (
+                    <img src={sessionImg} alt={day.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: isPast && !isCompleted ? 'brightness(0.25) grayscale(0.6)' : 'brightness(0.35)' }} />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.03)' }} />
+                  )}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.85) 100%)' }} />
+                  {isCompleted && (
+                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'rgba(34,197,94,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Check size={9} color="#fff" />
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 4px 5px' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', lineHeight: 1 }}>J{absoluteDayNumber}</div>
+                    {day.type === 'rest' ? (
+                      <div style={{ fontSize: 13, lineHeight: 1.1, marginTop: 2 }}>😴</div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 8, fontWeight: 600, color: colors.text, fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {day.label.split(' — ')[0]}
+                        </div>
+                        <div style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', lineHeight: 1, marginTop: 1 }}>
+                          ~{calories} kcal
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </button>
               );
             })}
           </div>

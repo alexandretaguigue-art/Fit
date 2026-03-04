@@ -824,41 +824,42 @@ function JournalTab() {
                   {entries.length > 0 && (
                     <div style={{ borderTop: planMeal && !mealStatus ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
                       {entries.map(entry => (
-                        <SwipeToDelete key={entry.id} onDelete={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }}>
-                          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: '#1A1A22' }}>
-                            {editingEntry === entry.id ? (
-                              <>
-                                <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                                <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))}
-                                  className="w-16 text-center text-white text-xs rounded-lg py-1.5"
-                                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,107,53,0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
-                                <span className="text-white/40 text-xs">g</span>
-                                <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
-                                  <Check size={12} className="text-green-400" />
-                                </button>
-                                <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                  <span className="text-white/40 text-xs">✕</span>
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-baseline gap-1.5">
-                                    <span className="text-white/80 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                                    <span className="text-white/40 text-xs">{entry.quantity}g</span>
-                                  </div>
-                                  <div className="flex gap-2 mt-0.5">
-                                    <span className="text-white/50 text-xs">{Math.round(entry.calories)} kcal</span>
-                                    <span className="text-white/30 text-xs">P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
-                                  </div>
+                        <div key={entry.id} className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: '#1A1A22' }}>
+                          {editingEntry === entry.id ? (
+                            <>
+                              <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                              <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))}
+                                className="w-16 text-center text-white text-xs rounded-lg py-1.5"
+                                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,107,53,0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
+                              <span className="text-white/40 text-xs">g</span>
+                              <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
+                                <Check size={12} className="text-green-400" />
+                              </button>
+                              <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                <span className="text-white/40 text-xs">✕</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-white/80 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                                  <span className="text-white/40 text-xs">{entry.quantity}g</span>
                                 </div>
-                                <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                  <Edit3 size={11} className="text-white/40" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </SwipeToDelete>
+                                <div className="flex gap-2 mt-0.5">
+                                  <span className="text-white/50 text-xs">{Math.round(entry.calories)} kcal</span>
+                                  <span className="text-white/30 text-xs">P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
+                                </div>
+                              </div>
+                              <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                <Edit3 size={11} className="text-white/40" />
+                              </button>
+                              <button onClick={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                                <Trash2 size={11} className="text-red-400" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}

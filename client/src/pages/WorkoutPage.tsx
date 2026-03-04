@@ -220,236 +220,212 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
   const hasMedia = !!(exercise.imageUrl || exercise.videoUrl);
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden transition-all duration-300"
-      style={{
-        background: allCompleted ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.04)',
-        border: allCompleted ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      {/* Header compact — toujours visible */}
-      <div className="p-4 flex items-center gap-3">
-        {/* Bouton check série principale — grand et accessible */}
-        <button
-          onClick={() => {
-            // Coche la première série non complétée
-            const firstUncompleted = sets.findIndex(s => !s.completed);
-            if (firstUncompleted >= 0) toggleSet(firstUncompleted);
-            else if (allCompleted) { handleSave(); }
-          }}
-          className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 transition-all duration-200 active:scale-95"
-          style={{
-            background: allCompleted ? 'rgba(34,197,94,0.2)' : completedCount > 0 ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.06)',
-            border: allCompleted ? '2px solid rgba(34,197,94,0.5)' : completedCount > 0 ? '2px solid rgba(255,107,53,0.4)' : '1px solid rgba(255,255,255,0.1)',
-          }}
-        >
-          {allCompleted ? (
-            <Check size={22} className="text-green-400" />
-          ) : (
-            <>
-              <span className="text-white font-bold text-base leading-none" style={{ fontFamily: 'Syne, sans-serif' }}>
-                {completedCount}/{sets.length}
-              </span>
-              <span className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>séries</span>
-            </>
-          )}
-        </button>
-
-        {/* Infos exercice */}
-        <div className="flex-1 min-w-0" onClick={() => setExpanded(!expanded)}>
-          <div className="flex items-start justify-between gap-1">
-            <h3 className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-              {selectedAlt ?? exercise.name}
-            </h3>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {hasMedia && (
-                <button
-                  onClick={e => { e.stopPropagation(); setShowDemo(!showDemo); }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center"
-                  style={{ background: showDemo ? 'rgba(255,107,53,0.2)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  title="Voir démonstration"
-                >
-                  <span style={{ fontSize: '12px' }}>🎥</span>
-                </button>
-              )}
-              {expanded ? <ChevronUp size={14} className="text-white/30" /> : <ChevronDown size={14} className="text-white/30" />}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-            <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {sets.length} × {repsLabel}
-            </span>
-            {sets[0] && (
-              <span className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                · {sets[0].weight}kg
-              </span>
-            )}
-            {adaptBadge && (
-              <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${adaptBadge.color}20`, color: adaptBadge.color, fontFamily: 'Inter, sans-serif' }}>
-                {adaptBadge.icon}{adaptBadge.label}
-              </span>
-            )}
-          </div>
-          {exercise.muscleGroups.slice(0, 2).map(m => (
-            <span key={m} className="inline-block text-xs px-1.5 py-0.5 rounded-full mr-1 mt-1" style={{ background: 'rgba(255,107,53,0.08)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>
-              {m}
-            </span>
-          ))}
-        </div>
-      </div>
+    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
       {/* Minuteur de repos */}
       {restTimer !== null && (
-        <div className="mx-4 mb-3 rounded-2xl p-3 flex items-center gap-3" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}>
-          <div className="relative w-12 h-12 flex-shrink-0">
-            <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-              <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,107,53,0.15)" strokeWidth="4" />
-              <circle
-                cx="24" cy="24" r="20" fill="none" stroke="#FF6B35" strokeWidth="4"
-                strokeDasharray={`${2 * Math.PI * 20}`}
-                strokeDashoffset={`${2 * Math.PI * 20 * (1 - restTimer / restTotal)}`}
+        <div style={{
+          borderRadius: 16, padding: '12px 14px',
+          background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)',
+          display: 'flex', alignItems: 'center', gap: 12
+        }}>
+          <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+            <svg width="44" height="44" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,107,53,0.15)" strokeWidth="3.5" />
+              <circle cx="22" cy="22" r="18" fill="none" stroke="#FF6B35" strokeWidth="3.5"
+                strokeDasharray={`${2 * Math.PI * 18}`}
+                strokeDashoffset={`${2 * Math.PI * 18 * (1 - restTimer / restTotal)}`}
                 strokeLinecap="round"
                 style={{ transition: 'stroke-dashoffset 1s linear' }}
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-orange-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{restTimer}</span>
+            <span style={{
+              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#FF6B35', fontWeight: 700, fontSize: 13, fontFamily: 'Syne, sans-serif'
+            }}>{restTimer}</span>
           </div>
-          <div className="flex-1">
-            <p className="text-orange-400 font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Repos en cours</p>
-            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Prochaine série dans {restTimer}s</p>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: '#FF6B35', fontWeight: 600, fontSize: 13, fontFamily: 'Syne, sans-serif', margin: 0 }}>Repos en cours</p>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>Prochaine série dans {restTimer}s</p>
           </div>
-          <button onClick={stopRestTimer} className="text-white/30 text-xs px-2 py-1 rounded-lg" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>Passer</button>
+          <button onClick={stopRestTimer} style={{
+            color: 'rgba(255,255,255,0.4)', fontSize: 11, padding: '5px 10px', borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer'
+          }}>Passer</button>
         </div>
       )}
 
-      {/* Démo image/vidéo */}
-      {showDemo && hasMedia && (
-        <div className="mx-4 mb-3 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          {exercise.videoUrl ? (
-            <video
-              src={exercise.videoUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full"
-              style={{ maxHeight: '220px', objectFit: 'contain' }}
-            />
-          ) : exercise.imageUrl ? (
-            <img
-              src={exercise.imageUrl}
-              alt={`Démonstration ${exercise.name}`}
-              className="w-full"
-              style={{ maxHeight: '220px', objectFit: 'contain' }}
-            />
-          ) : null}
-          <p className="text-white/40 text-xs text-center py-2" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Technique correcte — {exercise.name}
-          </p>
-        </div>
-      )}
+      {/* Séries — layout 2 lignes clair */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {sets.map((set, idx) => {
+          const labelColor = exercise.setScheme?.[idx]?.label
+            ? (idx === 0 ? '#94a3b8' : idx === (exercise.setScheme?.length ?? 0) - 1 ? '#fb923c' : '#FF6B35')
+            : 'rgba(255,255,255,0.35)';
+          const label = exercise.setScheme?.[idx]?.label ?? `Série ${idx + 1}`;
+          const note = exercise.setScheme?.[idx]?.note;
 
-      {/* Séries — toujours visibles quand expanded */}
-      {expanded && (
-        <div className="px-4 pb-4 space-y-3">
-          {/* Séries rapides */}
-          <div className="space-y-2">
-            {sets.map((set, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200"
-                style={{
-                  background: set.completed ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: set.completed ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <button
-                  onClick={() => toggleSet(idx)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 active:scale-90"
-                  style={{
-                    background: set.completed ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.08)',
-                    border: set.completed ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  {set.completed ? <Check size={14} className="text-green-400" /> : <span className="text-white/40 text-xs font-bold">{idx + 1}</span>}
-                </button>
-                <div className="flex flex-col min-w-0">
-                  {exercise.setScheme?.[idx]?.label ? (
-                    <span className="text-xs font-semibold" style={{ fontFamily: 'Syne, sans-serif', color: idx === 0 ? '#94a3b8' : idx === exercise.setScheme.length - 1 ? '#fb923c' : '#FF6B35' }}>
-                      {exercise.setScheme[idx].label}
-                    </span>
-                  ) : (
-                    <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>S{idx + 1}</span>
+          return (
+            <div
+              key={idx}
+              style={{
+                borderRadius: 14,
+                overflow: 'hidden',
+                border: set.completed ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                background: set.completed ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.03)',
+              }}
+            >
+              {/* Ligne 1 : label + note + bouton check */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px 6px 14px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, color: labelColor,
+                    fontFamily: 'Syne, sans-serif', textTransform: 'uppercase', letterSpacing: '0.04em'
+                  }}>{label}</span>
+                  {note && !set.completed && (
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, sans-serif' }}>— {note}</span>
                   )}
                 </div>
-                {/* Poids */}
-                <div className="flex items-center gap-1">
-                  <button onClick={() => updateSet(idx, 'weight', Math.max(0, set.weight - 2.5))} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>−</button>
-                  <div className="w-14 text-center">
-                    <span className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{set.weight}</span>
-                    <span className="text-white/40 text-xs ml-0.5">kg</span>
-                  </div>
-                  <button onClick={() => updateSet(idx, 'weight', set.weight + 2.5)} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>+</button>
-                </div>
-                {/* Reps */}
-                <div className="flex items-center gap-1">
-                  <button onClick={() => updateSet(idx, 'reps', Math.max(1, set.reps - 1))} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>−</button>
-                  <div className="w-10 text-center">
-                    <span className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>{set.reps}</span>
-                    <span className="text-white/40 text-xs ml-0.5">r</span>
-                  </div>
-                  <button onClick={() => updateSet(idx, 'reps', set.reps + 1)} className="w-8 h-8 rounded-lg text-white font-bold text-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>+</button>
-                </div>
-                {/* Note spécifique de la série */}
-                {exercise.setScheme?.[idx]?.note && !set.completed && (
-                  <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px' }}>
-                    → {exercise.setScheme[idx].note}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Conseils d'exécution */}
-          {exercise.tips.length > 0 && (
-            <div className="p-3 rounded-xl space-y-1.5" style={{ background: 'rgba(255,107,53,0.05)', border: '1px solid rgba(255,107,53,0.1)' }}>
-              {exercise.tips.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <div className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ background: '#FF6B35' }} />
-                  <p className="text-white/55 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Alternatives */}
-          <button
-            onClick={() => setShowAlt(!showAlt)}
-            className="flex items-center gap-1.5 text-xs text-white/35 hover:text-white/55 transition-colors"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            <ArrowRight size={11} />Machine indisponible ? Alternatives
-          </button>
-          {showAlt && (
-            <div className="space-y-2">
-              <button onClick={() => setSelectedAlt(null)} className="w-full flex items-center justify-between p-2.5 rounded-xl" style={{ background: !selectedAlt ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)', border: !selectedAlt ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-                <span className="text-white text-xs font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{exercise.name} (original)</span>
-                <span className="text-xs font-bold" style={{ color: '#22c55e', fontFamily: 'Inter, sans-serif' }}>{exercise.relevanceScore}/100</span>
-              </button>
-              {exercise.alternatives.map(alt => (
-                <button key={alt.name} onClick={() => setSelectedAlt(alt.name)} className="w-full flex items-center justify-between p-2.5 rounded-xl" style={{ background: selectedAlt === alt.name ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)', border: selectedAlt === alt.name ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-                  <span className="text-white/80 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{alt.name}</span>
-                  <span className="text-xs font-bold" style={{ color: alt.relevanceScore >= 90 ? '#22c55e' : alt.relevanceScore >= 75 ? '#84cc16' : '#eab308', fontFamily: 'Inter, sans-serif' }}>{alt.relevanceScore}/100</span>
+                <button
+                  onClick={() => toggleSet(idx)}
+                  style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: set.completed ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.07)',
+                    border: set.completed ? '2px solid rgba(34,197,94,0.6)' : '1px solid rgba(255,255,255,0.15)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                >
+                  {set.completed
+                    ? <Check size={14} color="#22C55E" />
+                    : <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif' }}>{idx + 1}</span>
+                  }
                 </button>
-              ))}
-            </div>
-          )}
+              </div>
 
-          <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200 active:scale-95" style={{ background: allCompleted ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #FF6B35, #FF3366)', fontFamily: 'Inter, sans-serif' }}>
-            {allCompleted ? '✓ Exercice terminé' : 'Enregistrer les séries'}
-          </button>
+              {/* Ligne 2 : poids + reps */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 0,
+                padding: '4px 14px 12px 14px',
+              }}>
+                {/* Poids */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <button
+                    onClick={() => updateSet(idx, 'weight', Math.max(0, set.weight - 2.5))}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: 'none',
+                      background: 'rgba(255,255,255,0.09)', color: '#fff',
+                      fontSize: 20, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}
+                  >−</button>
+                  <div style={{ textAlign: 'center', minWidth: 52 }}>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif' }}>{set.weight}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', marginLeft: 2 }}>kg</span>
+                  </div>
+                  <button
+                    onClick={() => updateSet(idx, 'weight', set.weight + 2.5)}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: 'none',
+                      background: 'rgba(255,255,255,0.09)', color: '#fff',
+                      fontSize: 20, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}
+                  >+</button>
+                </div>
+
+                {/* Diviseur */}
+                <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.08)', margin: '0 12px', flexShrink: 0 }} />
+
+                {/* Répétitions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => updateSet(idx, 'reps', Math.max(1, set.reps - 1))}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: 'none',
+                      background: 'rgba(255,255,255,0.09)', color: '#fff',
+                      fontSize: 20, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}
+                  >−</button>
+                  <div style={{ textAlign: 'center', minWidth: 44 }}>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif' }}>{set.reps}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif', marginLeft: 2 }}>reps</span>
+                  </div>
+                  <button
+                    onClick={() => updateSet(idx, 'reps', set.reps + 1)}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: 'none',
+                      background: 'rgba(255,255,255,0.09)', color: '#fff',
+                      fontSize: 20, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}
+                  >+</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Conseils d'exécution */}
+      {exercise.tips.length > 0 && (
+        <div style={{ borderRadius: 12, padding: '10px 14px', background: 'rgba(255,107,53,0.05)', border: '1px solid rgba(255,107,53,0.1)' }}>
+          {exercise.tips.map((tip, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: i < exercise.tips.length - 1 ? 6 : 0 }}>
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF6B35', flexShrink: 0, marginTop: 6 }} />
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: 'Inter, sans-serif', lineHeight: 1.5, margin: 0 }}>{tip}</p>
+            </div>
+          ))}
         </div>
       )}
+
+      {/* Alternatives */}
+      <button
+        onClick={() => setShowAlt(!showAlt)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, sans-serif', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      >
+        <ArrowRight size={11} />Machine indisponible ? Alternatives
+      </button>
+      {showAlt && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button onClick={() => setSelectedAlt(null)} style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
+            background: !selectedAlt ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)',
+            border: !selectedAlt ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <span style={{ color: '#fff', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>{exercise.name} (original)</span>
+            <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>{exercise.relevanceScore}/100</span>
+          </button>
+          {exercise.alternatives.map(alt => (
+            <button key={alt.name} onClick={() => setSelectedAlt(alt.name)} style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
+              background: selectedAlt === alt.name ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.04)',
+              border: selectedAlt === alt.name ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)'
+            }}>
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>{alt.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif', color: alt.relevanceScore >= 90 ? '#22c55e' : alt.relevanceScore >= 75 ? '#84cc16' : '#eab308' }}>{alt.relevanceScore}/100</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Bouton enregistrer */}
+      <button
+        onClick={handleSave}
+        style={{
+          width: '100%', padding: '14px', borderRadius: 14, border: 'none',
+          background: allCompleted ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #FF6B35, #FF3366)',
+          color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+          cursor: 'pointer', transition: 'opacity 0.2s',
+        }}
+      >
+        {allCompleted ? '✓ Exercice terminé' : 'Enregistrer les séries'}
+      </button>
     </div>
   );
 }

@@ -888,7 +888,7 @@ function CardioView({ session }: { session: WorkoutSession }) {
 }
 
 // ============================================================
-// EXERCISE CAROUSEL — style cards repas (grande photo, overlay)
+// EXERCISE LIST — liste verticale pleine largeur, tout ouvert
 // ============================================================
 
 function ExerciseCarousel({
@@ -901,15 +901,19 @@ function ExerciseCarousel({
   handleExerciseLog: (log: ExerciseLog) => void;
   handleDraftChange: (exerciseId: string, sets: SetData[]) => void;
 }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const swipeX = useRef<number | null>(null);
-  const swipeY = useRef<number | null>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-
-  // Mapping exercice → image (bras ou jambes selon le groupe musculaire)
+  // Mapping exercice → image selon le groupe musculaire
   const getExerciseImage = (exercise: Exercise): string => {
     const legsKeywords = ['squat', 'leg', 'lunge', 'calf', 'romanian', 'hip_thrust', 'deadlift', 'hamstring', 'quad', 'glute'];
-    const isLegs = legsKeywords.some(k => exercise.id.toLowerCase().includes(k) || exercise.muscleGroups.some(m => m.toLowerCase().includes('jambe') || m.toLowerCase().includes('quad') || m.toLowerCase().includes('fessier') || m.toLowerCase().includes('mollet') || m.toLowerCase().includes('ischios')));
+    const isLegs = legsKeywords.some(k =>
+      exercise.id.toLowerCase().includes(k) ||
+      exercise.muscleGroups.some(m =>
+        m.toLowerCase().includes('jambe') ||
+        m.toLowerCase().includes('quad') ||
+        m.toLowerCase().includes('fessier') ||
+        m.toLowerCase().includes('mollet') ||
+        m.toLowerCase().includes('ischios')
+      )
+    );
     return isLegs ? LEGS_IMAGE : ARMS_IMAGE;
   };
 
@@ -918,227 +922,134 @@ function ExerciseCarousel({
     return log && log.sets.every(s => s.completed);
   }).length;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    swipeX.current = e.touches[0].clientX;
-    swipeY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (swipeX.current === null || swipeY.current === null) return;
-    const dx = e.changedTouches[0].clientX - swipeX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
-    if (Math.abs(dx) > 40 && Math.abs(dx) > dy * 1.2) {
-      if (dx < 0 && activeIdx < exercises.length - 1) setActiveIdx(i => i + 1);
-      else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
-    }
-    swipeX.current = null;
-    swipeY.current = null;
-  };
-
   return (
-    <div>
+    <div className="space-y-4">
       {/* En-tête progression */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
-          Exercice <strong style={{ color: '#fff' }}>{activeIdx + 1}</strong> / {exercises.length}
+          {exercises.length} exercices
         </span>
-        <span style={{ fontSize: 13, color: completedCount === exercises.length ? '#22C55E' : '#FF6B35', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-          {completedCount}/{exercises.length} ✓
+        <span style={{
+          fontSize: 13,
+          color: completedCount === exercises.length ? '#22C55E' : '#FF6B35',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700
+        }}>
+          {completedCount}/{exercises.length} terminés
         </span>
       </div>
 
-      {/* Pastilles de navigation */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 14 }}>
-        {exercises.map((ex, i) => {
-          const log = exerciseLogs.find(l => l.exerciseId === ex.id);
-          const done = log && log.sets.every(s => s.completed);
-          return (
-            <button
-              key={ex.id}
-              onClick={() => setActiveIdx(i)}
-              style={{
-                width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 3,
-                background: done ? '#22C55E' : i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.18)',
-                transition: 'all 0.3s ease', border: 'none', cursor: 'pointer', padding: 0,
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Liste verticale — une card par exercice, pleine largeur */}
+      {exercises.map((exercise, i) => {
+        const img = getExerciseImage(exercise);
+        const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
+        const done = log && log.sets.every(s => s.completed);
+        const repsLabel = exercise.repsMax === null
+          ? `${exercise.repsMin}s`
+          : exercise.repsMin === exercise.repsMax
+          ? `${exercise.repsMin}`
+          : `${exercise.repsMin}-${exercise.repsMax}`;
 
-      {/* Piste carousel */}
-      <div
-        ref={trackRef}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        style={{ overflow: 'hidden', position: 'relative', margin: '0 -4px' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
-            transform: `translateX(calc(${-activeIdx * 90}% - ${activeIdx * 12}px + 5%))`,
-            willChange: 'transform',
-          }}
-        >
-          {exercises.map((exercise, i) => {
-            const isActive = i === activeIdx;
-            const img = getExerciseImage(exercise);
-            const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
-            const done = log && log.sets.every(s => s.completed);
-            const repsLabel = exercise.repsMax === null
-              ? `${exercise.repsMin}s`
-              : exercise.repsMin === exercise.repsMax ? `${exercise.repsMin}` : `${exercise.repsMin}-${exercise.repsMax}`;
+        return (
+          <div
+            key={exercise.id}
+            style={{
+              borderRadius: 20,
+              overflow: 'hidden',
+              width: '100%',
+              border: done
+                ? '2px solid rgba(34,197,94,0.45)'
+                : '1px solid rgba(255,255,255,0.09)',
+              background: done ? 'rgba(34,197,94,0.04)' : '#16161E',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* ── Grande photo avec overlay ── */}
+            <div style={{ position: 'relative', height: 180, overflow: 'hidden' }}>
+              <img
+                src={img}
+                alt={exercise.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
+              />
+              {/* Dégradé bas */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to bottom, rgba(15,15,20,0.0) 0%, rgba(15,15,20,0.55) 50%, rgba(15,15,20,0.98) 100%)'
+              }} />
 
-            return (
-              <div
-                key={exercise.id}
-                onClick={() => !isActive && setActiveIdx(i)}
-                style={{
-                  minWidth: '90%',
-                  borderRadius: 22,
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                  transform: isActive ? 'scale(1)' : 'scale(0.92)',
-                  opacity: isActive ? 1 : 0.45,
-                  transition: 'transform 0.38s ease, opacity 0.38s ease',
-                  border: done
-                    ? '2px solid rgba(34,197,94,0.5)'
-                    : isActive
-                    ? '1px solid rgba(255,107,53,0.25)'
-                    : '1px solid rgba(255,255,255,0.07)',
-                  background: done ? 'rgba(34,197,94,0.04)' : '#16161E',
-                  cursor: isActive ? 'default' : 'pointer',
-                  boxShadow: isActive ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
-                }}
-              >
-                {/* ── Grande photo avec overlay (style card repas) ── */}
-                <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
-                  <img
-                    src={img}
-                    alt={exercise.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
-                  />
-                  {/* Dégradé du bas */}
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(to bottom, rgba(15,15,20,0.05) 0%, rgba(15,15,20,0.6) 55%, rgba(15,15,20,0.97) 100%)'
-                  }} />
-
-                  {/* Badge terminé */}
-                  {done && (
-                    <div style={{
-                      position: 'absolute', top: 12, right: 12,
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(34,197,94,0.35)',
-                      border: '2px solid rgba(34,197,94,0.7)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      <Check size={16} color="#22C55E" />
-                    </div>
-                  )}
-
-                  {/* Numéro exercice */}
-                  <div style={{
-                    position: 'absolute', top: 12, left: 12,
-                    fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
-                    fontFamily: 'Inter, sans-serif', background: 'rgba(0,0,0,0.35)',
-                    padding: '3px 8px', borderRadius: 20,
-                  }}>
-                    {i + 1} / {exercises.length}
-                  </div>
-
-                  {/* Overlay texte en bas de la photo */}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
-                    {/* Groupe musculaire */}
-                    <div style={{
-                      fontSize: 10, fontWeight: 700, color: '#FF6B35',
-                      fontFamily: 'Inter, sans-serif',
-                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
-                    }}>
-                      {Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups.slice(0, 2).join(' · ') : exercise.muscleGroups}
-                    </div>
-                    {/* Nom de l'exercice */}
-                    <div style={{
-                      fontSize: 20, fontWeight: 800, color: '#fff',
-                      fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 5
-                    }}>
-                      {exercise.name}
-                    </div>
-                    {/* Séries × reps */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{
-                        fontSize: 12, color: 'rgba(255,255,255,0.75)',
-                        fontFamily: 'Inter, sans-serif',
-                        background: 'rgba(255,107,53,0.18)', padding: '3px 10px', borderRadius: 20,
-                        fontWeight: 600,
-                      }}>
-                        {exercise.sets} × {repsLabel}
-                      </span>
-                      {exercise.defaultWeight && exercise.defaultWeight > 0 && (
-                        <span style={{
-                          fontSize: 12, color: 'rgba(255,255,255,0.6)',
-                          fontFamily: 'Inter, sans-serif',
-                          background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: 20,
-                        }}>
-                          ~{exercise.defaultWeight} kg
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              {/* Badge terminé */}
+              {done && (
+                <div style={{
+                  position: 'absolute', top: 12, right: 12,
+                  width: 34, height: 34, borderRadius: '50%',
+                  background: 'rgba(34,197,94,0.3)',
+                  border: '2px solid rgba(34,197,94,0.7)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Check size={17} color="#22C55E" />
                 </div>
+              )}
 
-                {/* ── Contenu de la card (seulement sur la card active) ── */}
-                {isActive && (
-                  <div style={{ padding: '2px 0 4px 0' }}>
-                    <ExerciseCard
-                      exercise={exercise}
-                      onLog={handleExerciseLog}
-                      lastLog={log}
-                      adaptation={getExerciseAdaptation(exercise.id)}
-                      draftSets={draft?.exercises[exercise.id] ?? null}
-                      onDraftChange={handleDraftChange}
-                    />
-                  </div>
-                )}
+              {/* Numéro */}
+              <div style={{
+                position: 'absolute', top: 12, left: 12,
+                fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
+                fontFamily: 'Inter, sans-serif',
+                background: 'rgba(0,0,0,0.4)',
+                padding: '3px 9px', borderRadius: 20,
+              }}>
+                {i + 1} / {exercises.length}
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Boutons navigation bas */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        {activeIdx > 0 && (
-          <button
-            onClick={() => setActiveIdx(i => i - 1)}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 16,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-            }}
-          >
-            ← Précédent
-          </button>
-        )}
-        {activeIdx < exercises.length - 1 && (
-          <button
-            onClick={() => setActiveIdx(i => i + 1)}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 16,
-              background: 'linear-gradient(135deg, rgba(255,107,53,0.25), rgba(255,51,102,0.25))',
-              border: '1px solid rgba(255,107,53,0.35)',
-              color: '#FF6B35',
-              fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-            }}
-          >
-            Exercice suivant →
-          </button>
-        )}
-      </div>
+              {/* Overlay texte bas */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, color: '#FF6B35',
+                  fontFamily: 'Inter, sans-serif',
+                  textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
+                }}>
+                  {Array.isArray(exercise.muscleGroups)
+                    ? exercise.muscleGroups.slice(0, 2).join(' · ')
+                    : exercise.muscleGroups}
+                </div>
+                <div style={{
+                  fontSize: 21, fontWeight: 800, color: '#fff',
+                  fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 6
+                }}>
+                  {exercise.name}
+                </div>
+                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                  <span style={{
+                    fontSize: 12, color: 'rgba(255,255,255,0.8)',
+                    fontFamily: 'Inter, sans-serif', fontWeight: 600,
+                    background: 'rgba(255,107,53,0.2)', padding: '3px 11px', borderRadius: 20,
+                  }}>
+                    {exercise.sets} × {repsLabel}
+                  </span>
+                  {exercise.defaultWeight && exercise.defaultWeight > 0 && (
+                    <span style={{
+                      fontSize: 12, color: 'rgba(255,255,255,0.6)',
+                      fontFamily: 'Inter, sans-serif',
+                      background: 'rgba(255,255,255,0.1)', padding: '3px 11px', borderRadius: 20,
+                    }}>
+                      ~{exercise.defaultWeight} kg
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Contenu toujours visible (pas de clic requis) ── */}
+            <ExerciseCard
+              exercise={exercise}
+              onLog={handleExerciseLog}
+              lastLog={log}
+              adaptation={getExerciseAdaptation(exercise.id)}
+              draftSets={draft?.exercises[exercise.id] ?? null}
+              onDraftChange={handleDraftChange}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -379,77 +379,96 @@ const BREAKFASTS_TRAINING: Meal[] = [
 // DÉJEUNERS TRAINING — 12 variantes
 // ============================================================
 const LUNCHES_TRAINING: Meal[] = [
-  { time: '12h30', name: 'Déjeuner', totalCalories: 590, items: [
-    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
+  // 1. Pâtes bolognaise maison
+  { time: '12h30', name: 'Déjeuner — Pâtes bolognaise', totalCalories: 582, items: [
     { food: 'Pâtes blanches cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
+    { food: 'Boeuf haché 5% MG', quantity: '120g', proteins: 26, carbs: 0, fats: 6, calories: 158 },
     { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+    { food: 'Parmesan râpé', quantity: '10g', proteins: 4, carbs: 0, fats: 3, calories: 43 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 580, items: [
-    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
-    { food: 'Carottes vapeur', quantity: '150g', proteins: 1, carbs: 13, fats: 0, calories: 52 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  // 2. Burger maison poulet
+  { time: '12h30', name: 'Déjeuner — Burger poulet', totalCalories: 565, items: [
+    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
+    { food: 'Pain burger (2 tranches)', quantity: '100g', proteins: 8, carbs: 50, fats: 4, calories: 270 },
+    { food: 'Tomate', quantity: '80g', proteins: 1, carbs: 3, fats: 0, calories: 14 },
+    { food: 'Moutarde', quantity: '15g', proteins: 1, carbs: 1, fats: 1, calories: 15 },
+    { food: 'Fromage blanc 0%', quantity: '100g', proteins: 10, carbs: 4, fats: 0, calories: 56 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 570, items: [
-    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
-    { food: 'Riz blanc cuit', quantity: '200g', proteins: 3, carbs: 46, fats: 0, calories: 196 },
-    { food: 'Tomates cerises', quantity: '150g', proteins: 1, carbs: 6, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 603, items: [
-    { food: 'Saumon grillé', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
-    { food: 'Riz basmati cuit', quantity: '220g', proteins: 4, carbs: 57, fats: 0, calories: 246 },
-    { food: 'Courgette sautée', quantity: '150g', proteins: 2, carbs: 6, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 526, items: [
-    { food: 'Blanc de poulet grillé', quantity: '140g', proteins: 32, carbs: 0, fats: 2, calories: 152 },
-    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
-    { food: 'Carottes vapeur', quantity: '150g', proteins: 1, carbs: 13, fats: 0, calories: 52 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 554, items: [
-    { food: 'Thon au naturel (boîte)', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 158 },
-    { food: 'Pâtes blanches cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
-    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
+  // 3. Riz sauté poulet style asiatique
+  { time: '12h30', name: 'Déjeuner — Riz sauté poulet', totalCalories: 571, items: [
     { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
     { food: 'Riz blanc cuit', quantity: '250g', proteins: 4, carbs: 57, fats: 0, calories: 244 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+    { food: 'Oeuf entier', quantity: '1 (60g)', proteins: 8, carbs: 0, fats: 5, calories: 78 },
+    { food: 'Sauce soja', quantity: '15ml', proteins: 2, carbs: 2, fats: 0, calories: 9 },
+    { food: 'Huile d\'olive', quantity: '11ml', proteins: 0, carbs: 0, fats: 10, calories: 99 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 567, items: [
-    { food: 'Cabillaud au four', quantity: '150g', proteins: 30, carbs: 0, fats: 2, calories: 138 },
-    { food: 'Riz blanc cuit', quantity: '220g', proteins: 4, carbs: 51, fats: 0, calories: 215 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 576, items: [
-    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
-    { food: 'Riz basmati cuit', quantity: '230g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
-    { food: 'Carottes vapeur', quantity: '150g', proteins: 1, carbs: 13, fats: 0, calories: 52 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 552, items: [
-    { food: 'Blanc de poulet grillé', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 141 },
-    { food: 'Pâtes blanches cuites', quantity: '230g', proteins: 8, carbs: 57, fats: 2, calories: 281 },
-    { food: 'Courgette sautée', quantity: '100g', proteins: 2, carbs: 4, fats: 0, calories: 18 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
-  ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 564, items: [
-    { food: 'Saumon grillé', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
-    { food: 'Patate douce cuite', quantity: '250g', proteins: 3, carbs: 50, fats: 0, calories: 215 },
+  // 4. Wrap thon mayo
+  { time: '12h30', name: 'Déjeuner — Wrap thon', totalCalories: 558, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 158 },
+    { food: 'Tortilla blé (2 grandes)', quantity: '120g', proteins: 8, carbs: 54, fats: 4, calories: 284 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
     { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
-    { food: 'Huile d\'olive', quantity: '10ml', proteins: 0, carbs: 0, fats: 9, calories: 90 },
+    { food: 'Huile d\'olive', quantity: '6ml', proteins: 0, carbs: 0, fats: 5, calories: 54 },
   ]},
-  { time: '12h30', name: 'Déjeuner', totalCalories: 541, items: [
-    { food: 'Thon au naturel (boîte)', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 137 },
-    { food: 'Riz basmati cuit', quantity: '250g', proteins: 5, carbs: 65, fats: 0, calories: 280 },
-    { food: 'Concombre', quantity: '100g', proteins: 1, carbs: 3, fats: 0, calories: 16 },
+  // 5. Pommes de terre rôties + steak haché
+  { time: '12h30', name: 'Déjeuner — Steak pdt rôties', totalCalories: 574, items: [
+    { food: 'Steak haché 5% MG', quantity: '150g', proteins: 30, carbs: 0, fats: 8, calories: 194 },
+    { food: 'Pommes de terre cuites', quantity: '300g', proteins: 6, carbs: 51, fats: 0, calories: 231 },
+    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
     { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  // 6. Pâtes thon crème
+  { time: '12h30', name: 'Déjeuner — Pâtes thon crème', totalCalories: 561, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 158 },
+    { food: 'Pâtes blanches cuites', quantity: '220g', proteins: 8, carbs: 55, fats: 2, calories: 270 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Tomates cerises', quantity: '100g', proteins: 1, carbs: 4, fats: 0, calories: 18 },
+    { food: 'Huile d\'olive', quantity: '8ml', proteins: 0, carbs: 0, fats: 7, calories: 72 },
+  ]},
+  // 7. Saumon riz basmati sauce soja
+  { time: '12h30', name: 'Déjeuner — Saumon riz soja', totalCalories: 596, items: [
+    { food: 'Saumon grillé', quantity: '130g', proteins: 26, carbs: 0, fats: 14, calories: 222 },
+    { food: 'Riz basmati cuit', quantity: '230g', proteins: 5, carbs: 60, fats: 0, calories: 258 },
+    { food: 'Sauce soja', quantity: '15ml', proteins: 2, carbs: 2, fats: 0, calories: 9 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  // 8. Pizza protéinée maison (base pain de mie)
+  { time: '12h30', name: 'Déjeuner — Pizza protéinée', totalCalories: 568, items: [
+    { food: 'Pain de mie blanc (4 tranches)', quantity: '120g', proteins: 10, carbs: 60, fats: 4, calories: 318 },
+    { food: 'Blanc de poulet grillé', quantity: '100g', proteins: 23, carbs: 0, fats: 1, calories: 109 },
+    { food: 'Sauce tomate', quantity: '80g', proteins: 2, carbs: 6, fats: 0, calories: 28 },
+    { food: 'Mozzarella light', quantity: '60g', proteins: 10, carbs: 1, fats: 7, calories: 105 },
+    { food: 'Huile d\'olive', quantity: '9ml', proteins: 0, carbs: 0, fats: 8, calories: 81 },
+  ]},
+  // 9. Riz poulet curry doux
+  { time: '12h30', name: 'Déjeuner — Poulet curry', totalCalories: 555, items: [
+    { food: 'Blanc de poulet grillé', quantity: '140g', proteins: 32, carbs: 0, fats: 2, calories: 152 },
+    { food: 'Riz blanc cuit', quantity: '240g', proteins: 4, carbs: 55, fats: 0, calories: 235 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Curry en poudre', quantity: '5g', proteins: 0, carbs: 2, fats: 0, calories: 15 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  // 10. Bowl japonais (poké bowl)
+  { time: '12h30', name: 'Déjeuner — Poké bowl', totalCalories: 562, items: [
+    { food: 'Thon au naturel (boîte)', quantity: '130g', proteins: 30, carbs: 0, fats: 2, calories: 137 },
+    { food: 'Riz blanc cuit', quantity: '230g', proteins: 4, carbs: 53, fats: 0, calories: 225 },
+    { food: 'Concombre', quantity: '100g', proteins: 1, carbs: 3, fats: 0, calories: 16 },
+    { food: 'Sauce soja', quantity: '15ml', proteins: 2, carbs: 2, fats: 0, calories: 9 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
+  ]},
+  // 11. Hachis parmentier allégé
+  { time: '12h30', name: 'Déjeuner — Hachis parmentier', totalCalories: 573, items: [
+    { food: 'Boeuf haché 5% MG', quantity: '120g', proteins: 26, carbs: 0, fats: 6, calories: 158 },
+    { food: 'Pommes de terre cuites', quantity: '280g', proteins: 6, carbs: 48, fats: 0, calories: 216 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+  ]},
+  // 12. Cabillaud + pommes de terre + sauce moutarde
+  { time: '12h30', name: 'Déjeuner — Cabillaud moutarde', totalCalories: 549, items: [
+    { food: 'Cabillaud au four', quantity: '160g', proteins: 32, carbs: 0, fats: 2, calories: 147 },
+    { food: 'Pommes de terre cuites', quantity: '260g', proteins: 5, carbs: 44, fats: 0, calories: 201 },
+    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
+    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
   ]},
 ];
 
@@ -524,98 +543,107 @@ const SNACKS_TRAINING: Meal[] = [
 // DÎNERS TRAINING — 12 variantes
 // ============================================================
 const DINNERS_TRAINING: Meal[] = [
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 978, items: [
+  // 1. Pâtes bolognaise + whey
+  { time: '19h30', name: 'Dîner — Pâtes bolognaise', totalCalories: 920, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
-    { food: 'Riz blanc cuit', quantity: '250g', proteins: 4, carbs: 57, fats: 0, calories: 244 },
-    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 1, calories: 36 },
+    { food: 'Pâtes blanches cuites', quantity: '300g', proteins: 11, carbs: 75, fats: 2, calories: 367 },
+    { food: 'Boeuf haché 5% MG', quantity: '130g', proteins: 28, carbs: 0, fats: 7, calories: 171 },
+    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Parmesan râpé', quantity: '15g', proteins: 6, carbs: 0, fats: 5, calories: 65 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 946, items: [
+  // 2. Burger maison boeuf + frites four
+  { time: '19h30', name: 'Dîner — Burger boeuf frites', totalCalories: 935, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
-    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
-    { food: 'Tomates cerises', quantity: '150g', proteins: 1, carbs: 6, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Steak haché 5% MG', quantity: '150g', proteins: 30, carbs: 0, fats: 8, calories: 194 },
+    { food: 'Pain burger (2 tranches)', quantity: '100g', proteins: 8, carbs: 50, fats: 4, calories: 270 },
+    { food: 'Pommes de terre cuites', quantity: '200g', proteins: 4, carbs: 34, fats: 0, calories: 154 },
+    { food: 'Moutarde', quantity: '15g', proteins: 1, carbs: 1, fats: 1, calories: 15 },
+    { food: 'Huile d\'olive', quantity: '20ml', proteins: 0, carbs: 0, fats: 18, calories: 180 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 842, items: [
+  // 3. Saumon pâtes crème citron
+  { time: '19h30', name: 'Dîner — Saumon pâtes crème', totalCalories: 905, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
-    { food: 'Pâtes blanches cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
-    { food: 'Carottes vapeur', quantity: '150g', proteins: 1, carbs: 13, fats: 0, calories: 52 },
-    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+    { food: 'Pâtes blanches cuites', quantity: '270g', proteins: 10, carbs: 67, fats: 2, calories: 330 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Huile d\'olive', quantity: '17ml', proteins: 0, carbs: 0, fats: 15, calories: 153 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 914, items: [
+  // 4. Poulet riz + sauce curry
+  { time: '19h30', name: 'Dîner — Poulet curry riz', totalCalories: 918, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
-    { food: 'Patate douce cuite', quantity: '300g', proteins: 4, carbs: 60, fats: 0, calories: 258 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Blanc de poulet grillé', quantity: '180g', proteins: 42, carbs: 0, fats: 2, calories: 196 },
+    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Curry en poudre', quantity: '5g', proteins: 0, carbs: 2, fats: 0, calories: 15 },
+    { food: 'Huile d\'olive', quantity: '14ml', proteins: 0, carbs: 0, fats: 13, calories: 126 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 932, items: [
+  // 5. Crêpes protéinées poulet
+  { time: '19h30', name: 'Dîner — Crêpes poulet', totalCalories: 912, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
-    { food: 'Riz blanc cuit', quantity: '280g', proteins: 5, carbs: 64, fats: 0, calories: 273 },
-    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Farine de blé blanche', quantity: '120g', proteins: 11, carbs: 86, fats: 2, calories: 409 },
+    { food: 'Blanc de poulet grillé', quantity: '120g', proteins: 28, carbs: 0, fats: 1, calories: 130 },
+    { food: 'Oeuf entier', quantity: '2 (120g)', proteins: 16, carbs: 0, fats: 10, calories: 156 },
+    { food: 'Huile d\'olive', quantity: '10ml', proteins: 0, carbs: 0, fats: 9, calories: 90 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 935, items: [
+  // 6. Tacos maison poulet
+  { time: '19h30', name: 'Dîner — Tacos poulet', totalCalories: 928, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
-    { food: 'Riz blanc cuit', quantity: '250g', proteins: 4, carbs: 57, fats: 0, calories: 244 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
+    { food: 'Blanc de poulet grillé', quantity: '160g', proteins: 37, carbs: 0, fats: 2, calories: 174 },
+    { food: 'Tortilla blé (3 grandes)', quantity: '180g', proteins: 12, carbs: 81, fats: 6, calories: 426 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Sauce tomate', quantity: '60g', proteins: 1, carbs: 5, fats: 0, calories: 21 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 789, items: [
+  // 7. Pâtes thon sauce tomate
+  { time: '19h30', name: 'Dîner — Pâtes thon tomate', totalCalories: 897, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Thon au naturel (boîte)', quantity: '160g', proteins: 37, carbs: 0, fats: 2, calories: 169 },
-    { food: 'Pâtes blanches cuites', quantity: '270g', proteins: 10, carbs: 67, fats: 2, calories: 330 },
+    { food: 'Pâtes blanches cuites', quantity: '280g', proteins: 10, carbs: 70, fats: 2, calories: 342 },
     { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
-    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
+    { food: 'Huile d\'olive', quantity: '24ml', proteins: 0, carbs: 0, fats: 22, calories: 216 },
   ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 947, items: [
-    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Escalope de dinde', quantity: '150g', proteins: 33, carbs: 0, fats: 3, calories: 159 },
-    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 967, items: [
-    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
-    { food: 'Patate douce cuite', quantity: '280g', proteins: 4, carbs: 56, fats: 0, calories: 241 },
-    { food: 'Tomates cerises', quantity: '150g', proteins: 1, carbs: 6, fats: 0, calories: 27 },
-    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 804, items: [
-    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
-    { food: 'Pâtes blanches cuites', quantity: '260g', proteins: 9, carbs: 65, fats: 2, calories: 318 },
-    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 1, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 962, items: [
-    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
-    { food: 'Cabillaud au four', quantity: '180g', proteins: 36, carbs: 0, fats: 2, calories: 166 },
-    { food: 'Riz blanc cuit', quantity: '250g', proteins: 4, carbs: 57, fats: 0, calories: 244 },
-    { food: 'Poivrons grillés', quantity: '150g', proteins: 2, carbs: 10, fats: 0, calories: 48 },
-    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
-  ]},
-  { time: '19h30', name: 'Dîner post-training', totalCalories: 950, items: [
+  // 8. Riz sauté dinde + oeuf
+  { time: '19h30', name: 'Dîner — Riz sauté dinde', totalCalories: 940, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Escalope de dinde', quantity: '160g', proteins: 35, carbs: 0, fats: 3, calories: 170 },
-    { food: 'Riz basmati cuit', quantity: '270g', proteins: 6, carbs: 70, fats: 0, calories: 303 },
-    { food: 'Courgette sautée', quantity: '200g', proteins: 3, carbs: 8, fats: 0, calories: 36 },
-    { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
-    { food: 'Pain de mie blanc', quantity: '2 tranches (60g)', proteins: 5, carbs: 30, fats: 2, calories: 159 },
+    { food: 'Riz basmati cuit', quantity: '280g', proteins: 6, carbs: 73, fats: 0, calories: 314 },
+    { food: 'Oeuf entier', quantity: '1 (60g)', proteins: 8, carbs: 0, fats: 5, calories: 78 },
+    { food: 'Sauce soja', quantity: '15ml', proteins: 2, carbs: 2, fats: 0, calories: 9 },
+    { food: 'Huile d\'olive', quantity: '27ml', proteins: 0, carbs: 0, fats: 25, calories: 243 },
+  ]},
+  // 9. Saumon pdt four + sauce moutarde
+  { time: '19h30', name: 'Dîner — Saumon pdt moutarde', totalCalories: 908, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
+    { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
+    { food: 'Pommes de terre cuites', quantity: '300g', proteins: 6, carbs: 51, fats: 0, calories: 231 },
+    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
+    { food: 'Huile d\'olive', quantity: '30ml', proteins: 0, carbs: 0, fats: 28, calories: 270 },
+  ]},
+  // 10. Wrap boeuf haché fromage
+  { time: '19h30', name: 'Dîner — Wrap boeuf', totalCalories: 916, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
+    { food: 'Boeuf haché 5% MG', quantity: '150g', proteins: 32, carbs: 0, fats: 8, calories: 197 },
+    { food: 'Tortilla blé (3 grandes)', quantity: '180g', proteins: 12, carbs: 81, fats: 6, calories: 426 },
+    { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
+    { food: 'Sauce tomate', quantity: '60g', proteins: 1, carbs: 5, fats: 0, calories: 21 },
+    { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
+  ]},
+  // 11. Cabillaud + riz + sauce soja
+  { time: '19h30', name: 'Dîner — Cabillaud riz soja', totalCalories: 925, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
+    { food: 'Cabillaud au four', quantity: '200g', proteins: 40, carbs: 0, fats: 2, calories: 184 },
+    { food: 'Riz blanc cuit', quantity: '300g', proteins: 5, carbs: 69, fats: 0, calories: 293 },
+    { food: 'Sauce soja', quantity: '20ml', proteins: 3, carbs: 3, fats: 0, calories: 12 },
+    { food: 'Huile d\'olive', quantity: '35ml', proteins: 0, carbs: 0, fats: 32, calories: 315 },
+  ]},
+  // 12. Omelette jambon + pdt
+  { time: '19h30', name: 'Dîner — Omelette jambon pdt', totalCalories: 903, items: [
+    { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
+    { food: 'Oeufs entiers', quantity: '3 (180g)', proteins: 24, carbs: 0, fats: 15, calories: 234 },
+    { food: 'Jambon blanc (tranches)', quantity: '100g', proteins: 18, carbs: 1, fats: 3, calories: 103 },
+    { food: 'Pommes de terre cuites', quantity: '250g', proteins: 5, carbs: 43, fats: 0, calories: 193 },
+    { food: 'Huile d\'olive', quantity: '28ml', proteins: 0, carbs: 0, fats: 26, calories: 252 },
   ]},
 ];
 

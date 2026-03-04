@@ -2534,6 +2534,16 @@ export const foodItems: FoodItem[] = [
     tips: "Maison ou en conserve (sans sucre ajouté). Avec des pâtes et de la viande.",
     timing: "Déjeuner, dîner",
   },
+  {
+    id: 'tomacouli',
+    name: 'Tomacouli (coulis de tomates)',
+    category: 'vegetables',
+    relevanceScore: 85,
+    relevanceReason: "Coulis de tomates doux, sans morceaux. Idéal pour les sauces bolognaises et les pizzas. Riche en lycopène.",
+    per100g: { proteins: 1, carbs: 6, fats: 0, calories: 30 },
+    tips: "Utilise-le directement dans les pâtes bolo, les tacos ou les pizzas maison. Sans sucre ajouté.",
+    timing: "Déjeuner, dîner",
+  },
   // FRUITS
   {
     id: 'pomme',

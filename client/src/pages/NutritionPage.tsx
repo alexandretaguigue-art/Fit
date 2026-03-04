@@ -4,7 +4,7 @@
 // plan hebdomadaire, liste de courses, récap hebdomadaire réalité/objectif
 // ============================================================
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
@@ -308,6 +308,60 @@ function AddFoodModal({ onAdd, onClose, defaultMeal }: {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// COMPOSANT SWIPE TO DELETE
+// ============================================================
+function SwipeToDelete({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
+  const startX = useRef<number | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiped, setSwiped] = useState(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    setSwiped(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    if (dx < 0) setOffsetX(Math.max(dx, -90));
+  };
+
+  const handleTouchEnd = () => {
+    if (offsetX < -60) {
+      setSwiped(true);
+      setOffsetX(-90);
+    } else {
+      setOffsetX(0);
+    }
+    startX.current = null;
+  };
+
+  const handleReset = () => { setOffsetX(0); setSwiped(false); };
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Fond rouge — action supprimer */}
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 90, background: 'rgba(239,68,68,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 0 }}>
+        <button onClick={onDelete} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <Trash2 size={16} />
+          <span style={{ fontSize: 10, fontFamily: 'Inter, sans-serif' }}>Supprimer</span>
+        </button>
+      </div>
+      {/* Contenu glissant */}
+      <div
+        style={{ transform: `translateX(${offsetX}px)`, transition: offsetX === 0 || swiped ? 'transform 0.2s ease' : 'none', position: 'relative', zIndex: 1 }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={swiped ? handleReset : undefined}
+      >
+        {children}
       </div>
     </div>
   );
@@ -701,46 +755,45 @@ function JournalTab() {
                     </div>
                   )}
 
-                  {/* Aliments déjà saisis */}
+                  {/* Aliments déjà saisis — swipe gauche pour supprimer */}
                   {entries.length > 0 && (
                     <div style={{ borderTop: planMeal && !mealStatus ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
                       {entries.map(entry => (
-                        <div key={entry.id} className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          {editingEntry === entry.id ? (
-                            <>
-                              <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                              <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))}
-                                className="w-16 text-center text-white text-xs rounded-lg py-1.5"
-                                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,107,53,0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
-                              <span className="text-white/40 text-xs">g</span>
-                              <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
-                                <Check size={12} className="text-green-400" />
-                              </button>
-                              <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                <span className="text-white/40 text-xs">✕</span>
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-white/80 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
-                                  <span className="text-white/40 text-xs">{entry.quantity}g</span>
+                        <SwipeToDelete key={entry.id} onDelete={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }}>
+                          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: '#1A1A22' }}>
+                            {editingEntry === entry.id ? (
+                              <>
+                                <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                                <input type="number" value={editQty} onChange={e => setEditQty(Number(e.target.value))}
+                                  className="w-16 text-center text-white text-xs rounded-lg py-1.5"
+                                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,107,53,0.4)', fontFamily: 'Inter, sans-serif' }} min="10" step="10" />
+                                <span className="text-white/40 text-xs">g</span>
+                                <button onClick={() => handleEditSave(entry.id, entry)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
+                                  <Check size={12} className="text-green-400" />
+                                </button>
+                                <button onClick={() => setEditingEntry(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                  <span className="text-white/40 text-xs">✕</span>
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-white/80 text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
+                                    <span className="text-white/40 text-xs">{entry.quantity}g</span>
+                                  </div>
+                                  <div className="flex gap-2 mt-0.5">
+                                    <span className="text-white/50 text-xs">{Math.round(entry.calories)} kcal</span>
+                                    <span className="text-white/30 text-xs">P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
+                                  </div>
                                 </div>
-                                <div className="flex gap-2 mt-0.5">
-                                  <span className="text-white/50 text-xs">{Math.round(entry.calories)} kcal</span>
-                                  <span className="text-white/30 text-xs">P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
-                                </div>
-                              </div>
-                              <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                <Edit3 size={11} className="text-white/40" />
-                              </button>
-                              <button onClick={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)' }}>
-                                <Trash2 size={11} className="text-red-400/60" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                                <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                  <Edit3 size={11} className="text-white/40" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </SwipeToDelete>
                       ))}
                     </div>
                   )}

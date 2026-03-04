@@ -383,7 +383,7 @@ const LUNCHES_TRAINING: Meal[] = [
   { time: '12h30', name: 'Déjeuner — Pâtes bolognaise', totalCalories: 582, items: [
     { food: 'Pâtes blanches cuites', quantity: '250g', proteins: 9, carbs: 62, fats: 2, calories: 306 },
     { food: 'Boeuf haché 5% MG', quantity: '120g', proteins: 26, carbs: 0, fats: 6, calories: 158 },
-    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Tomacouli', quantity: '120g', proteins: 1, carbs: 7, fats: 0, calories: 36 },
     { food: 'Parmesan râpé', quantity: '10g', proteins: 4, carbs: 0, fats: 3, calories: 43 },
   ]},
   // 2. Burger maison poulet
@@ -391,7 +391,7 @@ const LUNCHES_TRAINING: Meal[] = [
     { food: 'Blanc de poulet grillé', quantity: '150g', proteins: 35, carbs: 0, fats: 2, calories: 163 },
     { food: 'Pain burger (2 tranches)', quantity: '100g', proteins: 8, carbs: 50, fats: 4, calories: 270 },
     { food: 'Tomate', quantity: '80g', proteins: 1, carbs: 3, fats: 0, calories: 14 },
-    { food: 'Moutarde', quantity: '15g', proteins: 1, carbs: 1, fats: 1, calories: 15 },
+    { food: 'Ketchup', quantity: '20g', proteins: 0, carbs: 5, fats: 0, calories: 20 },
     { food: 'Fromage blanc 0%', quantity: '100g', proteins: 10, carbs: 4, fats: 0, calories: 56 },
   ]},
   // 3. Riz sauté poulet style asiatique
@@ -414,7 +414,7 @@ const LUNCHES_TRAINING: Meal[] = [
   { time: '12h30', name: 'Déjeuner — Steak pdt rôties', totalCalories: 574, items: [
     { food: 'Steak haché 5% MG', quantity: '150g', proteins: 30, carbs: 0, fats: 8, calories: 194 },
     { food: 'Pommes de terre cuites', quantity: '300g', proteins: 6, carbs: 51, fats: 0, calories: 231 },
-    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
+    { food: 'Herbes de Provence', quantity: '5g', proteins: 0, carbs: 1, fats: 0, calories: 5 },
     { food: 'Huile d\'olive', quantity: '12ml', proteins: 0, carbs: 0, fats: 11, calories: 108 },
   ]},
   // 6. Pâtes thon crème
@@ -463,11 +463,11 @@ const LUNCHES_TRAINING: Meal[] = [
     { food: 'Fromage blanc 0%', quantity: '80g', proteins: 8, carbs: 3, fats: 0, calories: 45 },
     { food: 'Huile d\'olive', quantity: '15ml', proteins: 0, carbs: 0, fats: 14, calories: 135 },
   ]},
-  // 12. Cabillaud + pommes de terre + sauce moutarde
-  { time: '12h30', name: 'Déjeuner — Cabillaud moutarde', totalCalories: 549, items: [
+  // 12. Cabillaud + pommes de terre + citron herbes
+  { time: '12h30', name: 'Déjeuner — Cabillaud citron', totalCalories: 549, items: [
     { food: 'Cabillaud au four', quantity: '160g', proteins: 32, carbs: 0, fats: 2, calories: 147 },
     { food: 'Pommes de terre cuites', quantity: '260g', proteins: 5, carbs: 44, fats: 0, calories: 201 },
-    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
+    { food: 'Jus de citron + herbes', quantity: '20g', proteins: 0, carbs: 2, fats: 0, calories: 5 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
   ]},
 ];
@@ -548,7 +548,7 @@ const DINNERS_TRAINING: Meal[] = [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Pâtes blanches cuites', quantity: '300g', proteins: 11, carbs: 75, fats: 2, calories: 367 },
     { food: 'Boeuf haché 5% MG', quantity: '130g', proteins: 28, carbs: 0, fats: 7, calories: 171 },
-    { food: 'Sauce tomate', quantity: '100g', proteins: 2, carbs: 8, fats: 0, calories: 35 },
+    { food: 'Tomacouli', quantity: '120g', proteins: 1, carbs: 7, fats: 0, calories: 36 },
     { food: 'Parmesan râpé', quantity: '15g', proteins: 6, carbs: 0, fats: 5, calories: 65 },
     { food: 'Huile d\'olive', quantity: '18ml', proteins: 0, carbs: 0, fats: 17, calories: 162 },
   ]},
@@ -558,7 +558,7 @@ const DINNERS_TRAINING: Meal[] = [
     { food: 'Steak haché 5% MG', quantity: '150g', proteins: 30, carbs: 0, fats: 8, calories: 194 },
     { food: 'Pain burger (2 tranches)', quantity: '100g', proteins: 8, carbs: 50, fats: 4, calories: 270 },
     { food: 'Pommes de terre cuites', quantity: '200g', proteins: 4, carbs: 34, fats: 0, calories: 154 },
-    { food: 'Moutarde', quantity: '15g', proteins: 1, carbs: 1, fats: 1, calories: 15 },
+    { food: 'Ketchup', quantity: '20g', proteins: 0, carbs: 5, fats: 0, calories: 20 },
     { food: 'Huile d\'olive', quantity: '20ml', proteins: 0, carbs: 0, fats: 18, calories: 180 },
   ]},
   // 3. Saumon pâtes crème citron
@@ -612,12 +612,12 @@ const DINNERS_TRAINING: Meal[] = [
     { food: 'Sauce soja', quantity: '15ml', proteins: 2, carbs: 2, fats: 0, calories: 9 },
     { food: 'Huile d\'olive', quantity: '27ml', proteins: 0, carbs: 0, fats: 25, calories: 243 },
   ]},
-  // 9. Saumon pdt four + sauce moutarde
-  { time: '19h30', name: 'Dîner — Saumon pdt moutarde', totalCalories: 908, items: [
+  // 9. Saumon pdt four + citron aneth
+  { time: '19h30', name: 'Dîner — Saumon pdt citron', totalCalories: 908, items: [
     { food: 'Shaker Whey protéine', quantity: '30g (1 dose)', proteins: 24, carbs: 3, fats: 2, calories: 120 },
     { food: 'Saumon au four', quantity: '150g', proteins: 30, carbs: 0, fats: 17, calories: 257 },
     { food: 'Pommes de terre cuites', quantity: '300g', proteins: 6, carbs: 51, fats: 0, calories: 231 },
-    { food: 'Moutarde', quantity: '20g', proteins: 1, carbs: 1, fats: 1, calories: 20 },
+    { food: 'Jus de citron + aneth', quantity: '20g', proteins: 0, carbs: 2, fats: 0, calories: 5 },
     { food: 'Huile d\'olive', quantity: '30ml', proteins: 0, carbs: 0, fats: 28, calories: 270 },
   ]},
   // 10. Wrap boeuf haché fromage

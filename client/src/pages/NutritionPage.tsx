@@ -516,8 +516,25 @@ function JournalTab() {
     [dayLog, mealsConsumedCount]
   );
 
-  // Repas ouvert (tap pour voir le détail)
-  const [openMeal, setOpenMeal] = useState<string | null>(null);
+  // Index du repas actif dans le carousel
+  const [activeMealIdx, setActiveMealIdx] = useState(0);
+  const openMeal = MEAL_ORDER[activeMealIdx];
+  const setOpenMeal = (meal: string | null) => {
+    if (meal === null) return;
+    const idx = MEAL_ORDER.indexOf(meal);
+    if (idx !== -1) setActiveMealIdx(idx);
+  };
+  // Swipe carousel
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const swipeStartX = useRef<number | null>(null);
+  const handleCarouselTouchStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; };
+  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    if (dx < -50 && activeMealIdx < MEAL_ORDER.length - 1) setActiveMealIdx(i => i + 1);
+    else if (dx > 50 && activeMealIdx > 0) setActiveMealIdx(i => i - 1);
+    swipeStartX.current = null;
+  };
 
   // Repas ajustés (Prompt Ultime — ajustement quantités à la demande)
   const [adjustedMeals, setAdjustedMeals] = useState<Record<string, Array<{ food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }> | null>>({});
@@ -635,9 +652,25 @@ function JournalTab() {
         </div>
       )}
 
-      {/* LISTE REPAS — design simple, liste verticale, tap pour ouvrir */}
-      <div className="space-y-2">
-        {MEAL_ORDER.map((meal) => {
+      {/* CAROUSEL REPAS — swipe horizontal, card active au premier plan */}
+      <div
+        ref={carouselRef}
+        onTouchStart={handleCarouselTouchStart}
+        onTouchEnd={handleCarouselTouchEnd}
+        style={{ position: 'relative', overflow: 'hidden', paddingBottom: 8 }}
+      >
+        {/* Pastilles de navigation */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
+          {MEAL_ORDER.map((m, i) => (
+            <button key={m} onClick={() => setActiveMealIdx(i)}
+              style={{ width: i === activeMealIdx ? 24 : 8, height: 8, borderRadius: 4, background: i === activeMealIdx ? '#FF6B35' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s ease', border: 'none', cursor: 'pointer', padding: 0 }} />
+          ))}
+        </div>
+
+        {/* Piste de cards */}
+        <div style={{ display: 'flex', gap: 12, transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)', transform: `translateX(calc(${-activeMealIdx * 88}% - ${activeMealIdx * 12}px + 6%))`, willChange: 'transform' }}>
+        {MEAL_ORDER.map((meal, mealIdx) => {
+          const isActive = mealIdx === activeMealIdx;
           const entries = grouped[meal] ?? [];
           const mealCalories = entries.reduce((acc, e) => acc + e.calories, 0);
           const mealStatus = validatedMeals[meal];
@@ -661,11 +694,22 @@ function JournalTab() {
             : 'rgba(255,255,255,0.15)';
 
           return (
-            <div key={meal} className="rounded-2xl overflow-hidden transition-all"
-              style={{ border: `1px solid ${mealStatus === 'validated' ? 'rgba(34,197,94,0.35)' : mealStatus === 'modified' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.08)'}` }}>
+            <div key={meal}
+              onClick={() => !isActive && setActiveMealIdx(mealIdx)}
+              style={{
+                flexShrink: 0,
+                width: '88%',
+                borderRadius: 20,
+                overflow: 'hidden',
+                transform: isActive ? 'scale(1)' : 'scale(0.92)',
+                opacity: isActive ? 1 : 0.55,
+                transition: 'transform 0.35s ease, opacity 0.35s ease',
+                border: `1px solid ${mealStatus === 'validated' ? 'rgba(34,197,94,0.35)' : mealStatus === 'modified' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                cursor: isActive ? 'default' : 'pointer',
+              }}>
 
               {/* PHOTO EN HAUT — tap pour ouvrir/fermer */}
-              <button className="w-full text-left relative" style={{ height: 110, display: 'block' }} onClick={() => setOpenMeal(isOpen ? null : meal)}>
+              <button className="w-full text-left relative" style={{ height: isActive ? 170 : 120, display: 'block', transition: 'height 0.35s ease' }} onClick={() => isActive ? setOpenMeal(isOpen ? null : meal) : undefined}>
                 {/* Image de fond */}
                 <img src={MEAL_PHOTOS[meal]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
                 {/* Gradient sombre en bas pour lisibilité du texte */}
@@ -702,8 +746,8 @@ function JournalTab() {
                 </div>
               </button>
 
-              {/* Détail — visible si ouvert */}
-              {isOpen && (
+              {/* Détail — visible si ouvert (uniquement sur la card active) */}
+              {isOpen && isActive && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
 
                   {/* Plan suggéré */}
@@ -824,7 +868,8 @@ function JournalTab() {
             </div>
           );
         })}
-      </div>
+        </div>{/* fin piste de cards */}
+      </div>{/* fin carousel */}
 
       {/* Bouton ajouter global */}
       <button onClick={() => { setAddModalMeal('lunch'); setShowAddModal(true); }} className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"

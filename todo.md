@@ -21,3 +21,5 @@
 - [x] Restructurer section "Analyse musculaire" : modèle 3D à gauche (grand), infos musculaires à droite, fond uni, layout deux colonnes
 - [x] Redesign bloc Analyse musculaire : fond noir uni sans démarcation, typo soignée, score récupération, layout deux colonnes propre
 - [x] Ajouter et supprimer des exercices dans une séance (WorkoutPage : bouton + pour ajouter un exo custom, bouton poubelle pour supprimer, persistance localStorage)
+- [ ] Synchronisation automatique calories/repas/proportions lors du changement de séance dans le calendrier (swap, annulation, override)
+- [ ] Remplacer le formulaire libre d'ajout d'exercice par une sélection depuis une base de données d'exercices enrichie (100+ exercices par groupe musculaire)

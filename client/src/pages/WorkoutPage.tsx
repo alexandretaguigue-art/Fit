@@ -2,15 +2,16 @@
 // Journal interactif avec scoring, jugement des charges, alternatives
 // Cycle 14 jours : musculation, football, course, vélo, repos
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import React from 'react';
-import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target, Trash2, Plus, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target, Trash2, Plus, X, Search } from 'lucide-react';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import ScoreRing from '../components/ScoreRing';
 import SessionTimeline from '../components/SessionTimeline';
 import type { SessionLog, WorkoutSession, Exercise, FootballDrill } from '../lib/programData';
 import { toast } from 'sonner';
+import { EXERCISE_LIBRARY, searchExercises, getExercisesByCategory, CATEGORY_LABELS, CATEGORY_ICONS, type LibraryExercise } from '../lib/exerciseLibrary';
 
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
 
@@ -57,33 +58,50 @@ function useSessionExercises(sessionId: string, baseExercises: Exercise[]) {
 }
 
 // ============================================================
-// MODAL : Ajouter un exercice personnalisé
+// MODAL : Sélectionner un exercice depuis la bibliothèque
 // ============================================================
 
 function AddExerciseModal({ onAdd, onClose }: { onAdd: (ex: Exercise) => void; onClose: () => void }) {
-  const [name, setName] = useState('');
-  const [muscles, setMuscles] = useState('');
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selected, setSelected] = useState<LibraryExercise | null>(null);
   const [sets, setSets] = useState(3);
   const [repsMin, setRepsMin] = useState(8);
-  const [repsMax, setRepsMax] = useState<number | ''>(12);
-  const [weight, setWeight] = useState<number | ''>(0);
+  const [repsMax, setRepsMax] = useState(12);
+  const [weight, setWeight] = useState(0);
 
-  const handleSubmit = () => {
-    if (!name.trim()) { toast.error('Donne un nom à l\'exercice'); return; }
-    const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const results = useMemo(() => {
+    if (query.trim().length >= 2) return searchExercises(query);
+    if (activeCategory) return EXERCISE_LIBRARY.filter(e => e.category === activeCategory);
+    return EXERCISE_LIBRARY;
+  }, [query, activeCategory]);
+
+  const categories = useMemo(() => Object.keys(getExercisesByCategory()), []);
+
+  const handleSelect = (ex: LibraryExercise) => {
+    setSelected(ex);
+    setSets(ex.defaultSets);
+    setRepsMin(ex.defaultRepsMin);
+    setRepsMax(ex.defaultRepsMax);
+    setWeight(ex.defaultWeight ?? 0);
+  };
+
+  const handleConfirm = () => {
+    if (!selected) return;
+    const id = `lib_${selected.id}_${Date.now()}`;
     const ex: Exercise = {
       id,
-      name: name.trim(),
+      name: selected.name,
       sets,
       repsMin,
-      repsMax: repsMax === '' ? repsMin : Number(repsMax),
-      restSeconds: 90,
-      relevanceScore: 80,
-      relevanceReason: 'Exercice personnalisé',
+      repsMax,
+      restSeconds: selected.defaultRestSeconds,
+      relevanceScore: 85,
+      relevanceReason: `${CATEGORY_LABELS[selected.category] ?? selected.category} — bibliothèque`,
       alternatives: [],
-      tips: [],
-      muscleGroups: muscles.split(',').map(m => m.trim()).filter(Boolean),
-      defaultWeight: weight === '' ? 0 : Number(weight),
+      tips: selected.tips ?? [],
+      muscleGroups: selected.muscleGroups,
+      defaultWeight: weight,
       weightProgression: 'Augmente de 2.5 kg quand toutes les séries sont complètes',
     };
     onAdd(ex);
@@ -91,96 +109,189 @@ function AddExerciseModal({ onAdd, onClose }: { onAdd: (ex: Exercise) => void; o
     onClose();
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: 'rgba(255,255,255,0.07)',
+    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12,
+    padding: '10px 14px', color: '#fff', fontSize: 14,
+    fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+    outline: 'none',
+  };
+  const labelStyle: React.CSSProperties = {
+    color: 'rgba(255,255,255,0.45)', fontSize: 10, fontFamily: 'Inter, sans-serif',
+    textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6,
+  };
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.85)',
+      background: 'rgba(0,0,0,0.88)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     }} onClick={onClose}>
       <div
         style={{
-          width: '100%', maxWidth: 480,
-          background: '#16161E',
+          width: '100%', maxWidth: 520,
+          background: '#13131A',
           borderRadius: '24px 24px 0 0',
-          padding: '24px 20px 40px',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          maxHeight: '92vh',
+          display: 'flex', flexDirection: 'column',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Ajouter un exercice</h3>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <X size={16} color="rgba(255,255,255,0.6)" />
-          </button>
+        {/* ---- HEADER ---- */}
+        <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            {selected ? (
+              <button onClick={() => setSelected(null)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, padding: '6px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>← Retour</button>
+            ) : (
+              <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Ajouter un exercice</h3>
+            )}
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <X size={16} color="rgba(255,255,255,0.6)" />
+            </button>
+          </div>
+
+          {!selected && (
+            <>
+              {/* Barre de recherche */}
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <Search size={15} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={e => { setQuery(e.target.value); setActiveCategory(null); }}
+                  placeholder="Rechercher un exercice..."
+                  style={{ ...inputStyle, paddingLeft: 36 }}
+                />
+              </div>
+              {/* Filtres catégories */}
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 12, scrollbarWidth: 'none' }}>
+                <button
+                  onClick={() => { setActiveCategory(null); setQuery(''); }}
+                  style={{
+                    flexShrink: 0, padding: '5px 12px', borderRadius: 20,
+                    background: !activeCategory && !query ? 'rgba(255,107,53,0.2)' : 'rgba(255,255,255,0.06)',
+                    border: !activeCategory && !query ? '1px solid rgba(255,107,53,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                    color: !activeCategory && !query ? '#FF6B35' : 'rgba(255,255,255,0.5)',
+                    fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', whiteSpace: 'nowrap',
+                  }}
+                >Tous</button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => { setActiveCategory(cat); setQuery(''); }}
+                    style={{
+                      flexShrink: 0, padding: '5px 12px', borderRadius: 20,
+                      background: activeCategory === cat ? 'rgba(255,107,53,0.2)' : 'rgba(255,255,255,0.06)',
+                      border: activeCategory === cat ? '1px solid rgba(255,107,53,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                      color: activeCategory === cat ? '#FF6B35' : 'rgba(255,255,255,0.5)',
+                      fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', whiteSpace: 'nowrap',
+                    }}
+                  >{CATEGORY_ICONS[cat]} {CATEGORY_LABELS[cat] ?? cat}</button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Nom */}
-          <div>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Nom de l'exercice *</label>
-            <input
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ex : Curl marteau, Dips..."
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
-            />
+        {/* ---- LISTE DES EXERCICES ---- */}
+        {!selected && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 8px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, fontFamily: 'Inter, sans-serif', marginBottom: 8 }}>{results.length} exercice{results.length !== 1 ? 's' : ''}</p>
+            {results.map(ex => (
+              <button
+                key={ex.id}
+                onClick={() => handleSelect(ex)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 14, marginBottom: 6, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  transition: 'background 0.15s',
+                }}
+              >
+                <div>
+                  <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif', margin: '0 0 3px' }}>{ex.name}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>
+                    {ex.muscleGroups.join(' · ')} &nbsp;·&nbsp; {ex.equipment}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0, marginLeft: 8 }}>
+                  <span style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 8, padding: '2px 8px', color: '#FF6B35', fontSize: 10, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
+                    {CATEGORY_ICONS[ex.category]} {CATEGORY_LABELS[ex.category] ?? ex.category}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontFamily: 'Inter, sans-serif' }}>
+                    {ex.defaultSets}×{ex.defaultRepsMin}–{ex.defaultRepsMax}
+                  </span>
+                </div>
+              </button>
+            ))}
+            {results.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.25)', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
+                Aucun exercice trouvé pour « {query} »
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Muscles */}
-          <div>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Muscles ciblés (séparés par virgule)</label>
-            <input
-              value={muscles}
-              onChange={e => setMuscles(e.target.value)}
-              placeholder="Ex : Biceps, Avant-bras"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          {/* Séries + Reps */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Séries</label>
-              <input type="number" min={1} max={10} value={sets} onChange={e => setSets(Number(e.target.value))}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
+        {/* ---- ÉCRAN DE CONFIRMATION + BOUTON ---- */}
+        {selected && (<>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 8px' }}>
+            {/* Nom + muscles */}
+            <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 16, padding: '14px 16px', marginBottom: 16 }}>
+              <p style={{ color: '#FF6B35', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{CATEGORY_LABELS[selected.category]}</p>
+              <p style={{ color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: '0 0 4px' }}>{selected.name}</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'Inter, sans-serif', margin: 0 }}>{selected.muscleGroups.join(' · ')}</p>
             </div>
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Reps min</label>
-              <input type="number" min={1} max={50} value={repsMin} onChange={e => setRepsMin(Number(e.target.value))}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
-            </div>
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Reps max</label>
-              <input type="number" min={1} max={50} value={repsMax} onChange={e => setRepsMax(e.target.value === '' ? '' : Number(e.target.value))}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 10px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', textAlign: 'center' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Séries + Reps */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={labelStyle}>Séries</label>
+                  <input type="number" min={1} max={10} value={sets} onChange={e => setSets(Number(e.target.value))} style={{ ...inputStyle, textAlign: 'center' }} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Reps min</label>
+                  <input type="number" min={1} max={50} value={repsMin} onChange={e => setRepsMin(Number(e.target.value))} style={{ ...inputStyle, textAlign: 'center' }} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Reps max</label>
+                  <input type="number" min={1} max={50} value={repsMax} onChange={e => setRepsMax(Number(e.target.value))} style={{ ...inputStyle, textAlign: 'center' }} />
+                </div>
+              </div>
+              {/* Poids */}
+              <div>
+                <label style={labelStyle}>Poids de départ (kg) — 0 = poids du corps</label>
+                <input type="number" min={0} step={2.5} value={weight} onChange={e => setWeight(Number(e.target.value))} style={inputStyle} />
+              </div>
+              {/* Tips */}
+              {selected.tips && selected.tips.length > 0 && (
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '12px 14px' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Conseils</p>
+                  {selected.tips.map((tip, i) => (
+                    <p key={i} style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: 'Inter, sans-serif', margin: '0 0 4px', paddingLeft: 12, borderLeft: '2px solid rgba(255,107,53,0.3)' }}>• {tip}</p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Poids */}
-          <div>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>Poids de départ (kg)</label>
-            <input type="number" min={0} step={2.5} value={weight} onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
-              placeholder="0 = poids du corps"
-              style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }} />
+          <div style={{ padding: '12px 20px 32px', flexShrink: 0 }}>
+            <button
+              onClick={handleConfirm}
+              style={{
+                width: '100%', padding: '14px', borderRadius: 16,
+                background: 'linear-gradient(135deg, #FF6B35, #FF3366)',
+                border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+                fontFamily: 'Syne, sans-serif', cursor: 'pointer',
+                boxShadow: '0 6px 24px rgba(255,107,53,0.3)',
+              }}
+            >
+              Ajouter à la séance
+            </button>
           </div>
-
-          {/* Bouton */}
-          <button
-            onClick={handleSubmit}
-            style={{
-              width: '100%', padding: '14px', borderRadius: 16,
-              background: 'linear-gradient(135deg, #FF6B35, #FF3366)',
-              border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
-              fontFamily: 'Syne, sans-serif', cursor: 'pointer',
-              boxShadow: '0 6px 24px rgba(255,107,53,0.3)',
-              marginTop: 4,
-            }}
-          >
-            Ajouter à la séance
-          </button>
-        </div>
+        </>)}
       </div>
     </div>
   );

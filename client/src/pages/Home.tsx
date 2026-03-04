@@ -10,6 +10,7 @@ import { computeMuscleStates, fatigueToStateLabel, MUSCLE_LABELS, type SessionRe
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
 import { useAuth } from '../_core/hooks/useAuth';
+import { MACRO_TARGETS, sessionIdToNutritionType } from '../lib/nutritionEngine';
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
@@ -35,18 +36,22 @@ const SESSION_CALORIES_BURNED: Record<string, number> = {
   cycling: 380, rest: 0,
 };
 
-// Calories à MANGER par session (apport journalier recommandé)
-const SESSION_CALORIES_EAT: Record<string, { kcal: number; color: string; label: string }> = {
-  upper_a:           { kcal: 2700, color: '#A855F7', label: '2700 kcal' },
-  upper_b:           { kcal: 2700, color: '#A855F7', label: '2700 kcal' },
-  lower_a:           { kcal: 2800, color: '#EC4899', label: '2800 kcal' },
-  lower_b:           { kcal: 2800, color: '#EC4899', label: '2800 kcal' },
-  football:          { kcal: 2900, color: '#F97316', label: '2900 kcal' },
-  running_endurance: { kcal: 2750, color: '#3B82F6', label: '2750 kcal' },
-  running_intervals: { kcal: 2750, color: '#3B82F6', label: '2750 kcal' },
-  cycling:           { kcal: 2500, color: '#22C55E', label: '2500 kcal' },
-  rest:              { kcal: 2300, color: '#22C55E', label: '2300 kcal' },
+// Couleurs par type nutritionnel (synchronisé avec MACRO_TARGETS de nutritionEngine)
+const NUTRITION_TYPE_COLORS: Record<string, string> = {
+  training: '#FF6B35',
+  running:  '#3B82F6',
+  football: '#F97316',
+  cycling:  '#14B8A6',
+  rest:     '#22C55E',
 };
+
+// Calcule les infos caloriques dynamiquement depuis MACRO_TARGETS (source unique de vérité)
+function getEatInfo(sessionId: string): { kcal: number; color: string; label: string } {
+  const nutritionType = sessionIdToNutritionType(sessionId);
+  const kcal = MACRO_TARGETS[nutritionType].calories;
+  const color = NUTRITION_TYPE_COLORS[nutritionType] ?? '#FF6B35';
+  return { kcal, color, label: `${kcal} kcal` };
+}
 
 const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   gym:      { bg: 'rgba(255,107,53,0.08)',  border: 'rgba(255,107,53,0.25)',  text: '#FF6B35', badge: 'rgba(255,107,53,0.15)' },
@@ -182,7 +187,7 @@ export default function Home() {
       type: typeMap[sessionId] ?? 'rest',
       label: labelMap[sessionId] ?? sessionId,
       img: SESSION_IMAGES[sessionId] ?? '',
-      eatInfo: SESSION_CALORIES_EAT[sessionId] ?? SESSION_CALORIES_EAT.rest,
+      eatInfo: getEatInfo(sessionId),
     };
   }, []);
   const stats = getStats();
@@ -803,7 +808,7 @@ export default function Home() {
                     <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: 8 }}>Objectif du jour</p>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                       <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 28, fontWeight: 800, color: '#FF6B35', lineHeight: 1 }}>
-                        {SESSION_CALORIES_EAT[todaySessionId]?.kcal ?? 2500}
+                        {getEatInfo(todaySessionId).kcal}
                       </span>
                       <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: 'rgba(255,107,53,0.5)', fontWeight: 500 }}>kcal</span>
                     </div>

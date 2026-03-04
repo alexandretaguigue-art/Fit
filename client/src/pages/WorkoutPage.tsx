@@ -106,13 +106,14 @@ function SessionList({
 interface SetData { weight: number; reps: number; completed: boolean; }
 interface ExerciseLog { exerciseId: string; sets: SetData[]; alternativeUsed?: string; notes?: string; }
 
-function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraftChange }: {
+function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraftChange, onAltChange }: {
   exercise: Exercise;
   onLog: (log: ExerciseLog) => void;
   lastLog?: ExerciseLog;
   adaptation?: import('../lib/adaptationEngine').AdaptationResult | null;
   draftSets?: SetData[] | null;
   onDraftChange?: (exerciseId: string, sets: SetData[]) => void;
+  onAltChange?: (alt: string | null) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAlt, setShowAlt] = useState(false);
@@ -167,13 +168,12 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
 
   // Réinitialise les séries quand on change d'alternative (machine indisponible)
   useEffect(() => {
-    // On recharge les séries avec le poids de base de l'exercice original
-    // (l'alternative n'a pas de setScheme propre, on repart du defaultWeight)
     setSets(Array.from({ length: adaptation?.suggestedSets ?? exercise.sets }, () => ({
       weight: baseWeight, reps: suggestedRepsMin, completed: false,
     })));
     setShowVideo(false);
     setShowAlt(false);
+    onAltChange?.(selectedAlt);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAlt]);
 
@@ -231,12 +231,83 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
 
   const hasMedia = !!(exercise.imageUrl || exercise.videoUrl);
   const [showVideo, setShowVideo] = useState(false);
+  const [restFullscreen, setRestFullscreen] = useState(true); // plein écran par défaut quand le chrono démarre
+
+  // Quand le chrono démarre, repasser en plein écran
+  const prevRestTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (restTimer !== null && prevRestTimer.current === null) {
+      setRestFullscreen(true);
+    }
+    prevRestTimer.current = restTimer;
+  }, [restTimer]);
+
+  const R = 90; // rayon du cercle SVG plein écran
+  const circumference = 2 * Math.PI * R;
 
   return (
     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* Minuteur de repos */}
-      {restTimer !== null && (
+      {/* Minuteur de repos — plein écran */}
+      {restTimer !== null && restFullscreen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(10,10,16,0.97)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 0,
+        }}>
+          {/* Cercle SVG grand */}
+          <div style={{ position: 'relative', width: 240, height: 240, marginBottom: 32 }}>
+            <svg width="240" height="240" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r={R} fill="none" stroke="rgba(255,107,53,0.12)" strokeWidth="8" />
+              <circle cx="120" cy="120" r={R} fill="none" stroke="#FF6B35" strokeWidth="8"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - restTimer / restTotal)}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 1s linear' }}
+              />
+            </svg>
+            <div style={{
+              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 4
+            }}>
+              <span style={{ fontSize: 72, fontWeight: 900, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1 }}>{restTimer}</span>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontFamily: 'Inter, sans-serif' }}>secondes</span>
+            </div>
+          </div>
+
+          <p style={{ color: '#FF6B35', fontSize: 18, fontWeight: 700, fontFamily: 'Syne, sans-serif', marginBottom: 8 }}>Temps de repos</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontFamily: 'Inter, sans-serif', marginBottom: 40 }}>Prochaine série dans {restTimer}s</p>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={() => setRestFullscreen(false)}
+              style={{
+                padding: '12px 24px', borderRadius: 14,
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              Réduire le chrono
+            </button>
+            <button
+              onClick={stopRestTimer}
+              style={{
+                padding: '12px 24px', borderRadius: 14,
+                background: 'rgba(255,107,53,0.15)', border: '1px solid rgba(255,107,53,0.35)',
+                color: '#FF6B35', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              Passer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Minuteur de repos — compact (réduit) */}
+      {restTimer !== null && !restFullscreen && (
         <div style={{
           borderRadius: 16, padding: '12px 14px',
           background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)',
@@ -261,6 +332,10 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
             <p style={{ color: '#FF6B35', fontWeight: 600, fontSize: 13, fontFamily: 'Syne, sans-serif', margin: 0 }}>Repos en cours</p>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>Prochaine série dans {restTimer}s</p>
           </div>
+          <button onClick={() => setRestFullscreen(true)} style={{
+            color: '#FF6B35', fontSize: 11, padding: '5px 10px', borderRadius: 10,
+            border: '1px solid rgba(255,107,53,0.25)', background: 'rgba(255,107,53,0.08)', cursor: 'pointer', marginRight: 4
+          }}>●</button>
           <button onClick={stopRestTimer} style={{
             color: 'rgba(255,255,255,0.4)', fontSize: 11, padding: '5px 10px', borderRadius: 10,
             border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer'
@@ -980,6 +1055,8 @@ function ExerciseCarousel({
   const [activeIdx, setActiveIdx] = useState(0);
   const swipeX = useRef<number | null>(null);
   const swipeY = useRef<number | null>(null);
+  // Alternative choisie par exercice (id exercice → nom alternatif ou null)
+  const [selectedAlts, setSelectedAlts] = useState<Record<string, string | null>>({});
 
   const switchView = (mode: 'list' | 'carousel') => {
     setViewMode(mode);
@@ -987,8 +1064,21 @@ function ExerciseCarousel({
     setActiveIdx(0);
   };
 
-  // Mapping exercice → image selon le groupe musculaire
-  const getExerciseImage = (exercise: Exercise): string => {
+  // Mapping exercice → image : priorité à imageUrl, sinon miniature vidéo, sinon fallback musculaire
+  const getExerciseImage = (exercise: Exercise, altName?: string | null): string => {
+    // Si une alternative est sélectionnée, chercher l'exercice correspondant dans programData
+    if (altName) {
+      const altExercise = Object.values(programData).find(
+        (ex) => typeof ex === 'object' && ex !== null && 'name' in ex && (ex as unknown as Exercise).name === altName
+      ) as unknown as Exercise | undefined;
+      if (altExercise?.imageUrl) return altExercise.imageUrl;
+      if (altExercise?.videoUrl && !altExercise.videoUrl.includes('youtube')) {
+        // Utiliser une image de fallback basée sur les muscles de l'alternative
+      }
+    }
+    // Utiliser l'imageUrl de l'exercice original
+    if (exercise.imageUrl) return exercise.imageUrl;
+    // Fallback selon groupe musculaire
     const legsKeywords = ['squat', 'leg', 'lunge', 'calf', 'romanian', 'hip_thrust', 'deadlift', 'hamstring', 'quad', 'glute'];
     const isLegs = legsKeywords.some(k =>
       exercise.id.toLowerCase().includes(k) ||
@@ -1027,7 +1117,15 @@ function ExerciseCarousel({
 
   // Card commune (photo + contenu)
   const renderExerciseCard = (exercise: Exercise, i: number, isCarousel = false) => {
-    const img = getExerciseImage(exercise);
+    const currentAlt = selectedAlts[exercise.id] ?? null;
+    const img = getExerciseImage(exercise, currentAlt);
+    // Nom affiché : celui de l'alternative si sélectionnée
+    const displayName = currentAlt ?? exercise.name;
+    // Groupes musculaires de l'alternative si disponible
+    const altExercise = currentAlt ? (Object.values(programData).find(
+      (ex) => typeof ex === 'object' && ex !== null && 'name' in ex && (ex as unknown as Exercise).name === currentAlt
+    ) as unknown as Exercise | undefined) : null;
+    const displayMuscles = altExercise?.muscleGroups ?? exercise.muscleGroups;
     const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
     const done = log && log.sets.every(s => s.completed);
     const repsLabel = exercise.repsMax === null
@@ -1087,10 +1185,10 @@ function ExerciseCarousel({
               fontSize: 10, fontWeight: 700, color: '#FF6B35', fontFamily: 'Inter, sans-serif',
               textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
             }}>
-              {Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups.slice(0, 2).join(' · ') : exercise.muscleGroups}
+              {Array.isArray(displayMuscles) ? displayMuscles.slice(0, 2).join(' · ') : displayMuscles}
             </div>
             <div style={{ fontSize: 21, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 6 }}>
-              {exercise.name}
+              {displayName}
             </div>
             {/* Bouton play sur la photo si media disponible */}
             {(exercise.imageUrl || exercise.videoUrl) && (
@@ -1115,12 +1213,14 @@ function ExerciseCarousel({
         {/* Contenu ExerciseCard — visible sur toutes les cards en liste, seulement la active en carousel */}
         {isActive && (
           <ExerciseCard
+            key={`${exercise.id}-${currentAlt ?? 'original'}`}
             exercise={exercise}
             onLog={handleExerciseLog}
             lastLog={log}
             adaptation={getExerciseAdaptation(exercise.id)}
             draftSets={draft?.exercises[exercise.id] ?? null}
             onDraftChange={handleDraftChange}
+            onAltChange={(alt) => setSelectedAlts(prev => ({ ...prev, [exercise.id]: alt }))}
           />
         )}
       </div>

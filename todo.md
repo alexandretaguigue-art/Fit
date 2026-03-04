@@ -18,3 +18,4 @@
 - [x] Enrichir le moteur de récupération : prendre en compte repos, nutrition, fréquence des séances
 - [x] Remplacer le hologramme 3D géométrique par un SVG anatomique professionnel (silhouette humaine précise, muscles en paths, vue avant/arrière avec flip animé)
 - [x] Remplacer le SVG anatomique 2D par un vrai modèle 3D anatomique GLB (Z-Anatomy, CC BY-SA 4.0) avec React Three Fiber, éclairage PBR, rotation automatique et coloration musculaire dynamique
+- [x] Restructurer section "Analyse musculaire" : modèle 3D à gauche (grand), infos musculaires à droite, fond uni, layout deux colonnes

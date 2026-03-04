@@ -74,15 +74,49 @@ export default function Home() {
   let { user, loading, error, isAuthenticated, logout } = useAuth();
 
   const [, navigate] = useLocation();
-  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride } = useFitnessTracker();
-  const [calendarOffset, setCalendarOffset] = useState(0); // offset en cycles de 14 jours
+  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride } = useFitnessTracker();
+  const [calendarOffset, setCalendarOffset] = useState(0);
 
-  // Drag & drop pour swapper deux jours du calendrier
+  // Drag & drop iOS-style
   const [draggingDay, setDraggingDay] = useState<number | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
+  // Ordre visuel local (avant persistance) pour le swap en direct
+  const [visualOrder, setVisualOrder] = useState<Record<number, string>>({});
+  // Position de la card flottante
+  const [floatPos, setFloatPos] = useState<{ x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const isDragging = useRef(false);
+  const cardRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const floatCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Résoudre le sessionId effectif d'un jour (override visuel > override persisté > défaut)
+  const getEffectiveSessionId = useCallback((dayNumber: number): string => {
+    if (visualOrder[dayNumber]) return visualOrder[dayNumber];
+    const override = getScheduleOverride(`cycle_day_${dayNumber}`);
+    if (override) return override;
+    return cycle14Days.find(d => d.dayNumber === dayNumber)?.sessionId ?? 'rest';
+  }, [visualOrder, getScheduleOverride]);
+
+  // Infos d'un sessionId
+  const getSessionInfo = useCallback((sessionId: string) => {
+    const typeMap: Record<string, string> = {
+      upper_a: 'gym', upper_b: 'gym', lower_a: 'gym', lower_b: 'gym',
+      football: 'football', running_endurance: 'running', running_intervals: 'running',
+      cycling: 'cycling', rest: 'rest',
+    };
+    const labelMap: Record<string, string> = {
+      upper_a: 'Haut A', upper_b: 'Haut B', lower_a: 'Bas A', lower_b: 'Bas B',
+      football: 'Football', running_endurance: 'Course', running_intervals: 'Course',
+      cycling: 'Vélo', rest: 'Repos',
+    };
+    return {
+      type: typeMap[sessionId] ?? 'rest',
+      label: labelMap[sessionId] ?? sessionId,
+      img: SESSION_IMAGES[sessionId] ?? '',
+      eatInfo: SESSION_CALORIES_EAT[sessionId] ?? SESSION_CALORIES_EAT.rest,
+    };
+  }, []);
   const stats = getStats();
   const currentWeek = getCurrentWeek();
 
@@ -303,6 +337,50 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Card flottante qui suit le doigt */}
+          {draggingDay !== null && floatPos !== null && (() => {
+            const floatSessionId = getEffectiveSessionId(draggingDay);
+            const floatInfo = getSessionInfo(floatSessionId);
+            const floatColors = SESSION_TYPE_COLORS[floatInfo.type];
+            return (
+              <div
+                ref={floatCardRef}
+                style={{
+                  position: 'fixed',
+                  left: floatPos.x - 55,
+                  top: floatPos.y - 80,
+                  width: 110,
+                  aspectRatio: '3/4',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  zIndex: 9999,
+                  pointerEvents: 'none',
+                  border: '2px solid #FF6B35',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 32px rgba(255,107,53,0.4)',
+                  transform: 'scale(1.12) rotate(-3deg)',
+                  transition: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {floatInfo.img ? (
+                  <img src={floatInfo.img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.7)' }} />
+                ) : (
+                  <div style={{ position: 'absolute', inset: 0, background: '#1a1a22' }} />
+                )}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%)' }} />
+                <div style={{ position: 'absolute', bottom: 28, left: 0, right: 0, padding: '0 8px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.6)', fontFamily: 'Syne, sans-serif' }}>J{draggingDay}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: floatColors.text, fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{floatInfo.label}</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: `${floatInfo.eatInfo.color}25`, borderTop: `2px solid ${floatInfo.eatInfo.color}60`, padding: '4px 8px', display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: floatInfo.eatInfo.color, fontFamily: 'Syne, sans-serif' }}>{floatInfo.eatInfo.kcal}</span>
+                  <span style={{ fontSize: 8, color: `${floatInfo.eatInfo.color}aa`, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase' }}>kcal</span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Grille calendrier — scroll horizontal, grandes cards */}
           {(['Semaine 1', 'Semaine 2'] as const).map((weekLabel, weekIdx) => (
             <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 14 : 0 }}>
@@ -319,21 +397,25 @@ export default function Home() {
                   const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
                   const isDraggingThis = draggingDay === day.dayNumber;
                   const isDragTarget = dragOverDay === day.dayNumber && draggingDay !== null && draggingDay !== day.dayNumber;
-                  const colors = SESSION_TYPE_COLORS[day.type];
-                  const sessionImg = SESSION_IMAGES[day.sessionId];
-                  const eatInfo = SESSION_CALORIES_EAT[day.sessionId];
+
+                  // Utiliser le sessionId effectif (avec overrides visuels)
+                  const effectiveSessionId = getEffectiveSessionId(day.dayNumber);
+                  const sessionInfo = getSessionInfo(effectiveSessionId);
+                  const colors = SESSION_TYPE_COLORS[sessionInfo.type];
+                  const sessionImg = sessionInfo.img;
+                  const eatInfo = sessionInfo.eatInfo;
+
                   const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
                   const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
                   const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
 
-                  const handleTapOrDrop = () => {
-                    if (isDragging.current) {
-                      // Mode drag : on vient de relâcher — géré par onTouchEnd
-                      return;
-                    }
-                    // Tap simple : ouvrir la séance
-                    if (day.type !== 'rest' && calendarOffset === 0) {
-                      localStorage.setItem('pendingSessionId', day.sessionId);
+                  // Animation iOS : gigote si en mode drag et pas la card draggée
+                  const shouldWiggle = draggingDay !== null && !isDraggingThis;
+
+                  const handleTap = () => {
+                    if (isDragging.current) return;
+                    if (effectiveSessionId !== 'rest' && calendarOffset === 0) {
+                      localStorage.setItem('pendingSessionId', effectiveSessionId);
                       navigate('/workout');
                     }
                   };
@@ -341,48 +423,61 @@ export default function Home() {
                   return (
                     <button
                       key={day.dayNumber}
-                      onClick={handleTapOrDrop}
+                      ref={el => { cardRefs.current[day.dayNumber] = el; }}
+                      onClick={handleTap}
                       onTouchStart={(e) => {
                         if (calendarOffset !== 0) return;
                         dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
                         isDragging.current = false;
-                        // Appui long = 500ms
                         longPressTimer.current = setTimeout(() => {
                           isDragging.current = true;
                           setDraggingDay(day.dayNumber);
-                          if (navigator.vibrate) navigator.vibrate(40);
-                        }, 500);
+                          setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                          if (navigator.vibrate) navigator.vibrate([30, 10, 30]);
+                        }, 450);
                       }}
                       onTouchMove={(e) => {
                         if (!dragStartPos.current) return;
                         const dx = e.touches[0].clientX - dragStartPos.current.x;
                         const dy = e.touches[0].clientY - dragStartPos.current.y;
-                        if (Math.sqrt(dx*dx + dy*dy) > 8 && longPressTimer.current) {
+                        if (Math.sqrt(dx*dx + dy*dy) > 6 && longPressTimer.current) {
                           clearTimeout(longPressTimer.current);
                           longPressTimer.current = null;
                         }
                         if (!isDragging.current) return;
-                        // Détecter la card sous le doigt
+                        e.preventDefault();
+                        // Mettre à jour la position de la card flottante
+                        setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                        // Détecter la card cible sous le doigt
                         const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
                         const card = el?.closest('[data-day]') as HTMLElement | null;
                         const targetDay = card ? parseInt(card.dataset.day || '0') : null;
-                        if (targetDay && targetDay !== draggingDay) setDragOverDay(targetDay);
+                        if (targetDay && targetDay !== draggingDay) {
+                          setDragOverDay(targetDay);
+                          // Swap visuel immédiat
+                          setVisualOrder(prev => {
+                            const srcId = getEffectiveSessionId(draggingDay!);
+                            const tgtId = getEffectiveSessionId(targetDay);
+                            return { ...prev, [draggingDay!]: tgtId, [targetDay]: srcId };
+                          });
+                        }
                       }}
                       onTouchEnd={() => {
                         if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
                         if (isDragging.current && draggingDay !== null && dragOverDay !== null && draggingDay !== dragOverDay) {
-                          // Swap les deux jours
-                          const dayA = cycle14Days.find(d => d.dayNumber === draggingDay);
-                          const dayB = cycle14Days.find(d => d.dayNumber === dragOverDay);
-                          if (dayA && dayB) {
-                            setScheduleOverride(`cycle_day_${draggingDay}`, dayB.sessionId);
-                            setScheduleOverride(`cycle_day_${dragOverDay}`, dayA.sessionId);
-                            toast.success(`J${draggingDay} ⇄ J${dragOverDay} — séances échangées`);
-                          }
+                          // Persister le swap
+                          const srcId = getEffectiveSessionId(draggingDay);
+                          const tgtId = getEffectiveSessionId(dragOverDay);
+                          setScheduleOverride(`cycle_day_${draggingDay}`, tgtId);
+                          setScheduleOverride(`cycle_day_${dragOverDay}`, srcId);
+                          toast.success(`J${draggingDay} ⇄ J${dragOverDay} — séances échangées ✓`);
                         }
+                        // Réinitialiser
                         isDragging.current = false;
                         setDraggingDay(null);
                         setDragOverDay(null);
+                        setFloatPos(null);
+                        setVisualOrder({});
                       }}
                       data-day={day.dayNumber}
                       style={{
@@ -398,94 +493,61 @@ export default function Home() {
                         border: isDraggingThis
                           ? '2px solid #FF6B35'
                           : isDragTarget
-                          ? '2px dashed #FF6B35'
+                          ? '2px solid rgba(255,107,53,0.8)'
                           : isToday
                           ? `2px solid ${colors.text}`
                           : isCompleted
                           ? '1px solid rgba(34,197,94,0.5)'
                           : '1px solid rgba(255,255,255,0.08)',
-                        opacity: isDraggingThis ? 0.6 : isPast && !isCompleted && !isToday ? 0.45 : 1,
+                        opacity: isDraggingThis ? 0 : isPast && !isCompleted && !isToday ? 0.45 : 1,
                         cursor: 'pointer',
-                        background: isDragTarget ? 'rgba(255,107,53,0.12)' : '#0e0e14',
-                        boxShadow: isDraggingThis ? '0 0 24px rgba(255,107,53,0.5)' : isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
-                        transform: isDraggingThis ? 'scale(1.05)' : 'scale(1)',
-                        transition: 'all 0.15s',
+                        background: isDragTarget ? 'rgba(255,107,53,0.08)' : '#0e0e14',
+                        boxShadow: isDragTarget ? '0 0 20px rgba(255,107,53,0.35)' : isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
+                        transform: isDragTarget ? 'scale(0.95)' : shouldWiggle ? undefined : 'scale(1)',
+                        animation: shouldWiggle ? 'wiggle 0.4s ease-in-out infinite alternate' : 'none',
+                        transition: isDraggingThis ? 'none' : 'all 0.18s',
                         padding: 0,
                         display: 'flex',
                         flexDirection: 'column',
                       }}
                     >
-                      {/* Photo de fond — prend toute la hauteur sauf la barre calories */}
+                      {/* Photo de fond */}
                       <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
                         {sessionImg ? (
                           <img
                             src={sessionImg}
-                            alt={day.label}
+                            alt={sessionInfo.label}
                             style={{
                               position: 'absolute', inset: 0, width: '100%', height: '100%',
                               objectFit: 'cover',
                               filter: isPast && !isCompleted ? 'brightness(0.22) grayscale(0.7)' : 'brightness(0.55)',
+                              transition: 'all 0.25s',
                             }}
                           />
                         ) : (
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.02)' }} />
                         )}
-                        {/* Gradient sombre vers le bas */}
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.82) 100%)' }} />
-
-                        {/* Badge complété */}
                         {isCompleted && (
-                          <div style={{
-                            position: 'absolute', top: 4, right: 4, width: 14, height: 14,
-                            borderRadius: '50%', background: 'rgba(34,197,94,0.95)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
+                          <div style={{ position: 'absolute', top: 4, right: 4, width: 14, height: 14, borderRadius: '50%', background: 'rgba(34,197,94,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Check size={8} color="#fff" />
                           </div>
                         )}
-
-                        {/* Numéro de jour + label séance */}
                         <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
-                          <div style={{
-                            fontSize: 13, fontWeight: 800, lineHeight: 1,
-                            color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)',
-                            fontFamily: 'Syne, sans-serif',
-                          }}>J{absoluteDayNumber}</div>
-                          {day.type === 'rest' ? (
+                          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)', fontFamily: 'Syne, sans-serif' }}>J{absoluteDayNumber}</div>
+                          {effectiveSessionId === 'rest' ? (
                             <div style={{ fontSize: 22, lineHeight: 1, marginTop: 4 }}>😴</div>
                           ) : (
-                            <div style={{
-                              fontSize: 11, fontWeight: 700, lineHeight: 1.2, marginTop: 4,
-                              color: colors.text,
-                              fontFamily: 'Inter, sans-serif',
-                            }}>
-                              {day.label.split(' — ')[0]}
+                            <div style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.2, marginTop: 4, color: colors.text, fontFamily: 'Inter, sans-serif', transition: 'color 0.25s' }}>
+                              {sessionInfo.label}
                             </div>
                           )}
                         </div>
                       </div>
-
-                      {/* Barre calories à manger — couleur selon le niveau */}
-                      <div style={{
-                        background: `${eatInfo?.color ?? '#22C55E'}20`,
-                        borderTop: `2px solid ${eatInfo?.color ?? '#22C55E'}70`,
-                        padding: '7px 10px 8px',
-                        display: 'flex', alignItems: 'baseline', gap: 3,
-                      }}>
-                        <div style={{
-                          fontSize: 16, fontWeight: 800, lineHeight: 1,
-                          color: eatInfo?.color ?? '#22C55E',
-                          fontFamily: 'Syne, sans-serif',
-                          letterSpacing: '-0.02em',
-                        }}>
-                          {eatInfo?.kcal ?? 2300}
-                        </div>
-                        <div style={{
-                          fontSize: 9, fontWeight: 600, lineHeight: 1,
-                          color: `${eatInfo?.color ?? '#22C55E'}bb`,
-                          fontFamily: 'Inter, sans-serif',
-                          textTransform: 'uppercase', letterSpacing: '0.06em',
-                        }}>kcal</div>
+                      {/* Barre calories */}
+                      <div style={{ background: `${eatInfo.color}20`, borderTop: `2px solid ${eatInfo.color}70`, padding: '7px 10px 8px', display: 'flex', alignItems: 'baseline', gap: 3, transition: 'all 0.25s' }}>
+                        <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1, color: eatInfo.color, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em' }}>{eatInfo.kcal}</div>
+                        <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: `${eatInfo.color}bb`, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>kcal</div>
                       </div>
                     </button>
                   );
@@ -494,18 +556,23 @@ export default function Home() {
             </div>
           ))}
 
-          {/* Indication drag & drop */}
+          {/* Hint discret en mode drag */}
           {draggingDay !== null && (
-            <div className="mt-3 rounded-xl px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)' }}>
-              <GripVertical size={12} style={{ color: '#FF6B35' }} />
-              <span className="text-xs" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>
-                J{draggingDay} sélectionné — dépose sur un autre jour pour échanger
+            <div className="mt-2 text-center">
+              <span className="text-xs" style={{ color: 'rgba(255,107,53,0.7)', fontFamily: 'Inter, sans-serif' }}>
+                Dépose sur un autre jour pour échanger ↕
               </span>
-              <button onClick={() => { setDraggingDay(null); setDragOverDay(null); isDragging.current = false; }} style={{ marginLeft: 'auto' }}>
-                <X size={12} style={{ color: 'rgba(255,107,53,0.7)' }} />
-              </button>
             </div>
           )}
+
+          {/* CSS animation wiggle */}
+          <style>{`
+            @keyframes wiggle {
+              0%   { transform: rotate(-2deg) scale(0.97); }
+              50%  { transform: rotate(2deg) scale(1.01); }
+              100% { transform: rotate(-1deg) scale(0.98); }
+            }
+          `}</style>
 
           {/* Légende */}
           <div className="flex flex-wrap gap-3 mt-3">

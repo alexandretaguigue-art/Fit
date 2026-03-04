@@ -25,10 +25,10 @@ const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: st
 };
 
 // ============================================================
-// SESSION CAROUSEL
+// SESSION LIST (liste simple — pas de carousel)
 // ============================================================
 
-function SessionCarousel({
+function SessionList({
   cycleDayToday,
   sessionImages,
   onSelectSession,
@@ -39,9 +39,6 @@ function SessionCarousel({
   onSelectSession: (s: WorkoutSession) => void;
   data: { startDate?: string | null };
 }) {
-  const [activeIdx, setActiveIdx] = useState(Math.max(0, cycleDayToday - 1));
-  const swipeX = useRef<number | null>(null);
-  const swipeY = useRef<number | null>(null);
   const validDays = cycle14Days.filter(d => getSessionForCycleDay(d.dayNumber));
 
   const sessionImgMap: Record<string, string> = {
@@ -55,74 +52,48 @@ function SessionCarousel({
   return (
     <div>
       <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>Toutes les séances</p>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
-        {validDays.map((d, i) => (
-          <button key={d.dayNumber} onClick={() => setActiveIdx(i)}
-            style={{ width: i === activeIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s', border: 'none', cursor: 'pointer', padding: 0 }} />
-        ))}
-      </div>
-      <div
-        onTouchStart={e => { swipeX.current = e.touches[0].clientX; swipeY.current = e.touches[0].clientY; }}
-        onTouchEnd={e => {
-          if (swipeX.current === null || swipeY.current === null) return;
-          const dx = e.changedTouches[0].clientX - swipeX.current;
-          const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
-          if (Math.abs(dx) > 45 && Math.abs(dx) > dy * 1.5) {
-            if (dx < 0 && activeIdx < validDays.length - 1) setActiveIdx(i => i + 1);
-            else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
-          }
-          swipeX.current = null; swipeY.current = null;
-        }}
-        style={{ overflow: 'hidden', position: 'relative' }}
-      >
-        <div style={{ display: 'flex', gap: 12, transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)', transform: `translateX(calc(${-activeIdx * 88}% - ${activeIdx * 12}px + 6%))` }}>
-          {validDays.map((cycleDay, i) => {
-            const session = getSessionForCycleDay(cycleDay.dayNumber)!;
-            const colors = SESSION_TYPE_COLORS[cycleDay.type];
-            const isToday = data.startDate && cycleDay.dayNumber === cycleDayToday;
-            const isActive = i === activeIdx;
-            const img = sessionImgMap[cycleDay.type] || sessionImages.rest;
-            return (
-              <div
-                key={cycleDay.dayNumber}
-                onClick={() => isActive ? onSelectSession(session) : setActiveIdx(i)}
-                style={{
-                  minWidth: '88%', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
-                  transform: isActive ? 'scale(1)' : 'scale(0.93)',
-                  opacity: isActive ? 1 : 0.5,
-                  transition: 'transform 0.35s ease, opacity 0.35s ease',
-                  border: isToday ? `2px solid ${colors.text}60` : '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <div style={{ position: 'relative', height: 165, overflow: 'hidden' }}>
-                  <img src={img} alt={session.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.4)' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,15,20,0.2), rgba(15,15,20,0.9))' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15 }}>{cycleDay.icon}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: colors.text, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Jour {cycleDay.dayNumber}</span>
-                      {isToday && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: `${colors.text}25`, color: colors.text, fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>Aujourd'hui</span>}
-                    </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>{session.name}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{session.focus} · {session.durationMin} min</div>
+      <div className="space-y-3">
+        {validDays.map((cycleDay) => {
+          const session = getSessionForCycleDay(cycleDay.dayNumber)!;
+          const colors = SESSION_TYPE_COLORS[cycleDay.type];
+          const isToday = data.startDate && cycleDay.dayNumber === cycleDayToday;
+          const img = sessionImgMap[cycleDay.type] || sessionImages.rest;
+          return (
+            <div
+              key={cycleDay.dayNumber}
+              onClick={() => onSelectSession(session)}
+              className="rounded-2xl overflow-hidden cursor-pointer active:scale-98 transition-all duration-200"
+              style={{
+                border: isToday ? `2px solid ${colors.text}60` : '1px solid rgba(255,255,255,0.08)',
+                background: '#16161E',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                {/* Miniature photo à gauche */}
+                <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0, overflow: 'hidden', borderRadius: '16px 0 0 16px' }}>
+                  <img src={img} alt={session.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.5)' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${colors.text}30, transparent)` }} />
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 22 }}>{cycleDay.icon}</span>
                   </div>
                 </div>
-                {isActive && (
-                  <div style={{ background: '#16161E', padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {session.exercises.slice(0, 3).map(ex => (
-                        <span key={ex.id} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: `${colors.text}15`, color: colors.text, fontFamily: 'Inter, sans-serif' }}>{ex.name.split(' ')[0]}</span>
-                      ))}
-                      {session.exercises.length > 3 && <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif' }}>+{session.exercises.length - 3}</span>}
-                      {session.exercises.length === 0 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif' }}>{session.coachNote?.substring(0, 40)}...</span>}
-                    </div>
-                    <span style={{ fontSize: 11, color: colors.text, fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>Ouvrir →</span>
+                {/* Contenu texte */}
+                <div style={{ flex: 1, padding: '12px 14px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: colors.text, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>J{cycleDay.dayNumber}</span>
+                    {isToday && (
+                      <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: `${colors.text}20`, color: colors.text, fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>Aujourd'hui</span>
+                    )}
                   </div>
-                )}
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.name}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{session.focus} · {session.durationMin} min</div>
+                </div>
+                {/* Flèche droite */}
+                <div style={{ paddingRight: 14, color: 'rgba(255,255,255,0.2)', fontSize: 16 }}>›</div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -917,7 +888,7 @@ function CardioView({ session }: { session: WorkoutSession }) {
 }
 
 // ============================================================
-// EXERCISE CAROUSEL
+// EXERCISE CAROUSEL — style cards repas (grande photo, overlay)
 // ============================================================
 
 function ExerciseCarousel({
@@ -933,15 +904,13 @@ function ExerciseCarousel({
   const [activeIdx, setActiveIdx] = useState(0);
   const swipeX = useRef<number | null>(null);
   const swipeY = useRef<number | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
-  const exerciseImages: Record<string, string> = {
-    bench_press: ARMS_IMAGE, incline_db_press: ARMS_IMAGE, dips: ARMS_IMAGE,
-    lateral_raises: ARMS_IMAGE, triceps_pushdown: ARMS_IMAGE, military_press: ARMS_IMAGE,
-    face_pull: ARMS_IMAGE, squat: LEGS_IMAGE, leg_press: LEGS_IMAGE, lunges: LEGS_IMAGE,
-    leg_extension: LEGS_IMAGE, calf_raises: LEGS_IMAGE, romanian_deadlift: LEGS_IMAGE,
-    hip_thrust: LEGS_IMAGE, leg_curl: LEGS_IMAGE, pull_ups: ARMS_IMAGE, barbell_row: ARMS_IMAGE,
-    barbell_curl: ARMS_IMAGE, incline_curl: ARMS_IMAGE, skull_crusher: ARMS_IMAGE,
-    cable_curl: ARMS_IMAGE, cable_extension: ARMS_IMAGE, hammer_curl: ARMS_IMAGE,
+  // Mapping exercice → image (bras ou jambes selon le groupe musculaire)
+  const getExerciseImage = (exercise: Exercise): string => {
+    const legsKeywords = ['squat', 'leg', 'lunge', 'calf', 'romanian', 'hip_thrust', 'deadlift', 'hamstring', 'quad', 'glute'];
+    const isLegs = legsKeywords.some(k => exercise.id.toLowerCase().includes(k) || exercise.muscleGroups.some(m => m.toLowerCase().includes('jambe') || m.toLowerCase().includes('quad') || m.toLowerCase().includes('fessier') || m.toLowerCase().includes('mollet') || m.toLowerCase().includes('ischios')));
+    return isLegs ? LEGS_IMAGE : ARMS_IMAGE;
   };
 
   const completedCount = exercises.filter(ex => {
@@ -949,96 +918,180 @@ function ExerciseCarousel({
     return log && log.sets.every(s => s.completed);
   }).length;
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeX.current = e.touches[0].clientX;
+    swipeY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (swipeX.current === null || swipeY.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
+    if (Math.abs(dx) > 40 && Math.abs(dx) > dy * 1.2) {
+      if (dx < 0 && activeIdx < exercises.length - 1) setActiveIdx(i => i + 1);
+      else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
+    }
+    swipeX.current = null;
+    swipeY.current = null;
+  };
+
   return (
     <div>
-      {/* Progression globale */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
-          Exercice {activeIdx + 1} / {exercises.length}
+      {/* En-tête progression */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
+          Exercice <strong style={{ color: '#fff' }}>{activeIdx + 1}</strong> / {exercises.length}
         </span>
-        <span style={{ fontSize: 12, color: '#22C55E', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-          {completedCount}/{exercises.length} terminés
+        <span style={{ fontSize: 13, color: completedCount === exercises.length ? '#22C55E' : '#FF6B35', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+          {completedCount}/{exercises.length} ✓
         </span>
       </div>
-      {/* Pastilles */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 12 }}>
+
+      {/* Pastilles de navigation */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 14 }}>
         {exercises.map((ex, i) => {
           const log = exerciseLogs.find(l => l.exerciseId === ex.id);
           const done = log && log.sets.every(s => s.completed);
           return (
-            <button key={ex.id} onClick={() => setActiveIdx(i)}
-              style={{ width: i === activeIdx ? 18 : 6, height: 6, borderRadius: 3,
-                background: done ? '#22C55E' : i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.2)',
-                transition: 'all 0.3s', border: 'none', cursor: 'pointer', padding: 0 }} />
+            <button
+              key={ex.id}
+              onClick={() => setActiveIdx(i)}
+              style={{
+                width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 3,
+                background: done ? '#22C55E' : i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.18)',
+                transition: 'all 0.3s ease', border: 'none', cursor: 'pointer', padding: 0,
+              }}
+            />
           );
         })}
       </div>
+
       {/* Piste carousel */}
       <div
-        onTouchStart={e => { swipeX.current = e.touches[0].clientX; swipeY.current = e.touches[0].clientY; }}
-        onTouchEnd={e => {
-          if (swipeX.current === null || swipeY.current === null) return;
-          const dx = e.changedTouches[0].clientX - swipeX.current;
-          const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
-          if (Math.abs(dx) > 45 && Math.abs(dx) > dy * 1.5) {
-            if (dx < 0 && activeIdx < exercises.length - 1) setActiveIdx(i => i + 1);
-            else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
-          }
-          swipeX.current = null; swipeY.current = null;
-        }}
-        style={{ overflow: 'hidden' }}
+        ref={trackRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ overflow: 'hidden', position: 'relative', margin: '0 -4px' }}
       >
-        <div style={{
-          display: 'flex', gap: 12,
-          transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)',
-          transform: `translateX(calc(${-activeIdx * 88}% - ${activeIdx * 12}px + 6%))`,
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
+            transform: `translateX(calc(${-activeIdx * 90}% - ${activeIdx * 12}px + 5%))`,
+            willChange: 'transform',
+          }}
+        >
           {exercises.map((exercise, i) => {
             const isActive = i === activeIdx;
-            const img = exerciseImages[exercise.id] || ARMS_IMAGE;
+            const img = getExerciseImage(exercise);
             const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
             const done = log && log.sets.every(s => s.completed);
+            const repsLabel = exercise.repsMax === null
+              ? `${exercise.repsMin}s`
+              : exercise.repsMin === exercise.repsMax ? `${exercise.repsMin}` : `${exercise.repsMin}-${exercise.repsMax}`;
+
             return (
               <div
                 key={exercise.id}
                 onClick={() => !isActive && setActiveIdx(i)}
                 style={{
-                  minWidth: '88%', borderRadius: 20, overflow: 'hidden', flexShrink: 0,
-                  transform: isActive ? 'scale(1)' : 'scale(0.93)',
-                  opacity: isActive ? 1 : 0.5,
-                  transition: 'transform 0.35s ease, opacity 0.35s ease',
-                  border: done ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                  background: done ? 'rgba(34,197,94,0.05)' : '#16161E',
+                  minWidth: '90%',
+                  borderRadius: 22,
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  transform: isActive ? 'scale(1)' : 'scale(0.92)',
+                  opacity: isActive ? 1 : 0.45,
+                  transition: 'transform 0.38s ease, opacity 0.38s ease',
+                  border: done
+                    ? '2px solid rgba(34,197,94,0.5)'
+                    : isActive
+                    ? '1px solid rgba(255,107,53,0.25)'
+                    : '1px solid rgba(255,255,255,0.07)',
+                  background: done ? 'rgba(34,197,94,0.04)' : '#16161E',
                   cursor: isActive ? 'default' : 'pointer',
+                  boxShadow: isActive ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
                 }}
               >
-                {/* Photo en haut avec overlay */}
-                <div style={{ position: 'relative', height: 130, overflow: 'hidden' }}>
-                  <img src={img} alt={exercise.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.35)' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,15,20,0.1), rgba(15,15,20,0.92))' }} />
+                {/* ── Grande photo avec overlay (style card repas) ── */}
+                <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
+                  <img
+                    src={img}
+                    alt={exercise.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
+                  />
+                  {/* Dégradé du bas */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(to bottom, rgba(15,15,20,0.05) 0%, rgba(15,15,20,0.6) 55%, rgba(15,15,20,0.97) 100%)'
+                  }} />
+
+                  {/* Badge terminé */}
                   {done && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, width: 28, height: 28, borderRadius: '50%',
-                      background: 'rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={14} color="#22C55E" />
+                    <div style={{
+                      position: 'absolute', top: 12, right: 12,
+                      width: 32, height: 32, borderRadius: '50%',
+                      background: 'rgba(34,197,94,0.35)',
+                      border: '2px solid rgba(34,197,94,0.7)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Check size={16} color="#22C55E" />
                     </div>
                   )}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 14px' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#FF6B35', fontFamily: 'Inter, sans-serif',
-                      textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
-                      {Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups[0] : exercise.muscleGroups}
+
+                  {/* Numéro exercice */}
+                  <div style={{
+                    position: 'absolute', top: 12, left: 12,
+                    fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                    fontFamily: 'Inter, sans-serif', background: 'rgba(0,0,0,0.35)',
+                    padding: '3px 8px', borderRadius: 20,
+                  }}>
+                    {i + 1} / {exercises.length}
+                  </div>
+
+                  {/* Overlay texte en bas de la photo */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
+                    {/* Groupe musculaire */}
+                    <div style={{
+                      fontSize: 10, fontWeight: 700, color: '#FF6B35',
+                      fontFamily: 'Inter, sans-serif',
+                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
+                    }}>
+                      {Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups.slice(0, 2).join(' · ') : exercise.muscleGroups}
                     </div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>
+                    {/* Nom de l'exercice */}
+                    <div style={{
+                      fontSize: 20, fontWeight: 800, color: '#fff',
+                      fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 5
+                    }}>
                       {exercise.name}
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
-                      {exercise.sets} séries · {exercise.repsMin}{exercise.repsMax && exercise.repsMax !== exercise.repsMin ? `-${exercise.repsMax}` : ''} répétitions
+                    {/* Séries × reps */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 12, color: 'rgba(255,255,255,0.75)',
+                        fontFamily: 'Inter, sans-serif',
+                        background: 'rgba(255,107,53,0.18)', padding: '3px 10px', borderRadius: 20,
+                        fontWeight: 600,
+                      }}>
+                        {exercise.sets} × {repsLabel}
+                      </span>
+                      {exercise.defaultWeight && exercise.defaultWeight > 0 && (
+                        <span style={{
+                          fontSize: 12, color: 'rgba(255,255,255,0.6)',
+                          fontFamily: 'Inter, sans-serif',
+                          background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: 20,
+                        }}>
+                          ~{exercise.defaultWeight} kg
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-                {/* Contenu de la card — seulement sur la card active */}
+
+                {/* ── Contenu de la card (seulement sur la card active) ── */}
                 {isActive && (
-                  <div style={{ padding: '0 0 4px 0' }}>
+                  <div style={{ padding: '2px 0 4px 0' }}>
                     <ExerciseCard
                       exercise={exercise}
                       onLog={handleExerciseLog}
@@ -1054,23 +1107,35 @@ function ExerciseCarousel({
           })}
         </div>
       </div>
-      {/* Navigation bas */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+
+      {/* Boutons navigation bas */}
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
         {activeIdx > 0 && (
-          <button onClick={() => setActiveIdx(i => i - 1)}
-            style={{ flex: 1, padding: '12px', borderRadius: 14, background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
-              fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+          <button
+            onClick={() => setActiveIdx(i => i - 1)}
+            style={{
+              flex: 1, padding: '13px', borderRadius: 16,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
             ← Précédent
           </button>
         )}
         {activeIdx < exercises.length - 1 && (
-          <button onClick={() => setActiveIdx(i => i + 1)}
-            style={{ flex: 1, padding: '12px', borderRadius: 14,
-              background: 'linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,51,102,0.2))',
-              border: '1px solid rgba(255,107,53,0.3)', color: '#FF6B35',
-              fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-            Suivant →
+          <button
+            onClick={() => setActiveIdx(i => i + 1)}
+            style={{
+              flex: 1, padding: '13px', borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(255,107,53,0.25), rgba(255,51,102,0.25))',
+              border: '1px solid rgba(255,107,53,0.35)',
+              color: '#FF6B35',
+              fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            Exercice suivant →
           </button>
         )}
       </div>
@@ -1351,8 +1416,8 @@ export default function WorkoutPage() {
           </div>
         )}
 
-        {/* Toutes les séances du cycle — CAROUSEL */}
-        <SessionCarousel
+        {/* Toutes les séances du cycle — LISTE */}
+        <SessionList
           cycleDayToday={cycleDayToday}
           sessionImages={sessionImages}
           onSelectSession={setSelectedSession}

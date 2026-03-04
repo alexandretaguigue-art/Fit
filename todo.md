@@ -4,3 +4,5 @@
 - [x] Adapter les repas restants (non encore mangés) du jour A et du jour B lors d'un swap pour atteindre le nouvel objectif calorique
 - [x] Adapter les repas restants quand une séance est annulée (bouton "Je n'ai pas fait la séance")
 - [x] Fix : bloquer le scroll horizontal du calendrier pendant le drag & drop, et ne permettre le défilement automatique qu'aux extrémités gauche/droite
+- [x] Fix : bloquer le scroll vertical de la page pendant le drag & drop calendrier
+- [x] Fix : le plan alimentaire (onglet Nutrition) doit afficher les calories correspondant au type de séance du jour (précision à 80 kcal près)

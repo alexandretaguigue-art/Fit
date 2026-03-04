@@ -427,14 +427,52 @@ export function useFitnessTracker() {
   // PLAN ALIMENTAIRE HEBDOMADAIRE & LISTE DE COURSES
   // ============================================================
 
+  /**
+   * Convertit les overrides de séances (clés cycle_day_X ou dateKey YYYY-MM-DD)
+   * en une map dateKey → sessionId utilisable par generateWeeklyMealPlan.
+   * Les clés cycle_day_X sont converties en dateKeys réels basés sur la date de démarrage du programme.
+   */
+  const buildDateKeyOverrides = useCallback((weekStartMonday: Date): Record<string, string> => {
+    const result: Record<string, string> = {};
+    if (!data.scheduleOverrides) return result;
+
+    for (const [key, sessionId] of Object.entries(data.scheduleOverrides)) {
+      if (key.startsWith('cycle_day_')) {
+        // Clé cycle_day_X : convertir en dateKey si le programme a démarré
+        if (data.startDate) {
+          const cycleDay = parseInt(key.replace('cycle_day_', ''), 10);
+          if (!isNaN(cycleDay) && cycleDay >= 1 && cycleDay <= 14) {
+            // Calculer la date réelle du jour de cycle courant
+            const programStart = new Date(data.startDate);
+            const today = new Date();
+            const msPerDay = 24 * 60 * 60 * 1000;
+            const daysSinceStart = Math.floor((today.getTime() - programStart.getTime()) / msPerDay);
+            const currentCycleStart = Math.floor(daysSinceStart / 14) * 14;
+            const targetDayOffset = currentCycleStart + (cycleDay - 1);
+            const targetDate = new Date(programStart.getTime() + targetDayOffset * msPerDay);
+            const dateKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}-${String(targetDate.getDate()).padStart(2,'0')}`;
+            result[dateKey] = sessionId;
+          }
+        }
+      } else {
+        // Clé dateKey directe (YYYY-MM-DD) — utilisée par adaptNutritionForSession
+        result[key] = sessionId;
+      }
+    }
+    return result;
+  }, [data.scheduleOverrides, data.startDate]);
+
   const getWeeklyMealPlan = useCallback((weekStartMonday: Date): WeeklyMealPlan => {
-    return generateWeeklyMealPlan(weekStartMonday);
-  }, []);
+    // Passer les overrides de séances pour que le plan alimentaire reflète les échanges du calendrier
+    const dateKeyOverrides = buildDateKeyOverrides(weekStartMonday);
+    return generateWeeklyMealPlan(weekStartMonday, dateKeyOverrides);
+  }, [buildDateKeyOverrides]);
 
   const getShoppingList = useCallback((weekStartMonday: Date): ShoppingList => {
-    const plan = generateWeeklyMealPlan(weekStartMonday);
+    const dateKeyOverrides = buildDateKeyOverrides(weekStartMonday);
+    const plan = generateWeeklyMealPlan(weekStartMonday, dateKeyOverrides);
     return generateShoppingList(plan);
-  }, []);
+  }, [buildDateKeyOverrides]);
 
   // Calculer le lundi de la semaine prochaine (pour la liste de courses du samedi)
   const getNextWeekMonday = useCallback((): Date => {

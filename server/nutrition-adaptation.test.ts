@@ -227,3 +227,124 @@ describe('Simulation DayLog après adaptation', () => {
     expect(adaptedJ7.isTrainingDay).toBe(true);
   });
 });
+
+// ============================================================
+// Tests pour scaleMealToCalories (logique de scaling des repas)
+// ============================================================
+
+interface MealItem {
+  food: string;
+  quantity: string;
+  proteins: number;
+  carbs: number;
+  fats: number;
+  calories: number;
+}
+
+interface Meal {
+  time: string;
+  name: string;
+  items: MealItem[];
+  totalCalories: number;
+}
+
+function scaleMealToCalories(meal: Meal, targetCalories: number): Meal {
+  if (meal.totalCalories <= 0) return meal;
+  const ratio = targetCalories / meal.totalCalories;
+  const scaledItems: MealItem[] = meal.items.map(item => ({
+    ...item,
+    proteins: Math.round(item.proteins * ratio * 10) / 10,
+    carbs: Math.round(item.carbs * ratio * 10) / 10,
+    fats: Math.round(item.fats * ratio * 10) / 10,
+    calories: Math.round(item.calories * ratio),
+    quantity: item.quantity.replace(/(\d+(?:\.\d+)?)/, (match) => {
+      const originalQty = parseFloat(match);
+      const newQty = Math.round(originalQty * ratio);
+      return String(newQty);
+    }),
+  }));
+  const newTotal = scaledItems.reduce((s, i) => s + i.calories, 0);
+  return { ...meal, items: scaledItems, totalCalories: newTotal };
+}
+
+describe('scaleMealToCalories', () => {
+  const baseMeal: Meal = {
+    time: '07h00',
+    name: 'Petit-déjeuner',
+    totalCalories: 800,
+    items: [
+      { food: 'Flocons d\'avoine', quantity: '100g', proteins: 13, carbs: 60, fats: 7, calories: 389 },
+      { food: 'Lait demi-écrémé', quantity: '200ml', proteins: 7, carbs: 10, fats: 4, calories: 102 },
+      { food: 'Banane', quantity: '1 (150g)', proteins: 2, carbs: 34, fats: 0, calories: 134 },
+      { food: 'Amandes', quantity: '20g', proteins: 4, carbs: 5, fats: 10, calories: 116 },
+      { food: 'Miel', quantity: '15g', proteins: 0, carbs: 12, fats: 0, calories: 46 },
+    ],
+  };
+
+  it('retourne le repas inchangé si totalCalories = 0', () => {
+    const emptyMeal: Meal = { ...baseMeal, totalCalories: 0, items: [] };
+    const result = scaleMealToCalories(emptyMeal, 500);
+    expect(result).toBe(emptyMeal);
+  });
+
+  it('scale vers le haut (800 → 870 kcal pour football)', () => {
+    const result = scaleMealToCalories(baseMeal, 870);
+    expect(result.totalCalories).toBeGreaterThan(800);
+    // Tolérance ±10 kcal due aux arrondis
+    expect(Math.abs(result.totalCalories - 870)).toBeLessThanOrEqual(20);
+  });
+
+  it('scale vers le bas (800 → 750 kcal pour repos)', () => {
+    const result = scaleMealToCalories(baseMeal, 750);
+    expect(result.totalCalories).toBeLessThan(800);
+    expect(Math.abs(result.totalCalories - 750)).toBeLessThanOrEqual(20);
+  });
+
+  it('préserve le nombre d\'items après scaling', () => {
+    const result = scaleMealToCalories(baseMeal, 900);
+    expect(result.items).toHaveLength(baseMeal.items.length);
+  });
+
+  it('les macros scalées sont proportionnelles', () => {
+    const ratio = 870 / 800;
+    const result = scaleMealToCalories(baseMeal, 870);
+    const originalProteins = baseMeal.items.reduce((s, i) => s + i.proteins, 0);
+    const scaledProteins = result.items.reduce((s, i) => s + i.proteins, 0);
+    // Tolérance ±2g due aux arrondis
+    expect(Math.abs(scaledProteins - originalProteins * ratio)).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('generateWeeklyMealPlan avec sessionOverrides', () => {
+  it('sans override : les jours de repos ont moins de calories que les jours d\'entraînement', () => {
+    // Lundi = training (2700 kcal), Dimanche = rest (2500 kcal)
+    const trainingTarget = MACRO_TARGETS.training.calories;
+    const restTarget = MACRO_TARGETS.rest.calories;
+    expect(trainingTarget).toBeGreaterThan(restTarget);
+  });
+
+  it('avec override football : la cible est 2900 kcal', () => {
+    const type = sessionIdToNutritionType('football');
+    expect(MACRO_TARGETS[type].calories).toBe(2900);
+  });
+
+  it('avec override cycling : la cible est 2550 kcal (entre repos et training)', () => {
+    const type = sessionIdToNutritionType('cycling');
+    const target = MACRO_TARGETS[type].calories;
+    expect(target).toBeGreaterThan(MACRO_TARGETS.rest.calories);
+    expect(target).toBeLessThan(MACRO_TARGETS.training.calories);
+  });
+
+  it('la hiérarchie calorique est cohérente : football > running > training > cycling > rest', () => {
+    expect(MACRO_TARGETS.football.calories).toBeGreaterThan(MACRO_TARGETS.running.calories);
+    expect(MACRO_TARGETS.running.calories).toBeGreaterThan(MACRO_TARGETS.training.calories);
+    expect(MACRO_TARGETS.training.calories).toBeGreaterThan(MACRO_TARGETS.cycling.calories);
+    expect(MACRO_TARGETS.cycling.calories).toBeGreaterThan(MACRO_TARGETS.rest.calories);
+  });
+
+  it('les protéines restent constantes quel que soit le type de séance', () => {
+    const proteinValues = Object.values(MACRO_TARGETS).map(t => t.proteins);
+    const allSame = proteinValues.every(p => p === 150);
+    expect(allSame).toBe(true);
+  });
+});

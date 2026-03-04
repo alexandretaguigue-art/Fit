@@ -1092,10 +1092,30 @@ function PlanTab() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{day.dayName}</span>
                   {isToday && <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: 'rgba(255,107,53,0.2)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>Aujourd'hui</span>}
-                  {day.isTrainingDay && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>🏋️ {day.sessionName}</span>}
+                  {(() => {
+                    const sessionTypeColors: Record<string, { bg: string; color: string; icon: string; label: string }> = {
+                      training:  { bg: 'rgba(255,107,53,0.12)', color: '#FF6B35', icon: '🏋️', label: day.sessionName ?? 'Musculation' },
+                      running:   { bg: 'rgba(59,130,246,0.12)',  color: '#3B82F6', icon: '🏃', label: day.sessionName ?? 'Course' },
+                      football:  { bg: 'rgba(34,197,94,0.12)',   color: '#22C55E', icon: '⚽', label: day.sessionName ?? 'Football' },
+                      cycling:   { bg: 'rgba(20,184,166,0.12)',  color: '#14B8A6', icon: '🚴', label: day.sessionName ?? 'Vélo' },
+                      rest:      { bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', icon: '😴', label: 'Repos' },
+                    };
+                    const st = (day as any).sessionType ?? (day.isTrainingDay ? 'training' : 'rest');
+                    const style = sessionTypeColors[st] ?? sessionTypeColors.rest;
+                    return (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: style.bg, color: style.color, fontFamily: 'Inter, sans-serif' }}>
+                        {style.icon} {style.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-white/70 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{Math.round(day.totalMacros.calories)} kcal</span>
+                  <span className="text-white/70 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    {Math.round(day.totalMacros.calories)} kcal
+                    {(day as any).targetCalories && Math.abs(Math.round(day.totalMacros.calories) - (day as any).targetCalories) > 80 && (
+                      <span className="text-white/30 ml-1">(cible : {(day as any).targetCalories})</span>
+                    )}
+                  </span>
                   <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{Math.round(day.totalMacros.proteins)}g</span>
                   <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{Math.round(day.totalMacros.carbs)}g</span>
                   <span className="text-white/35 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>L:{Math.round(day.totalMacros.fats)}g</span>

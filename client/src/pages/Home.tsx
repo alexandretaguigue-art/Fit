@@ -101,11 +101,14 @@ export default function Home() {
   const floatCardRef = useRef<HTMLDivElement | null>(null);
   // Refs sur les deux conteneurs de scroll horizontal (Semaine 1 et Semaine 2)
   const scrollContainerRefs = useRef<Array<HTMLDivElement | null>>([null, null]);
+  // Ref sur le conteneur principal de la page (pour bloquer le scroll vertical)
+  const pageContainerRef = useRef<HTMLDivElement | null>(null);
   // Ref pour le timer d'auto-scroll aux extrémités
   const autoScrollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Bloquer/débloquer le scroll horizontal des conteneurs calendrier
+  // Bloquer/débloquer le scroll horizontal des conteneurs calendrier ET le scroll vertical de la page
   const setScrollLocked = useCallback((locked: boolean) => {
+    // Scroll horizontal des rangées calendrier
     scrollContainerRefs.current.forEach(el => {
       if (!el) return;
       if (locked) {
@@ -116,6 +119,13 @@ export default function Home() {
         el.style.scrollSnapType = 'x mandatory';
       }
     });
+    // Scroll vertical de la page entière
+    if (pageContainerRef.current) {
+      pageContainerRef.current.style.overflow = locked ? 'hidden' : '';
+    }
+    // Bloquer aussi le scroll du body/html pour éviter le rebond iOS
+    document.body.style.overflow = locked ? 'hidden' : '';
+    document.body.style.touchAction = locked ? 'none' : '';
   }, []);
 
   // Démarrer l'auto-scroll vers la gauche ou la droite (pour atteindre les cartes hors écran)
@@ -189,7 +199,7 @@ export default function Home() {
   );
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: '#0F0F14' }}>
+    <div ref={pageContainerRef} className="min-h-screen pb-24" style={{ background: '#0F0F14' }}>
       {/* Hero Section */}
       <div className="relative h-72 overflow-hidden">
         <img

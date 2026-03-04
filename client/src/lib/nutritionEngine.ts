@@ -272,9 +272,11 @@ export interface WeeklyMealPlan {
     date: string;
     dayName: string;
     isTrainingDay: boolean;
+    sessionType: 'training' | 'running' | 'football' | 'cycling' | 'rest';
     sessionName?: string;
     meals: Meal[];
     totalMacros: DayMacros;
+    targetCalories: number;
   }>;
   weeklyTotals: DayMacros;
 }
@@ -1066,7 +1068,52 @@ function computeMealMacros(meal: Meal): DayMacros {
   );
 }
 
-export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
+/**
+ * Mappe un sessionId vers le sessionType nutritionnel.
+ */
+export function sessionIdToNutritionType(
+  sessionId: string
+): 'training' | 'running' | 'football' | 'cycling' | 'rest' {
+  if (sessionId === 'rest') return 'rest';
+  if (sessionId === 'football') return 'football';
+  if (sessionId === 'running_endurance' || sessionId === 'running_intervals') return 'running';
+  if (sessionId === 'cycling') return 'cycling';
+  return 'training'; // upper_a, upper_b, lower_a, lower_b
+}
+
+/**
+ * Ajuste proportionnellement les quantités et macros d'un repas
+ * pour atteindre une cible calorique donnée (à ±80 kcal près).
+ */
+function scaleMealToCalories(meal: Meal, targetCalories: number): Meal {
+  if (meal.totalCalories <= 0) return meal;
+  const ratio = targetCalories / meal.totalCalories;
+  const scaledItems: MealItem[] = meal.items.map(item => ({
+    ...item,
+    proteins: Math.round(item.proteins * ratio * 10) / 10,
+    carbs: Math.round(item.carbs * ratio * 10) / 10,
+    fats: Math.round(item.fats * ratio * 10) / 10,
+    calories: Math.round(item.calories * ratio),
+    // Ajuster la quantité numérique dans la chaîne (ex: "100g" → "107g")
+    quantity: item.quantity.replace(/(\d+(?:\.\d+)?)/, (match) => {
+      const originalQty = parseFloat(match);
+      const newQty = Math.round(originalQty * ratio);
+      return String(newQty);
+    }),
+  }));
+  const newTotal = scaledItems.reduce((s, i) => s + i.calories, 0);
+  return { ...meal, items: scaledItems, totalCalories: newTotal };
+}
+
+/**
+ * Gènère le plan alimentaire de la semaine.
+ * @param weekStartMonday - Lundi de la semaine
+ * @param sessionOverrides - Map date (YYYY-MM-DD) → sessionId pour tenir compte des échanges de séances
+ */
+export function generateWeeklyMealPlan(
+  weekStartMonday: Date,
+  sessionOverrides?: Record<string, string>
+): WeeklyMealPlan {
   const weekIdx = getWeekIndex(weekStartMonday);
   const days = [];
   let weeklyTotals: DayMacros = { proteins: 0, carbs: 0, fats: 0, calories: 0 };
@@ -1075,14 +1122,34 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
     const date = new Date(weekStartMonday);
     date.setDate(weekStartMonday.getDate() + i);
     const dayOfWeek = date.getDay();
-    const sessionName = SESSION_BY_DAY[dayOfWeek];
-    const isTrainingDay = sessionName !== null;
+    const dateKey = toLocalDateKey(date);
 
+    // Déterminer le sessionType : override du calendrier > défaut par jour de semaine
+    let sessionType: 'training' | 'running' | 'football' | 'cycling' | 'rest';
+    let sessionName: string | undefined;
+
+    if (sessionOverrides && sessionOverrides[dateKey]) {
+      const overrideId = sessionOverrides[dateKey];
+      sessionType = sessionIdToNutritionType(overrideId);
+      const labelMap: Record<string, string> = {
+        upper_a: 'Haut A', upper_b: 'Haut B', lower_a: 'Bas A', lower_b: 'Bas B',
+        football: 'Football', running_endurance: 'Course endurance',
+        running_intervals: 'Course fractionné', cycling: 'Vélo', rest: 'Repos',
+      };
+      sessionName = sessionType !== 'rest' ? (labelMap[overrideId] ?? overrideId) : undefined;
+    } else {
+      const defaultSession = SESSION_BY_DAY[dayOfWeek];
+      sessionType = defaultSession !== null ? 'training' : 'rest';
+      sessionName = defaultSession ?? undefined;
+    }
+
+    const isTrainingDay = sessionType !== 'rest';
     const dayShift = (weekIdx + i) % 12;
 
-    let meals: Meal[];
+    // Sélectionner les repas de base (training ou repos)
+    let baseMeals: Meal[];
     if (isTrainingDay) {
-      meals = [
+      baseMeals = [
         BREAKFASTS_TRAINING[dayShift],
         MORNING_SNACKS[dayShift],
         LUNCHES_TRAINING[dayShift],
@@ -1090,13 +1157,33 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
         DINNERS_TRAINING[dayShift],
       ];
     } else {
-      meals = [
+      baseMeals = [
         BREAKFASTS_REST[dayShift],
         MORNING_SNACKS_REST[dayShift],
         LUNCHES_REST[dayShift],
         SNACKS_REST[dayShift],
         DINNERS_REST[dayShift],
       ];
+    }
+
+    // Calculer les calories actuelles du plan de base
+    const baseTotalCalories = baseMeals.reduce((s, m) => s + m.totalCalories, 0);
+
+    // Cible calorique selon le sessionType
+    const targetCalories = MACRO_TARGETS[sessionType].calories;
+
+    // Scaler les repas si l'écart est > 80 kcal
+    let meals: Meal[];
+    if (Math.abs(baseTotalCalories - targetCalories) > 80 && baseTotalCalories > 0) {
+      // Répartir la différence sur les 5 repas proportionnellement
+      const perMealTarget = (calIdx: number) => {
+        // Proportions typiques : PDJ 30%, Coll mat 10%, Déj 30%, Coll 10%, Dîner 20%
+        const proportions = [0.30, 0.10, 0.30, 0.10, 0.20];
+        return Math.round(targetCalories * proportions[calIdx]);
+      };
+      meals = baseMeals.map((meal, idx) => scaleMealToCalories(meal, perMealTarget(idx)));
+    } else {
+      meals = baseMeals;
     }
 
     const totalMacros = meals.reduce(
@@ -1120,12 +1207,14 @@ export function generateWeeklyMealPlan(weekStartMonday: Date): WeeklyMealPlan {
     };
 
     days.push({
-      date: toLocalDateKey(date),
+      date: dateKey,
       dayName: DAY_NAMES_FR[dayOfWeek],
       isTrainingDay,
-      sessionName: sessionName ?? undefined,
+      sessionType,
+      sessionName,
       meals,
       totalMacros,
+      targetCalories,
     });
   }
 

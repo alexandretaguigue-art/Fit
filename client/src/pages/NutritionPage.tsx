@@ -380,7 +380,7 @@ function SwipeToDelete({ children, onDelete }: { children: React.ReactNode; onDe
 // ONGLET JOURNAL — avec validation des repas du plan + compensation
 // ============================================================
 function JournalTab() {
-  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments } = useFitnessTracker();
+  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments } = useFitnessTracker();
   const [dateOffset, setDateOffset] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalMeal, setAddModalMeal] = useState<FoodEntry['meal']>('lunch');
@@ -437,6 +437,10 @@ function JournalTab() {
 
   const weekPlan = useMemo(() => getWeeklyMealPlan(weekMonday), [weekMonday, getWeeklyMealPlan]);
   const dayPlan = useMemo(() => weekPlan.days.find(d => d.date === dateKey), [weekPlan, dateKey]);
+
+  // Plan de référence (sans overrides) pour détecter les modifications en orange
+  const baseWeekPlan = useMemo(() => getBaseWeeklyMealPlan(weekMonday), [weekMonday, getBaseWeeklyMealPlan]);
+  const baseDayPlan = useMemo(() => baseWeekPlan.days.find(d => d.date === dateKey), [baseWeekPlan, dateKey]);
 
   // Repas complétés (validés ou modifiés)
   const completedMeals = useMemo(() =>
@@ -729,6 +733,25 @@ function JournalTab() {
           const isAdjusted = !!adjustedMeals[meal];
           const plannedCals = planMeal?.totalCalories ?? 0;
 
+          // Plan de référence pour ce repas (sans overrides) — pour mise en évidence orange
+          const basePlanMeal = baseDayPlan?.meals.find(m => {
+            const name = m.name;
+            if (meal === 'breakfast') return name === 'Petit-déjeuner';
+            if (meal === 'morning_snack') return name === 'Collation matinale';
+            if (meal === 'lunch') return name === 'Déjeuner';
+            if (meal === 'snack') return name === 'Collation' || name === 'Collation pré-entraînement' || name.startsWith('Collation');
+            if (meal === 'dinner') return name === 'Dîner' || name === 'Dîner post-training' || name.startsWith('Dîner');
+            return false;
+          });
+          // Détecter si ce repas a été adapté suite à un changement de séance
+          const isMealAdaptedBySwap = !isAdjusted && planMeal && basePlanMeal && (
+            planMeal.totalCalories !== basePlanMeal.totalCalories ||
+            planMeal.items.some((item, idx) => {
+              const baseItem = basePlanMeal.items[idx];
+              return !baseItem || item.food !== baseItem.food || item.quantity !== baseItem.quantity;
+            })
+          );
+
           // Couleur de statut
           const statusColor = mealStatus === 'validated' ? '#22c55e'
             : mealStatus === 'modified' ? '#FF6B35'
@@ -793,11 +816,21 @@ function JournalTab() {
 
                   {/* Plan suggéré */}
                   {!mealStatus && planMeal && (
-                    <div className="p-4" style={{ background: isAdjusted ? 'rgba(59,130,246,0.04)' : 'rgba(255,107,53,0.03)' }}>
+                    <div className="p-4" style={{ background: isAdjusted ? 'rgba(59,130,246,0.04)' : isMealAdaptedBySwap ? 'rgba(255,107,53,0.05)' : 'rgba(255,107,53,0.03)' }}>
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold tracking-wide" style={{ color: isAdjusted ? '#60a5fa' : 'rgba(255,107,53,0.8)', fontFamily: 'Inter, sans-serif' }}>
-                          {isAdjusted ? '🔄 REPAS AJUSTÉ' : 'PLAN SUGGÉRÉ'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold tracking-wide" style={{ color: isAdjusted ? '#60a5fa' : 'rgba(255,107,53,0.8)', fontFamily: 'Inter, sans-serif' }}>
+                            {isAdjusted ? '🔄 REPAS AJUSTÉ' : 'PLAN SUGGÉRÉ'}
+                          </span>
+                          {isMealAdaptedBySwap && !isAdjusted && (
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                              style={{ background: 'rgba(255,107,53,0.2)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.35)', fontFamily: 'Inter, sans-serif' }}
+                            >
+                              Séance modifiée
+                            </span>
+                          )}
+                        </div>
                         {!isAdjusted ? (
                           <button onClick={() => handleAdjustMeal(meal, planMeal)}
                             className="px-2.5 py-1 rounded-lg text-xs font-semibold"
@@ -818,6 +851,14 @@ function JournalTab() {
                           const isSwipingThis = swipingItem?.key === itemKey;
                           const offsetX = isSwipingThis ? swipingItem!.offsetX : 0;
                           const showDelete = offsetX < -30;
+
+                          // Détecter si cet item a été modifié par rapport au plan de référence
+                          const baseItem = basePlanMeal?.items[i];
+                          const isItemFoodChanged = isMealAdaptedBySwap && baseItem && item.food !== baseItem.food;
+                          const isItemQtyChanged = isMealAdaptedBySwap && baseItem && item.food === baseItem.food && item.quantity !== baseItem.quantity;
+                          const isItemNew = isMealAdaptedBySwap && !baseItem;
+                          const isItemHighlighted = isItemFoodChanged || isItemQtyChanged || isItemNew;
+
                           return (
                             <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
                               {/* Fond rouge poubelle */}
@@ -834,8 +875,9 @@ function JournalTab() {
                                 style={{
                                   transform: `translateX(${offsetX}px)`,
                                   transition: isSwipingThis ? 'none' : 'transform 0.2s ease',
-                                  background: 'rgba(255,255,255,0.04)',
+                                  background: isItemHighlighted ? 'rgba(255,107,53,0.08)' : 'rgba(255,255,255,0.04)',
                                   borderRadius: 12,
+                                  border: isItemHighlighted ? '1px solid rgba(255,107,53,0.25)' : '1px solid transparent',
                                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                   padding: '8px 12px',
                                   touchAction: 'pan-y',
@@ -844,9 +886,41 @@ function JournalTab() {
                                 onTouchMove={e => { e.stopPropagation(); handlePlanItemTouchMove(itemKey, e.touches[0].clientX); }}
                                 onTouchEnd={e => { e.stopPropagation(); handlePlanItemTouchEnd(itemKey, offsetX); }}
                               >
-                                <span className="text-white/80 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                                <div className="text-right">
-                                  <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  {isItemHighlighted && (
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B35', flexShrink: 0 }} />
+                                  )}
+                                  <span
+                                    className="text-sm truncate"
+                                    style={{
+                                      fontFamily: 'Inter, sans-serif',
+                                      color: isItemFoodChanged || isItemNew ? '#FF6B35' : 'rgba(255,255,255,0.8)',
+                                    }}
+                                  >
+                                    {item.food}
+                                    {isItemFoodChanged && baseItem && (
+                                      <span style={{ color: 'rgba(255,107,53,0.5)', fontSize: 10, marginLeft: 4 }}>
+                                        (au lieu de {baseItem.food})
+                                      </span>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="text-right flex-shrink-0 ml-2">
+                                  <span
+                                    className="text-xs block"
+                                    style={{
+                                      fontFamily: 'Inter, sans-serif',
+                                      color: isItemQtyChanged ? '#FF6B35' : 'rgba(255,255,255,0.5)',
+                                      fontWeight: isItemQtyChanged ? 700 : 400,
+                                    }}
+                                  >
+                                    {item.quantity}
+                                    {isItemQtyChanged && baseItem && (
+                                      <span style={{ color: 'rgba(255,107,53,0.4)', fontSize: 9, marginLeft: 3 }}>
+                                        (au lieu de {baseItem.quantity})
+                                      </span>
+                                    )}
+                                  </span>
                                   <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
                                 </div>
                               </div>

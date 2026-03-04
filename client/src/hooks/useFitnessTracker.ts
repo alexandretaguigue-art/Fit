@@ -520,6 +520,14 @@ export function useFitnessTracker() {
     return generateWeeklyMealPlan(weekStartMonday, dateKeyOverrides);
   }, [buildDateKeyOverrides]);
 
+  /**
+   * Plan alimentaire de référence (sans overrides de séances).
+   * Utilisé pour détecter les modifications nutritionnelles et les afficher en orange.
+   */
+  const getBaseWeeklyMealPlan = useCallback((weekStartMonday: Date): WeeklyMealPlan => {
+    return generateWeeklyMealPlan(weekStartMonday, {});
+  }, []);
+
   const getShoppingList = useCallback((weekStartMonday: Date): ShoppingList => {
     const dateKeyOverrides = buildDateKeyOverrides(weekStartMonday);
     const plan = generateWeeklyMealPlan(weekStartMonday, dateKeyOverrides);
@@ -827,6 +835,7 @@ export function useFitnessTracker() {
     getWeeklyNutritionSummary,
     // Plan alimentaire & courses
     getWeeklyMealPlan,
+    getBaseWeeklyMealPlan,
     getShoppingList,
     getNextWeekMonday,
     getCurrentWeekMonday,

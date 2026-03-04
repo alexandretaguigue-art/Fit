@@ -11,3 +11,5 @@
 - [x] Fix : les quantités des repas dans le plan ne s'adaptent pas aux macros cibles du type de séance (portions réalistes, max ~200g poulet, ~150g riz cru, etc.)
 - [x] Fix : sans date de démarrage du programme, getDayLog utilise le fallback jour-de-semaine au lieu du cycle 14 jours — les overrides cycle_day_X ne fonctionnent pas
 - [x] Fix : bouton "Démarrer mon programme" ne fixe pas la date de démarrage — redirige juste vers les séances sans retour visuel
+- [x] Corps hologramme SVG animé orange sur l'accueil avec zones musculaires actives selon le type de séance du jour
+- [x] Mise en évidence orange des modifications nutritionnelles (quantités et aliments changés) dans NutritionPage

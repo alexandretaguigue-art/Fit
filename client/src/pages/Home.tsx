@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
+import { BodyHologram } from '../components/BodyHologram';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
 import { useAuth } from '../_core/hooks/useAuth';
@@ -202,6 +203,9 @@ export default function Home() {
   const todaySession = todayCycleDay ? getSessionForCycleDay(cycleDayToday) : null;
   const todayType = todayCycleDay?.type || 'rest';
   const todayColors = SESSION_TYPE_COLORS[todayType];
+
+  // SessionId effectif du jour (avec override)
+  const todaySessionId = getEffectiveSessionId(cycleDayToday);
 
   // Prochain jour d'entraînement
   const nextTrainingDay = cycle14Days.find(
@@ -697,31 +701,61 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats rapides */}
-        {data.startDate && (
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Séances', value: stats.totalSessions, unit: '', icon: Dumbbell },
-              { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm', icon: Target },
-              { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm', icon: Target },
-            ].map(({ label, value, unit, icon: Icon }) => (
-              <div
-                key={label}
-                className="rounded-2xl p-3 text-center"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                <Icon size={16} className="mx-auto mb-1.5" style={{ color: '#FF6B35' }} />
-                <div className="text-white font-bold text-lg leading-none" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  {value}
-                  <span className="text-xs text-white/40 ml-0.5">{unit}</span>
-                </div>
-                <div className="text-white/40 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  {label}
-                </div>
+        {/* Analyse corporelle + Stats rapides */}
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <p className="text-white/50 text-xs uppercase tracking-wider mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Analyse musculaire du jour
+          </p>
+          <div className="flex items-start gap-4">
+            {/* Hologramme corps */}
+            <div className="flex-shrink-0">
+              <BodyHologram sessionId={todaySessionId} />
+            </div>
+
+            {/* Stats à droite */}
+            <div className="flex-1 flex flex-col justify-between h-full gap-3 pt-2">
+              {/* Titre séance */}
+              <div>
+                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Séance du jour</p>
+                <p className="text-white font-bold text-sm mt-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  {todaySession?.name || 'Repos'}
+                </p>
               </div>
-            ))}
+
+              {/* Stats numériques */}
+              {data.startDate && (
+                <div className="space-y-2">
+                  {[
+                    { label: 'Séances complétées', value: stats.totalSessions, unit: '' },
+                    { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm' },
+                    { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm' },
+                  ].map(({ label, value, unit }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</span>
+                      <span className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: '#FF6B35' }}>
+                        {value}<span className="text-xs ml-0.5" style={{ color: 'rgba(255,107,53,0.6)' }}>{unit}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Objectif calorique */}
+              <div
+                className="rounded-xl p-2.5"
+                style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}
+              >
+                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique</p>
+                <p className="font-bold text-lg leading-none mt-0.5" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>
+                  {SESSION_CALORIES_EAT[todaySessionId]?.kcal ?? 2500} <span className="text-xs font-normal" style={{ color: 'rgba(255,107,53,0.6)' }}>kcal</span>
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Phase actuelle */}
         <div

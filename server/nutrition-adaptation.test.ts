@@ -423,3 +423,117 @@ describe('generateWeeklyMealPlan avec sessionOverrides', () => {
     expect(allSame).toBe(true);
   });
 });
+
+// ============================================================
+// TESTS — Détection des modifications nutritionnelles (orange highlighting)
+// ============================================================
+
+describe('Détection des modifications de repas suite à un swap', () => {
+  // Simuler deux items de repas : un de base et un adapté
+  type MealItem = { food: string; quantity: string; calories: number };
+
+  function detectItemChanges(
+    currentItem: MealItem,
+    baseItem: MealItem | undefined,
+    isMealAdaptedBySwap: boolean
+  ) {
+    const isItemFoodChanged = isMealAdaptedBySwap && !!baseItem && currentItem.food !== baseItem.food;
+    const isItemQtyChanged = isMealAdaptedBySwap && !!baseItem && currentItem.food === baseItem.food && currentItem.quantity !== baseItem.quantity;
+    const isItemNew = isMealAdaptedBySwap && !baseItem;
+    const isItemHighlighted = isItemFoodChanged || isItemQtyChanged || isItemNew;
+    return { isItemFoodChanged, isItemQtyChanged, isItemNew, isItemHighlighted };
+  }
+
+  it('ne surligne pas si le repas n\'a pas été adapté', () => {
+    const current = { food: 'Riz basmati', quantity: '120g', calories: 156 };
+    const base = { food: 'Riz basmati', quantity: '120g', calories: 156 };
+    const result = detectItemChanges(current, base, false);
+    expect(result.isItemHighlighted).toBe(false);
+  });
+
+  it('surligne si la quantité a changé suite à un swap', () => {
+    const current = { food: 'Riz basmati', quantity: '145g', calories: 188 };
+    const base = { food: 'Riz basmati', quantity: '120g', calories: 156 };
+    const result = detectItemChanges(current, base, true);
+    expect(result.isItemQtyChanged).toBe(true);
+    expect(result.isItemHighlighted).toBe(true);
+    expect(result.isItemFoodChanged).toBe(false);
+  });
+
+  it('surligne si l\'aliment a changé suite à un swap', () => {
+    const current = { food: 'Patate douce', quantity: '200g', calories: 172 };
+    const base = { food: 'Riz basmati', quantity: '120g', calories: 156 };
+    const result = detectItemChanges(current, base, true);
+    expect(result.isItemFoodChanged).toBe(true);
+    expect(result.isItemHighlighted).toBe(true);
+    expect(result.isItemQtyChanged).toBe(false);
+  });
+
+  it('surligne si l\'item est nouveau (pas dans le plan de base)', () => {
+    const current = { food: 'Banane', quantity: '1 pièce', calories: 89 };
+    const result = detectItemChanges(current, undefined, true);
+    expect(result.isItemNew).toBe(true);
+    expect(result.isItemHighlighted).toBe(true);
+  });
+
+  it('ne surligne pas si même aliment et même quantité même avec swap', () => {
+    const current = { food: 'Œufs entiers', quantity: '3 pièces', calories: 234 };
+    const base = { food: 'Œufs entiers', quantity: '3 pièces', calories: 234 };
+    const result = detectItemChanges(current, base, true);
+    expect(result.isItemHighlighted).toBe(false);
+  });
+});
+
+// ============================================================
+// TESTS — Logique de détection isMealAdaptedBySwap
+// ============================================================
+
+describe('isMealAdaptedBySwap — détection au niveau du repas', () => {
+  type Meal = { totalCalories: number; items: { food: string; quantity: string }[] };
+
+  function computeIsMealAdaptedBySwap(
+    isAdjusted: boolean,
+    planMeal: Meal | undefined,
+    basePlanMeal: Meal | undefined
+  ): boolean {
+    return !isAdjusted && !!planMeal && !!basePlanMeal && (
+      planMeal.totalCalories !== basePlanMeal.totalCalories ||
+      planMeal.items.some((item, idx) => {
+        const baseItem = basePlanMeal.items[idx];
+        return !baseItem || item.food !== baseItem.food || item.quantity !== baseItem.quantity;
+      })
+    );
+  }
+
+  it('retourne false si le repas a été ajusté manuellement', () => {
+    const meal = { totalCalories: 650, items: [{ food: 'Riz', quantity: '150g' }] };
+    expect(computeIsMealAdaptedBySwap(true, meal, meal)).toBe(false);
+  });
+
+  it('retourne false si les calories et items sont identiques', () => {
+    const meal = { totalCalories: 600, items: [{ food: 'Riz', quantity: '120g' }] };
+    expect(computeIsMealAdaptedBySwap(false, meal, meal)).toBe(false);
+  });
+
+  it('retourne true si les calories totales diffèrent', () => {
+    const current = { totalCalories: 720, items: [{ food: 'Riz', quantity: '145g' }] };
+    const base = { totalCalories: 600, items: [{ food: 'Riz', quantity: '120g' }] };
+    expect(computeIsMealAdaptedBySwap(false, current, base)).toBe(true);
+  });
+
+  it('retourne true si un aliment a changé', () => {
+    const current = { totalCalories: 600, items: [{ food: 'Patate douce', quantity: '200g' }] };
+    const base = { totalCalories: 600, items: [{ food: 'Riz', quantity: '120g' }] };
+    expect(computeIsMealAdaptedBySwap(false, current, base)).toBe(true);
+  });
+
+  it('retourne false si planMeal est undefined', () => {
+    const base = { totalCalories: 600, items: [{ food: 'Riz', quantity: '120g' }] };
+    expect(computeIsMealAdaptedBySwap(false, undefined, base)).toBe(false);
+  });
+
+  it('retourne false si basePlanMeal est undefined', () => {
+    const meal = { totalCalories: 600, items: [{ food: 'Riz', quantity: '120g' }] };
+    expect(computeIsMealAdaptedBySwap(false, meal, undefined)).toBe(false);
+  });
+});

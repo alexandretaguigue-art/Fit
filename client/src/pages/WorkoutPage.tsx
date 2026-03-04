@@ -948,7 +948,6 @@ function ExerciseCarousel({
         style={{
           borderRadius: 20,
           overflow: 'hidden',
-          width: '100%',
           border: done
             ? '2px solid rgba(34,197,94,0.45)'
             : isCarousel && isActive ? '1px solid rgba(255,107,53,0.25)' : '1px solid rgba(255,255,255,0.09)',
@@ -959,7 +958,7 @@ function ExerciseCarousel({
           transition: 'transform 0.35s ease, opacity 0.35s ease',
           cursor: isCarousel && !isActive ? 'pointer' : 'default',
           flexShrink: 0,
-          ...(isCarousel ? { minWidth: '88%' } : {}),
+          width: isCarousel ? '88%' : '100%',
         }}
       >
         {/* Photo avec overlay */}
@@ -1108,13 +1107,14 @@ function ExerciseCarousel({
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            style={{ overflow: 'hidden', margin: '0 -4px' }}
+            style={{ overflow: 'hidden', width: '100%' }}
           >
             <div style={{
               display: 'flex', gap: 12,
               transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
-              transform: `translateX(calc(${-activeIdx * 88}% - ${activeIdx * 12}px + 6%))`,
+              transform: `translateX(calc(${activeIdx} * (-88% - 12px) + 6%))`,
               willChange: 'transform',
+              paddingLeft: 0,
             }}>
               {exercises.map((exercise, i) => renderExerciseCard(exercise, i, true))}
             </div>

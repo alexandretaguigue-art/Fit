@@ -805,7 +805,7 @@ function JournalTab() {
                   {entries.length > 0 && (
                     <div style={{ borderTop: planMeal && !mealStatus ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
                       {entries.map(entry => (
-                        <div key={entry.id} className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: '#1A1A22' }}>
+                        <div key={entry.id} className="flex items-center gap-2 px-4 py-3" onClick={e => e.stopPropagation()} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: '#1A1A22' }}>
                           {editingEntry === entry.id ? (
                             <>
                               <span className="text-white/70 text-xs flex-1" style={{ fontFamily: 'Inter, sans-serif' }}>{entry.foodName}</span>
@@ -832,11 +832,17 @@ function JournalTab() {
                                   <span className="text-white/30 text-xs">P:{Math.round(entry.proteins)}g G:{Math.round(entry.carbs)}g L:{Math.round(entry.fats)}g</span>
                                 </div>
                               </div>
-                              <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                <Edit3 size={11} className="text-white/40" />
+                              <button
+                                onClick={e => { e.stopPropagation(); e.preventDefault(); setEditingEntry(entry.id); setEditQty(entry.quantity); }}
+                                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setEditingEntry(entry.id); setEditQty(entry.quantity); }}
+                                style={{ width: 34, height: 34, borderRadius: 10, border: 'none', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                <Edit3 size={13} color="rgba(255,255,255,0.4)" />
                               </button>
-                              <button onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} onClick={e => { e.stopPropagation(); deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
-                                <Trash2 size={11} className="text-red-400" />
+                              <button
+                                onClick={e => { e.stopPropagation(); e.preventDefault(); deleteFoodEntry(dateKey, entry.id); toast.success('Aliment supprimé'); }}
+                                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); deleteFoodEntry(dateKey, entry.id); toast.success('Aliment supprimé'); }}
+                                style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                <Trash2 size={14} color="#f87171" />
                               </button>
                             </>
                           )}

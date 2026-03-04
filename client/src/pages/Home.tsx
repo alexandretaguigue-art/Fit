@@ -5,7 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
-import BodyAnatomySVG from '../components/BodyAnatomySVG';
+import BodyModel3D from '../components/BodyModel3D';
 import { computeMuscleStates, fatigueToStateLabel, MUSCLE_LABELS, type SessionRecord } from '../lib/muscleRecovery';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
@@ -729,16 +729,14 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hologramme anatomique SVG */}
+          {/* Modèle anatomique 3D — Z-Anatomy (CC BY-SA 4.0) */}
           {(() => {
-            // Construire les SessionRecords depuis les sessionLogs
             const sessionRecords: SessionRecord[] = data.sessionLogs.map(log => ({
               sessionId: log.sessionId,
               dateKey: log.date.split('T')[0],
               completedAt: new Date(log.date).getTime(),
             }));
             const muscleStates = computeMuscleStates(sessionRecords);
-            // Mapper vers le format MuscleStatus attendu par BodyAnatomySVG
             const muscleStatuses = Array.from(muscleStates.entries()).map(([group, state]) => ({
               id: group,
               name: MUSCLE_LABELS[group],
@@ -748,10 +746,10 @@ export default function Home() {
             }));
             return (
               <div className="px-4 pb-2">
-                <BodyAnatomySVG
+                <BodyModel3D
                   muscleStatuses={muscleStatuses}
+                  height={400}
                   onMuscleClick={(m) => {
-                    // Afficher un toast avec l'état du muscle
                     const label = m.state === 'fresh' ? 'Non sollicité'
                       : m.state === 'recovered' ? 'Récupéré ✓'
                       : m.state === 'light' ? 'Légère fatigue'

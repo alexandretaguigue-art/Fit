@@ -17,3 +17,4 @@
 - [x] Moteur de récupération musculaire : calcul du niveau de fatigue/récupération de chaque groupe musculaire en fonction du temps écoulé depuis la dernière séance
 - [x] Enrichir le moteur de récupération : prendre en compte repos, nutrition, fréquence des séances
 - [x] Remplacer le hologramme 3D géométrique par un SVG anatomique professionnel (silhouette humaine précise, muscles en paths, vue avant/arrière avec flip animé)
+- [x] Remplacer le SVG anatomique 2D par un vrai modèle 3D anatomique GLB (Z-Anatomy, CC BY-SA 4.0) avec React Three Fiber, éclairage PBR, rotation automatique et coloration musculaire dynamique

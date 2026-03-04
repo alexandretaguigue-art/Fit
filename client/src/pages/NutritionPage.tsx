@@ -29,6 +29,15 @@ const MEAL_ICONS_MAP: Record<string, string> = {
   dinner: '🌙',
 };
 
+// Photos Unsplash pour chaque repas
+const MEAL_PHOTOS: Record<string, string> = {
+  breakfast: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&q=80',
+  morning_snack: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800&q=80',
+  lunch: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
+  snack: 'https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=800&q=80',
+  dinner: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=80',
+};
+
 const MEAL_TIMES: Record<string, string> = {
   breakfast: '07h00',
   morning_snack: '10h30',
@@ -653,38 +662,43 @@ function JournalTab() {
 
           return (
             <div key={meal} className="rounded-2xl overflow-hidden transition-all"
-              style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${mealStatus === 'validated' ? 'rgba(34,197,94,0.25)' : mealStatus === 'modified' ? 'rgba(255,107,53,0.25)' : 'rgba(255,255,255,0.08)'}` }}>
+              style={{ border: `1px solid ${mealStatus === 'validated' ? 'rgba(34,197,94,0.35)' : mealStatus === 'modified' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.08)'}` }}>
 
-              {/* Ligne principale — tap pour ouvrir/fermer */}
-              <button className="w-full flex items-center gap-3 px-4 py-3.5 text-left" onClick={() => setOpenMeal(isOpen ? null : meal)}>
-                {/* Icône + indicateur statut */}
-                <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                    style={{ background: mealStatus === 'validated' ? 'rgba(34,197,94,0.12)' : mealStatus === 'modified' ? 'rgba(255,107,53,0.1)' : 'rgba(255,255,255,0.06)' }}>
-                    {MEAL_ICONS_MAP[meal]}
+              {/* PHOTO EN HAUT — tap pour ouvrir/fermer */}
+              <button className="w-full text-left relative" style={{ height: 110, display: 'block' }} onClick={() => setOpenMeal(isOpen ? null : meal)}>
+                {/* Image de fond */}
+                <img src={MEAL_PHOTOS[meal]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+                {/* Gradient sombre en bas pour lisibilité du texte */}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(10,10,18,0.15) 0%, rgba(10,10,18,0.75) 100%)' }} />
+                {/* Badge statut en haut à droite */}
+                {mealStatus === 'validated' && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.85)', backdropFilter: 'blur(8px)' }}>
+                    <Check size={10} className="text-white" />
+                    <span className="text-white text-xs font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>Mangé</span>
                   </div>
-                  {mealStatus === 'validated' && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#22c55e' }}>
-                      <Check size={9} className="text-white" />
+                )}
+                {mealStatus === 'modified' && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'rgba(255,107,53,0.85)', backdropFilter: 'blur(8px)' }}>
+                    <span className="text-white text-xs font-bold" style={{ fontFamily: 'Inter, sans-serif' }}>Modifié</span>
+                  </div>
+                )}
+                {/* Flèche ouverture en haut à gauche */}
+                <div className="absolute top-3 left-3">
+                  <ChevronRight size={16} className="text-white/50 transition-transform" style={{ transform: isOpen ? 'rotate(90deg)' : 'none' }} />
+                </div>
+                {/* Nom + heure en bas à gauche */}
+                <div className="absolute bottom-0 left-0 right-0 px-4 pb-3">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-white font-bold text-base leading-tight" style={{ fontFamily: 'Syne, sans-serif', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{MEAL_LABELS[meal]}</p>
+                      <p className="text-white/70 text-xs" style={{ fontFamily: 'Inter, sans-serif', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>{MEAL_TIMES[meal]}</p>
                     </div>
-                  )}
-                </div>
-
-                {/* Nom + heure */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{MEAL_LABELS[meal]}</span>
-                    {mealStatus === 'modified' && <span className="text-orange-400 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>modifié</span>}
+                    <div className="text-right">
+                      <span className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                        {mealCalories > 0 ? `${Math.round(mealCalories)} kcal` : plannedCals > 0 ? `~${plannedCals} kcal` : '—'}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{MEAL_TIMES[meal]}</span>
-                </div>
-
-                {/* Calories + flèche */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-white/70 text-sm font-semibold" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    {mealCalories > 0 ? `${Math.round(mealCalories)} kcal` : plannedCals > 0 ? `~${plannedCals} kcal` : '—'}
-                  </span>
-                  <ChevronRight size={14} className="text-white/25 transition-transform" style={{ transform: isOpen ? 'rotate(90deg)' : 'none' }} />
                 </div>
               </button>
 

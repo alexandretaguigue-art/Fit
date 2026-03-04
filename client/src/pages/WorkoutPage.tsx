@@ -877,6 +877,20 @@ function ExerciseCarousel({
   handleExerciseLog: (log: ExerciseLog) => void;
   handleDraftChange: (exerciseId: string, sets: SetData[]) => void;
 }) {
+  // Vue : 'list' (verticale) ou 'carousel' (horizontal)
+  const [viewMode, setViewMode] = useState<'list' | 'carousel'>(() => {
+    return (localStorage.getItem('exercise_view_mode') as 'list' | 'carousel') ?? 'list';
+  });
+  const [activeIdx, setActiveIdx] = useState(0);
+  const swipeX = useRef<number | null>(null);
+  const swipeY = useRef<number | null>(null);
+
+  const switchView = (mode: 'list' | 'carousel') => {
+    setViewMode(mode);
+    localStorage.setItem('exercise_view_mode', mode);
+    setActiveIdx(0);
+  };
+
   // Mapping exercice → image selon le groupe musculaire
   const getExerciseImage = (exercise: Exercise): string => {
     const legsKeywords = ['squat', 'leg', 'lunge', 'calf', 'romanian', 'hip_thrust', 'deadlift', 'hamstring', 'quad', 'glute'];
@@ -898,134 +912,234 @@ function ExerciseCarousel({
     return log && log.sets.every(s => s.completed);
   }).length;
 
+  // Swipe handlers pour le carousel
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeX.current = e.touches[0].clientX;
+    swipeY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (swipeX.current === null || swipeY.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
+    if (Math.abs(dx) > 40 && Math.abs(dx) > dy * 1.2) {
+      if (dx < 0 && activeIdx < exercises.length - 1) setActiveIdx(i => i + 1);
+      else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
+    }
+    swipeX.current = null;
+    swipeY.current = null;
+  };
+
+  // Card commune (photo + contenu)
+  const renderExerciseCard = (exercise: Exercise, i: number, isCarousel = false) => {
+    const img = getExerciseImage(exercise);
+    const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
+    const done = log && log.sets.every(s => s.completed);
+    const repsLabel = exercise.repsMax === null
+      ? `${exercise.repsMin}s`
+      : exercise.repsMin === exercise.repsMax
+      ? `${exercise.repsMin}`
+      : `${exercise.repsMin}-${exercise.repsMax}`;
+    const isActive = !isCarousel || i === activeIdx;
+
+    return (
+      <div
+        key={exercise.id}
+        onClick={() => isCarousel && !isActive && setActiveIdx(i)}
+        style={{
+          borderRadius: 20,
+          overflow: 'hidden',
+          width: '100%',
+          border: done
+            ? '2px solid rgba(34,197,94,0.45)'
+            : isCarousel && isActive ? '1px solid rgba(255,107,53,0.25)' : '1px solid rgba(255,255,255,0.09)',
+          background: done ? 'rgba(34,197,94,0.04)' : '#16161E',
+          boxShadow: isCarousel && isActive ? '0 8px 32px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.3)',
+          transform: isCarousel ? (isActive ? 'scale(1)' : 'scale(0.93)') : 'none',
+          opacity: isCarousel ? (isActive ? 1 : 0.45) : 1,
+          transition: 'transform 0.35s ease, opacity 0.35s ease',
+          cursor: isCarousel && !isActive ? 'pointer' : 'default',
+          flexShrink: 0,
+          ...(isCarousel ? { minWidth: '88%' } : {}),
+        }}
+      >
+        {/* Photo avec overlay */}
+        <div style={{ position: 'relative', height: 180, overflow: 'hidden' }}>
+          <img src={img} alt={exercise.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(15,15,20,0.0) 0%, rgba(15,15,20,0.55) 50%, rgba(15,15,20,0.98) 100%)'
+          }} />
+          {done && (
+            <div style={{
+              position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: '50%',
+              background: 'rgba(34,197,94,0.3)', border: '2px solid rgba(34,197,94,0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Check size={17} color="#22C55E" />
+            </div>
+          )}
+          <div style={{
+            position: 'absolute', top: 12, left: 12, fontSize: 11, fontWeight: 700,
+            color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif',
+            background: 'rgba(0,0,0,0.4)', padding: '3px 9px', borderRadius: 20,
+          }}>
+            {i + 1} / {exercises.length}
+          </div>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+            <div style={{
+              fontSize: 10, fontWeight: 700, color: '#FF6B35', fontFamily: 'Inter, sans-serif',
+              textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
+            }}>
+              {Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups.slice(0, 2).join(' · ') : exercise.muscleGroups}
+            </div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 6 }}>
+              {exercise.name}
+            </div>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif', fontWeight: 600, background: 'rgba(255,107,53,0.2)', padding: '3px 11px', borderRadius: 20 }}>
+                {exercise.sets} × {repsLabel}
+              </span>
+              {exercise.defaultWeight && exercise.defaultWeight > 0 && (
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif', background: 'rgba(255,255,255,0.1)', padding: '3px 11px', borderRadius: 20 }}>
+                  ~{exercise.defaultWeight} kg
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Contenu ExerciseCard — visible sur toutes les cards en liste, seulement la active en carousel */}
+        {isActive && (
+          <ExerciseCard
+            exercise={exercise}
+            onLog={handleExerciseLog}
+            lastLog={log}
+            adaptation={getExerciseAdaptation(exercise.id)}
+            draftSets={draft?.exercises[exercise.id] ?? null}
+            onDraftChange={handleDraftChange}
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      {/* En-tête progression */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* En-tête : progression + boutons de vue */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
-          {exercises.length} exercices
+          <span style={{ color: completedCount === exercises.length ? '#22C55E' : '#FF6B35', fontWeight: 700 }}>
+            {completedCount}/{exercises.length}
+          </span>{' '}terminés
         </span>
-        <span style={{
-          fontSize: 13,
-          color: completedCount === exercises.length ? '#22C55E' : '#FF6B35',
-          fontFamily: 'Inter, sans-serif', fontWeight: 700
+
+        {/* Boutons de bascule vue */}
+        <div style={{
+          display: 'flex', gap: 0, borderRadius: 12, overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)'
         }}>
-          {completedCount}/{exercises.length} terminés
-        </span>
-      </div>
-
-      {/* Liste verticale — une card par exercice, pleine largeur */}
-      {exercises.map((exercise, i) => {
-        const img = getExerciseImage(exercise);
-        const log = exerciseLogs.find(l => l.exerciseId === exercise.id);
-        const done = log && log.sets.every(s => s.completed);
-        const repsLabel = exercise.repsMax === null
-          ? `${exercise.repsMin}s`
-          : exercise.repsMin === exercise.repsMax
-          ? `${exercise.repsMin}`
-          : `${exercise.repsMin}-${exercise.repsMax}`;
-
-        return (
-          <div
-            key={exercise.id}
+          <button
+            onClick={() => switchView('list')}
             style={{
-              borderRadius: 20,
-              overflow: 'hidden',
-              width: '100%',
-              border: done
-                ? '2px solid rgba(34,197,94,0.45)'
-                : '1px solid rgba(255,255,255,0.09)',
-              background: done ? 'rgba(34,197,94,0.04)' : '#16161E',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              padding: '7px 14px', border: 'none', cursor: 'pointer',
+              background: viewMode === 'list' ? 'rgba(255,107,53,0.25)' : 'transparent',
+              color: viewMode === 'list' ? '#FF6B35' : 'rgba(255,255,255,0.35)',
+              fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 5,
+              borderRight: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            {/* ── Grande photo avec overlay ── */}
-            <div style={{ position: 'relative', height: 180, overflow: 'hidden' }}>
-              <img
-                src={img}
-                alt={exercise.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
-              />
-              {/* Dégradé bas */}
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(to bottom, rgba(15,15,20,0.0) 0%, rgba(15,15,20,0.55) 50%, rgba(15,15,20,0.98) 100%)'
-              }} />
+            {/* Icône liste */}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="0" y="1" width="14" height="2.5" rx="1.25" fill="currentColor"/>
+              <rect x="0" y="5.75" width="14" height="2.5" rx="1.25" fill="currentColor"/>
+              <rect x="0" y="10.5" width="14" height="2.5" rx="1.25" fill="currentColor"/>
+            </svg>
+            Liste
+          </button>
+          <button
+            onClick={() => switchView('carousel')}
+            style={{
+              padding: '7px 14px', border: 'none', cursor: 'pointer',
+              background: viewMode === 'carousel' ? 'rgba(255,107,53,0.25)' : 'transparent',
+              color: viewMode === 'carousel' ? '#FF6B35' : 'rgba(255,255,255,0.35)',
+              fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            {/* Icône carousel */}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="2" y="1" width="10" height="12" rx="2" fill="currentColor" opacity="0.9"/>
+              <rect x="0" y="3" width="2" height="8" rx="1" fill="currentColor" opacity="0.4"/>
+              <rect x="12" y="3" width="2" height="8" rx="1" fill="currentColor" opacity="0.4"/>
+            </svg>
+            Carousel
+          </button>
+        </div>
+      </div>
 
-              {/* Badge terminé */}
-              {done && (
-                <div style={{
-                  position: 'absolute', top: 12, right: 12,
-                  width: 34, height: 34, borderRadius: '50%',
-                  background: 'rgba(34,197,94,0.3)',
-                  border: '2px solid rgba(34,197,94,0.7)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Check size={17} color="#22C55E" />
-                </div>
-              )}
+      {/* VUE LISTE */}
+      {viewMode === 'list' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {exercises.map((exercise, i) => renderExerciseCard(exercise, i, false))}
+        </div>
+      )}
 
-              {/* Numéro */}
-              <div style={{
-                position: 'absolute', top: 12, left: 12,
-                fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
-                fontFamily: 'Inter, sans-serif',
-                background: 'rgba(0,0,0,0.4)',
-                padding: '3px 9px', borderRadius: 20,
-              }}>
-                {i + 1} / {exercises.length}
-              </div>
-
-              {/* Overlay texte bas */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                <div style={{
-                  fontSize: 10, fontWeight: 700, color: '#FF6B35',
-                  fontFamily: 'Inter, sans-serif',
-                  textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4
-                }}>
-                  {Array.isArray(exercise.muscleGroups)
-                    ? exercise.muscleGroups.slice(0, 2).join(' · ')
-                    : exercise.muscleGroups}
-                </div>
-                <div style={{
-                  fontSize: 21, fontWeight: 800, color: '#fff',
-                  fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 6
-                }}>
-                  {exercise.name}
-                </div>
-                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: 12, color: 'rgba(255,255,255,0.8)',
-                    fontFamily: 'Inter, sans-serif', fontWeight: 600,
-                    background: 'rgba(255,107,53,0.2)', padding: '3px 11px', borderRadius: 20,
-                  }}>
-                    {exercise.sets} × {repsLabel}
-                  </span>
-                  {exercise.defaultWeight && exercise.defaultWeight > 0 && (
-                    <span style={{
-                      fontSize: 12, color: 'rgba(255,255,255,0.6)',
-                      fontFamily: 'Inter, sans-serif',
-                      background: 'rgba(255,255,255,0.1)', padding: '3px 11px', borderRadius: 20,
-                    }}>
-                      ~{exercise.defaultWeight} kg
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* ── Contenu toujours visible (pas de clic requis) ── */}
-            <ExerciseCard
-              exercise={exercise}
-              onLog={handleExerciseLog}
-              lastLog={log}
-              adaptation={getExerciseAdaptation(exercise.id)}
-              draftSets={draft?.exercises[exercise.id] ?? null}
-              onDraftChange={handleDraftChange}
-            />
+      {/* VUE CAROUSEL */}
+      {viewMode === 'carousel' && (
+        <div>
+          {/* Pastilles de navigation */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 12 }}>
+            {exercises.map((ex, i) => {
+              const log = exerciseLogs.find(l => l.exerciseId === ex.id);
+              const done = log && log.sets.every(s => s.completed);
+              return (
+                <button key={ex.id} onClick={() => setActiveIdx(i)} style={{
+                  width: i === activeIdx ? 20 : 6, height: 6, borderRadius: 3,
+                  background: done ? '#22C55E' : i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.18)',
+                  transition: 'all 0.3s ease', border: 'none', cursor: 'pointer', padding: 0,
+                }} />
+              );
+            })}
           </div>
-        );
-      })}
+
+          {/* Piste carousel */}
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={{ overflow: 'hidden', margin: '0 -4px' }}
+          >
+            <div style={{
+              display: 'flex', gap: 12,
+              transition: 'transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94)',
+              transform: `translateX(calc(${-activeIdx * 88}% - ${activeIdx * 12}px + 6%))`,
+              willChange: 'transform',
+            }}>
+              {exercises.map((exercise, i) => renderExerciseCard(exercise, i, true))}
+            </div>
+          </div>
+
+          {/* Boutons navigation bas */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            {activeIdx > 0 && (
+              <button onClick={() => setActiveIdx(i => i - 1)} style={{
+                flex: 1, padding: '13px', borderRadius: 16,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              }}>← Précédent</button>
+            )}
+            {activeIdx < exercises.length - 1 && (
+              <button onClick={() => setActiveIdx(i => i + 1)} style={{
+                flex: 1, padding: '13px', borderRadius: 16,
+                background: 'linear-gradient(135deg, rgba(255,107,53,0.25), rgba(255,51,102,0.25))',
+                border: '1px solid rgba(255,107,53,0.35)', color: '#FF6B35',
+                fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+              }}>Suivant →</button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

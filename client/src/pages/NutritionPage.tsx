@@ -783,40 +783,12 @@ function JournalTab() {
                         ))}
                       </div>
 
-                      {/* Boutons Valider ce repas / Autre chose */}
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => {
-                            const itemsToValidate = adjustedMeals[meal] ?? planMeal.items;
-                            dayLog.entries.filter(e => e.meal === meal).forEach(e => deleteFoodEntry(dateKey, e.id));
-                            itemsToValidate.forEach(item => {
-                              const food = programData.foodItems.find(f => f.name.toLowerCase().includes(item.food.toLowerCase().split(' ')[0]));
-                              const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
-                              const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
-                              if (food) { const macros = computeFoodMacros(food.id, food.name, qty, food.per100g); addFoodEntry(dateKey, { ...macros, meal: meal as FoodEntry['meal'], id: nanoid() }); }
-                              else { addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: meal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories }); }
-                            });
-                            setValidatedMeals(prev => ({ ...prev, [meal]: 'validated' }));
-                            setOpenMeal(null);
-                            toast.success(`${MEAL_LABELS[meal]} validé ✓`);
-                          }}
-                          className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
-                          style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.35)', fontFamily: 'Syne, sans-serif' }}>
-                          <CheckCircle size={15} /> Valider ce repas
-                        </button>
-                        <div className="flex gap-2">
-                          <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Syne, sans-serif' }}>
-                            <Plus size={13} /> Ajouter un aliment
-                          </button>
-                          <button onClick={() => handleInvalidateMeal(meal)}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                            style={{ background: 'rgba(255,107,53,0.08)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.2)', fontFamily: 'Syne, sans-serif' }}>
-                            <XCircle size={13} /> Autre chose
-                          </button>
-                        </div>
-                      </div>
+                      {/* Lien Ajouter un aliment sous le plan */}
+                      <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }}
+                        className="flex items-center gap-1.5 text-white/40 text-xs hover:text-white/60 transition-colors mt-1"
+                        style={{ fontFamily: 'Inter, sans-serif' }}>
+                        <Plus size={11} /> Ajouter un aliment
+                      </button>
                     </div>
                   )}
 
@@ -881,11 +853,48 @@ function JournalTab() {
         </div>{/* fin piste de cards */}
       </div>{/* fin carousel */}
 
-      {/* Bouton ajouter global */}
-      <button onClick={() => { setAddModalMeal('lunch'); setShowAddModal(true); }} className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
-        style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)', fontFamily: 'Syne, sans-serif', boxShadow: '0 8px 30px rgba(255, 107, 53, 0.2)' }}>
-        <Plus size={18} /> Ajouter un aliment
-      </button>
+      {/* Gros bouton vert Valider ce repas */}
+      {(() => {
+        const activeMeal = MEAL_ORDER[activeMealIdx];
+        const activeDayLog = dayLog;
+        const activePlanMeal = dayPlan?.meals.find(m => {
+          const n = m.name;
+          if (activeMeal === 'breakfast') return n === 'Petit-déjeuner';
+          if (activeMeal === 'morning_snack') return n === 'Collation matinale' || n === 'Collation';
+          if (activeMeal === 'lunch') return n === 'Déjeuner';
+          if (activeMeal === 'afternoon_snack') return n === 'Collation' || n === 'Collation pré-entraînement' || n === 'Collation après-midi';
+          if (activeMeal === 'dinner') return n === 'Dîner' || n === 'Dîner post-training';
+          return false;
+        });
+        const activeMealStatus = validatedMeals[activeMeal] || (activeDayLog.entries.some(e => e.meal === activeMeal) ? 'modified' : null);
+        if (activeMealStatus === 'validated') return (
+          <div className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2"
+            style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', fontFamily: 'Syne, sans-serif', color: '#22c55e' }}>
+            <CheckCircle size={18} /> Repas validé
+          </div>
+        );
+        return (
+          <button onClick={() => {
+            if (!activePlanMeal) { toast.error('Aucun plan pour ce repas'); return; }
+            const itemsToValidate = adjustedMeals[activeMeal] ?? activePlanMeal.items;
+            activeDayLog.entries.filter(e => e.meal === activeMeal).forEach(e => deleteFoodEntry(dateKey, e.id));
+            (itemsToValidate as Array<{food: string; quantity: string; calories: number; proteins: number; carbs: number; fats: number}>).forEach(item => {
+              const food = programData.foodItems.find(f => f.name.toLowerCase().includes(item.food.toLowerCase().split(' ')[0]));
+              const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
+              const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
+              if (food) { const macros = computeFoodMacros(food.id, food.name, qty, food.per100g); addFoodEntry(dateKey, { ...macros, meal: activeMeal as FoodEntry['meal'], id: nanoid() }); }
+              else { addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: activeMeal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories }); }
+            });
+            setValidatedMeals(prev => ({ ...prev, [activeMeal]: 'validated' }));
+            setOpenMeal(null);
+            toast.success(`${MEAL_LABELS[activeMeal]} validé ✓`);
+          }}
+          className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', fontFamily: 'Syne, sans-serif', boxShadow: '0 8px 30px rgba(34,197,94,0.25)' }}>
+          <CheckCircle size={18} /> Valider ce repas
+        </button>
+        );
+      })()}
 
       {showAddModal && <AddFoodModal onAdd={handleAdd} onClose={() => setShowAddModal(false)} defaultMeal={addModalMeal} />}
     </div>

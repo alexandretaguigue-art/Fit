@@ -1,9 +1,9 @@
 // DESIGN: "Coach Nocturne" — Dark Mode Premium Fitness
 // Hero section avec image, stats du programme, cycle 14 jours, séance du jour
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, X, Check } from 'lucide-react';
+import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
@@ -75,8 +75,14 @@ export default function Home() {
 
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride } = useFitnessTracker();
-  const [editingDay, setEditingDay] = useState<number | null>(null);
   const [calendarOffset, setCalendarOffset] = useState(0); // offset en cycles de 14 jours
+
+  // Drag & drop pour swapper deux jours du calendrier
+  const [draggingDay, setDraggingDay] = useState<number | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<number | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
   const stats = getStats();
   const currentWeek = getCurrentWeek();
 
@@ -311,7 +317,8 @@ export default function Home() {
                   const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
                   const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
                   const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
-                  const isEditing = editingDay === day.dayNumber && calendarOffset === 0;
+                  const isDraggingThis = draggingDay === day.dayNumber;
+                  const isDragTarget = dragOverDay === day.dayNumber && draggingDay !== null && draggingDay !== day.dayNumber;
                   const colors = SESSION_TYPE_COLORS[day.type];
                   const sessionImg = SESSION_IMAGES[day.sessionId];
                   const eatInfo = SESSION_CALORIES_EAT[day.sessionId];
@@ -319,10 +326,65 @@ export default function Home() {
                   const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
                   const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
 
+                  const handleTapOrDrop = () => {
+                    if (isDragging.current) {
+                      // Mode drag : on vient de relâcher — géré par onTouchEnd
+                      return;
+                    }
+                    // Tap simple : ouvrir la séance
+                    if (day.type !== 'rest' && calendarOffset === 0) {
+                      localStorage.setItem('pendingSessionId', day.sessionId);
+                      navigate('/workout');
+                    }
+                  };
+
                   return (
                     <button
                       key={day.dayNumber}
-                      onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
+                      onClick={handleTapOrDrop}
+                      onTouchStart={(e) => {
+                        if (calendarOffset !== 0) return;
+                        dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                        isDragging.current = false;
+                        // Appui long = 500ms
+                        longPressTimer.current = setTimeout(() => {
+                          isDragging.current = true;
+                          setDraggingDay(day.dayNumber);
+                          if (navigator.vibrate) navigator.vibrate(40);
+                        }, 500);
+                      }}
+                      onTouchMove={(e) => {
+                        if (!dragStartPos.current) return;
+                        const dx = e.touches[0].clientX - dragStartPos.current.x;
+                        const dy = e.touches[0].clientY - dragStartPos.current.y;
+                        if (Math.sqrt(dx*dx + dy*dy) > 8 && longPressTimer.current) {
+                          clearTimeout(longPressTimer.current);
+                          longPressTimer.current = null;
+                        }
+                        if (!isDragging.current) return;
+                        // Détecter la card sous le doigt
+                        const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+                        const card = el?.closest('[data-day]') as HTMLElement | null;
+                        const targetDay = card ? parseInt(card.dataset.day || '0') : null;
+                        if (targetDay && targetDay !== draggingDay) setDragOverDay(targetDay);
+                      }}
+                      onTouchEnd={() => {
+                        if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+                        if (isDragging.current && draggingDay !== null && dragOverDay !== null && draggingDay !== dragOverDay) {
+                          // Swap les deux jours
+                          const dayA = cycle14Days.find(d => d.dayNumber === draggingDay);
+                          const dayB = cycle14Days.find(d => d.dayNumber === dragOverDay);
+                          if (dayA && dayB) {
+                            setScheduleOverride(`cycle_day_${draggingDay}`, dayB.sessionId);
+                            setScheduleOverride(`cycle_day_${dragOverDay}`, dayA.sessionId);
+                            toast.success(`J${draggingDay} ⇄ J${dragOverDay} — séances échangées`);
+                          }
+                        }
+                        isDragging.current = false;
+                        setDraggingDay(null);
+                        setDragOverDay(null);
+                      }}
+                      data-day={day.dayNumber}
                       style={{
                         position: 'relative',
                         borderRadius: 16,
@@ -333,18 +395,21 @@ export default function Home() {
                         maxWidth: 160,
                         aspectRatio: '3/4',
                         scrollSnapAlign: 'start',
-                        border: isToday
+                        border: isDraggingThis
+                          ? '2px solid #FF6B35'
+                          : isDragTarget
+                          ? '2px dashed #FF6B35'
+                          : isToday
                           ? `2px solid ${colors.text}`
-                          : isEditing
-                          ? '2px solid rgba(255,255,255,0.5)'
                           : isCompleted
                           ? '1px solid rgba(34,197,94,0.5)'
                           : '1px solid rgba(255,255,255,0.08)',
-                        opacity: isPast && !isCompleted && !isToday ? 0.45 : 1,
+                        opacity: isDraggingThis ? 0.6 : isPast && !isCompleted && !isToday ? 0.45 : 1,
                         cursor: 'pointer',
-                        background: '#0e0e14',
-                        boxShadow: isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
-                        transition: 'all 0.2s',
+                        background: isDragTarget ? 'rgba(255,107,53,0.12)' : '#0e0e14',
+                        boxShadow: isDraggingThis ? '0 0 24px rgba(255,107,53,0.5)' : isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
+                        transform: isDraggingThis ? 'scale(1.05)' : 'scale(1)',
+                        transition: 'all 0.15s',
                         padding: 0,
                         display: 'flex',
                         flexDirection: 'column',
@@ -429,64 +494,16 @@ export default function Home() {
             </div>
           ))}
 
-          {/* Panneau de modification du jour sélectionné */}
-          {editingDay !== null && (
-            <div
-              className="mt-4 rounded-xl p-3 space-y-2"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-white font-semibold text-xs" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  Modifier Jour {editingDay}
-                </p>
-                <button onClick={() => setEditingDay(null)}>
-                  <X size={14} className="text-white/40" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'upper_a', label: 'Haut A', icon: '💪', type: 'gym' },
-                  { id: 'upper_b', label: 'Haut B', icon: '💪', type: 'gym' },
-                  { id: 'lower_a', label: 'Bas A', icon: '🦵', type: 'gym' },
-                  { id: 'lower_b', label: 'Bas B', icon: '🦵', type: 'gym' },
-                  { id: 'football', label: 'Football', icon: '⚽', type: 'football' },
-                  { id: 'running_endurance', label: 'Course endurance', icon: '🏃', type: 'running' },
-                  { id: 'running_intervals', label: 'Course fractionné', icon: '⚡', type: 'running' },
-                  { id: 'cycling', label: 'Vélo', icon: '🚴', type: 'cycling' },
-                  { id: 'rest', label: 'Repos', icon: '💤', type: 'rest' },
-                ].map(opt => {
-                  const colors = SESSION_TYPE_COLORS[opt.type];
-                  const currentDay = cycle14Days.find(d => d.dayNumber === editingDay);
-                  const isCurrentSession = currentDay?.sessionId === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        setScheduleOverride(
-                          `cycle_day_${editingDay}`,
-                          isCurrentSession ? null : opt.id
-                        );
-                        toast.success(`Jour ${editingDay} → ${opt.label}`);
-                        setEditingDay(null);
-                      }}
-                      className="flex items-center gap-2 p-2.5 rounded-xl text-left transition-all duration-200 active:scale-95"
-                      style={{
-                        background: isCurrentSession ? colors.bg : 'rgba(255,255,255,0.04)',
-                        border: isCurrentSession ? `1px solid ${colors.border}` : '1px solid rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      <span style={{ fontSize: '16px' }}>{opt.icon}</span>
-                      <span
-                        className="text-xs font-medium"
-                        style={{ color: isCurrentSession ? colors.text : 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}
-                      >
-                        {opt.label}
-                      </span>
-                      {isCurrentSession && <Check size={10} style={{ color: colors.text, marginLeft: 'auto' }} />}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Indication drag & drop */}
+          {draggingDay !== null && (
+            <div className="mt-3 rounded-xl px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)' }}>
+              <GripVertical size={12} style={{ color: '#FF6B35' }} />
+              <span className="text-xs" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>
+                J{draggingDay} sélectionné — dépose sur un autre jour pour échanger
+              </span>
+              <button onClick={() => { setDraggingDay(null); setDragOverDay(null); isDragging.current = false; }} style={{ marginLeft: 'auto' }}>
+                <X size={12} style={{ color: 'rgba(255,107,53,0.7)' }} />
+              </button>
             </div>
           )}
 

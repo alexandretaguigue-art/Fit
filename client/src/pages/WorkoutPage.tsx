@@ -1569,6 +1569,23 @@ export default function WorkoutPage() {
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
   const { data } = useFitnessTracker();
 
+  // Ouvrir automatiquement une séance si un sessionId est passé depuis le calendrier
+  useEffect(() => {
+    const pendingId = localStorage.getItem('pendingSessionId');
+    if (pendingId) {
+      localStorage.removeItem('pendingSessionId');
+      const today = new Date();
+      const programStart = data.startDate ? new Date(data.startDate) : today;
+      const weekNum = data.startDate
+        ? Math.max(1, Math.ceil((today.getTime() - programStart.getTime()) / (7 * 24 * 3600 * 1000)))
+        : 1;
+      const session = getSessionForPhase(pendingId, weekNum) || getSessionForCycleDay(
+        cycle14Days.findIndex(d => d.sessionId === pendingId) + 1
+      );
+      if (session) setSelectedSession(session);
+    }
+  }, [data.startDate]);
+
   const sessionImages: Record<string, string> = {
     upper_a: ARMS_IMAGE, upper_b: ARMS_IMAGE,
     lower_a: LEGS_IMAGE, lower_b: LEGS_IMAGE,

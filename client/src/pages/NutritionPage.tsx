@@ -4,7 +4,7 @@
 // plan hebdomadaire, liste de courses, récap hebdomadaire réalité/objectif
 // ============================================================
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
@@ -388,6 +388,31 @@ function JournalTab() {
   const [editQty, setEditQty] = useState(0);
   // Repas validés (mangé comme prévu) ou invalidés (modifié)
   const [validatedMeals, setValidatedMeals] = useState<Record<string, 'validated' | 'modified' | null>>({});
+  // Items du plan supprimés manuellement (clé = `${meal}-${i}`)
+  const [removedPlanItems, setRemovedPlanItems] = useState<Set<string>>(new Set());
+  // Item en cours de swipe pour suppression (clé = `${meal}-${i}`, valeur = offsetX)
+  const [swipingItem, setSwipingItem] = useState<{ key: string; offsetX: number } | null>(null);
+  const swipeItemStartX = useRef<number | null>(null);
+
+  const handlePlanItemTouchStart = useCallback((key: string, clientX: number) => {
+    swipeItemStartX.current = clientX;
+    setSwipingItem({ key, offsetX: 0 });
+  }, []);
+
+  const handlePlanItemTouchMove = useCallback((key: string, clientX: number) => {
+    if (swipeItemStartX.current === null) return;
+    const dx = clientX - swipeItemStartX.current;
+    if (dx < 0) setSwipingItem({ key, offsetX: Math.max(dx, -80) });
+  }, []);
+
+  const handlePlanItemTouchEnd = useCallback((key: string, offsetX: number) => {
+    if (offsetX < -50) {
+      setRemovedPlanItems(prev => { const s = new Set(prev); s.add(key); return s; });
+      toast.success('Aliment retiré du plan');
+    }
+    setSwipingItem(null);
+    swipeItemStartX.current = null;
+  }, []);
 
   const dateKey = useMemo(() => {
     const d = new Date();
@@ -778,18 +803,58 @@ function JournalTab() {
                         )}
                       </div>
 
-                      {/* Liste des aliments du plan */}
+                      {/* Liste des aliments du plan — swipe gauche ou croix pour supprimer */}
                       <div className="space-y-1.5 mb-4">
-                        {displayItems.map((item, i) => (
-                          <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl"
-                            style={{ background: 'rgba(255,255,255,0.04)' }}>
-                            <span className="text-white/80 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                            <div className="text-right">
-                              <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                              <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal · P{item.proteins}g</span>
+                        {displayItems.map((item, i) => {
+                          const itemKey = `${meal}-${i}`;
+                          if (removedPlanItems.has(itemKey)) return null;
+                          const isSwipingThis = swipingItem?.key === itemKey;
+                          const offsetX = isSwipingThis ? swipingItem!.offsetX : 0;
+                          const showDelete = offsetX < -30;
+                          return (
+                            <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+                              {/* Fond rouge poubelle */}
+                              <div style={{
+                                position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
+                                background: 'rgba(239,68,68,0.85)', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', borderRadius: '0 12px 12px 0',
+                                opacity: showDelete ? 1 : 0, transition: 'opacity 0.15s',
+                              }}>
+                                <Trash2 size={18} color="white" />
+                              </div>
+                              {/* Contenu glissant */}
+                              <div
+                                style={{
+                                  transform: `translateX(${offsetX}px)`,
+                                  transition: isSwipingThis ? 'none' : 'transform 0.2s ease',
+                                  background: 'rgba(255,255,255,0.04)',
+                                  borderRadius: 12,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  padding: '8px 12px',
+                                  touchAction: 'pan-y',
+                                }}
+                                onTouchStart={e => { e.stopPropagation(); handlePlanItemTouchStart(itemKey, e.touches[0].clientX); }}
+                                onTouchMove={e => { e.stopPropagation(); handlePlanItemTouchMove(itemKey, e.touches[0].clientX); }}
+                                onTouchEnd={e => { e.stopPropagation(); handlePlanItemTouchEnd(itemKey, offsetX); }}
+                              >
+                                <span className="text-white/80 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div className="text-right">
+                                    <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                                    <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
+                                  </div>
+                                  {/* Croix de suppression directe */}
+                                  <button
+                                    onClick={e => { e.stopPropagation(); e.preventDefault(); setRemovedPlanItems(prev => { const s = new Set(prev); s.add(itemKey); return s; }); toast.success('Aliment retiré'); }}
+                                    onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setRemovedPlanItems(prev => { const s = new Set(prev); s.add(itemKey); return s; }); toast.success('Aliment retiré'); }}
+                                    style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                    <span style={{ color: '#f87171', fontSize: 14, lineHeight: 1, fontWeight: 700 }}>×</span>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Lien Ajouter un aliment sous le plan */}

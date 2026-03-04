@@ -292,11 +292,16 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Grille calendrier — 7 colonnes, 2 rangées, grandes cards */}
+          {/* Grille calendrier — scroll horizontal, grandes cards */}
           {(['Semaine 1', 'Semaine 2'] as const).map((weekLabel, weekIdx) => (
-            <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 10 : 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 6 }}>{weekLabel}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+            <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 14 : 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 8 }}>{weekLabel}</p>
+              <div style={{
+                display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4,
+                scrollSnapType: 'x mandatory',
+                WebkitOverflowScrolling: 'touch',
+                msOverflowStyle: 'none', scrollbarWidth: 'none',
+              }}>
                 {cycle14Days.slice(weekIdx * 7, weekIdx * 7 + 7).map(day => {
                   const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
                   const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
@@ -315,20 +320,25 @@ export default function Home() {
                       onClick={() => calendarOffset === 0 ? setEditingDay(editingDay === day.dayNumber ? null : day.dayNumber) : undefined}
                       style={{
                         position: 'relative',
-                        borderRadius: 10,
+                        borderRadius: 16,
                         overflow: 'hidden',
-                        aspectRatio: '1/1.45',
+                        flexShrink: 0,
+                        width: 'calc((100vw - 64px) / 2.5)',
+                        minWidth: 110,
+                        maxWidth: 160,
+                        aspectRatio: '3/4',
+                        scrollSnapAlign: 'start',
                         border: isToday
                           ? `2px solid ${colors.text}`
                           : isEditing
                           ? '2px solid rgba(255,255,255,0.5)'
                           : isCompleted
                           ? '1px solid rgba(34,197,94,0.5)'
-                          : '1px solid rgba(255,255,255,0.06)',
+                          : '1px solid rgba(255,255,255,0.08)',
                         opacity: isPast && !isCompleted && !isToday ? 0.45 : 1,
                         cursor: 'pointer',
                         background: '#0e0e14',
-                        boxShadow: isToday ? `0 0 16px ${colors.text}55` : 'none',
+                        boxShadow: isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
                         transition: 'all 0.2s',
                         padding: 0,
                         display: 'flex',
@@ -365,20 +375,19 @@ export default function Home() {
                         )}
 
                         {/* Numéro de jour + label séance */}
-                        <div style={{ position: 'absolute', bottom: 5, left: 0, right: 0, padding: '0 4px' }}>
+                        <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
                           <div style={{
-                            fontSize: 10, fontWeight: 800, lineHeight: 1,
-                            color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.6)',
+                            fontSize: 13, fontWeight: 800, lineHeight: 1,
+                            color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)',
                             fontFamily: 'Syne, sans-serif',
                           }}>J{absoluteDayNumber}</div>
                           {day.type === 'rest' ? (
-                            <div style={{ fontSize: 14, lineHeight: 1, marginTop: 1 }}>😴</div>
+                            <div style={{ fontSize: 22, lineHeight: 1, marginTop: 4 }}>😴</div>
                           ) : (
                             <div style={{
-                              fontSize: 7.5, fontWeight: 700, lineHeight: 1.1, marginTop: 2,
+                              fontSize: 11, fontWeight: 700, lineHeight: 1.2, marginTop: 4,
                               color: colors.text,
                               fontFamily: 'Inter, sans-serif',
-                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                             }}>
                               {day.label.split(' — ')[0]}
                             </div>
@@ -388,24 +397,24 @@ export default function Home() {
 
                       {/* Barre calories à manger — couleur selon le niveau */}
                       <div style={{
-                        background: `${eatInfo?.color ?? '#22C55E'}18`,
-                        borderTop: `1.5px solid ${eatInfo?.color ?? '#22C55E'}60`,
-                        padding: '3px 4px 4px',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                        background: `${eatInfo?.color ?? '#22C55E'}20`,
+                        borderTop: `2px solid ${eatInfo?.color ?? '#22C55E'}70`,
+                        padding: '7px 10px 8px',
+                        display: 'flex', alignItems: 'baseline', gap: 3,
                       }}>
                         <div style={{
-                          fontSize: 7, fontWeight: 700, lineHeight: 1,
+                          fontSize: 16, fontWeight: 800, lineHeight: 1,
                           color: eatInfo?.color ?? '#22C55E',
-                          fontFamily: 'Inter, sans-serif',
-                          letterSpacing: '-0.01em',
+                          fontFamily: 'Syne, sans-serif',
+                          letterSpacing: '-0.02em',
                         }}>
                           {eatInfo?.kcal ?? 2300}
                         </div>
                         <div style={{
-                          fontSize: 5.5, fontWeight: 500, lineHeight: 1,
-                          color: `${eatInfo?.color ?? '#22C55E'}99`,
+                          fontSize: 9, fontWeight: 600, lineHeight: 1,
+                          color: `${eatInfo?.color ?? '#22C55E'}bb`,
                           fontFamily: 'Inter, sans-serif',
-                          textTransform: 'uppercase', letterSpacing: '0.04em',
+                          textTransform: 'uppercase', letterSpacing: '0.06em',
                         }}>kcal</div>
                       </div>
                     </button>

@@ -838,18 +838,9 @@ function JournalTab() {
                                 onTouchEnd={e => { e.stopPropagation(); handlePlanItemTouchEnd(itemKey, offsetX); }}
                               >
                                 <span className="text-white/80 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div className="text-right">
-                                    <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                                    <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
-                                  </div>
-                                  {/* Croix de suppression directe */}
-                                  <button
-                                    onClick={e => { e.stopPropagation(); e.preventDefault(); setRemovedPlanItems(prev => { const s = new Set(prev); s.add(itemKey); return s; }); toast.success('Aliment retiré'); }}
-                                    onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setRemovedPlanItems(prev => { const s = new Set(prev); s.add(itemKey); return s; }); toast.success('Aliment retiré'); }}
-                                    style={{ width: 26, height: 26, borderRadius: 8, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                                    <span style={{ color: '#f87171', fontSize: 14, lineHeight: 1, fontWeight: 700 }}>×</span>
-                                  </button>
+                                <div className="text-right">
+                                  <span className="text-white/50 text-xs block" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
+                                  <span className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal</span>
                                 </div>
                               </div>
                             </div>

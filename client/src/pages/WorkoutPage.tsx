@@ -165,6 +165,18 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
     }));
   });
 
+  // Réinitialise les séries quand on change d'alternative (machine indisponible)
+  useEffect(() => {
+    // On recharge les séries avec le poids de base de l'exercice original
+    // (l'alternative n'a pas de setScheme propre, on repart du defaultWeight)
+    setSets(Array.from({ length: adaptation?.suggestedSets ?? exercise.sets }, () => ({
+      weight: baseWeight, reps: suggestedRepsMin, completed: false,
+    })));
+    setShowVideo(false);
+    setShowAlt(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAlt]);
+
   const displayScore = selectedAlt
     ? exercise.alternatives.find(a => a.name === selectedAlt)?.relevanceScore ?? exercise.relevanceScore
     : exercise.relevanceScore;
@@ -218,6 +230,7 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
     : null;
 
   const hasMedia = !!(exercise.imageUrl || exercise.videoUrl);
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -253,6 +266,89 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
             border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', cursor: 'pointer'
           }}>Passer</button>
         </div>
+      )}
+
+      {/* Bouton vidéo + modal */}
+      {hasMedia && (
+        <>
+          <button
+            onClick={() => setShowVideo(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', borderRadius: 12,
+              background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)',
+              cursor: 'pointer', width: '100%',
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(255,107,53,0.2)', border: '1.5px solid rgba(255,107,53,0.5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
+                <path d="M1 1.5L11 7L1 12.5V1.5Z" fill="#FF6B35" />
+              </svg>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ color: '#FF6B35', fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif', margin: 0 }}>Voir le mouvement</p>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, fontFamily: 'Inter, sans-serif', margin: 0 }}>Démo vidéo de l’exercice</p>
+            </div>
+          </button>
+
+          {/* Modal vidéo */}
+          {showVideo && (
+            <div
+              onClick={() => setShowVideo(false)}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', padding: 20,
+              }}
+            >
+              <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, borderRadius: 20, overflow: 'hidden', background: '#0F0F18', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div>
+                    <p style={{ color: '#fff', fontWeight: 700, fontSize: 14, fontFamily: 'Syne, sans-serif', margin: 0 }}>{exercise.name}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>{Array.isArray(exercise.muscleGroups) ? exercise.muscleGroups.join(' · ') : exercise.muscleGroups}</p>
+                  </div>
+                  <button onClick={() => setShowVideo(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+                {/* Media */}
+                {exercise.videoUrl ? (
+                  exercise.videoUrl.includes('youtube') || exercise.videoUrl.includes('youtu.be') ? (
+                    <iframe
+                      src={exercise.videoUrl}
+                      style={{ width: '100%', height: 260, border: 'none', display: 'block' }}
+                      allow="autoplay; fullscreen"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={exercise.videoUrl}
+                      autoPlay loop muted playsInline
+                      style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block' }}
+                    />
+                  )
+                ) : exercise.imageUrl ? (
+                  <img src={exercise.imageUrl} alt={exercise.name} style={{ width: '100%', height: 260, objectFit: 'contain', display: 'block', background: '#0F0F18' }} />
+                ) : null}
+                {/* Conseils rapides */}
+                {exercise.tips.length > 0 && (
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    {exercise.tips.slice(0, 2).map((tip, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: i < 1 ? 6 : 0 }}>
+                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF6B35', flexShrink: 0, marginTop: 6 }} />
+                        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontFamily: 'Inter, sans-serif', lineHeight: 1.5, margin: 0 }}>{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontFamily: 'Inter, sans-serif', marginTop: 16 }}>Appuie n’importe où pour fermer</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Séries — layout 2 lignes clair */}
@@ -996,6 +1092,14 @@ function ExerciseCarousel({
             <div style={{ fontSize: 21, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.15, marginBottom: 6 }}>
               {exercise.name}
             </div>
+            {/* Bouton play sur la photo si media disponible */}
+            {(exercise.imageUrl || exercise.videoUrl) && (
+              <div style={{ position: 'absolute', top: 12, right: done ? 52 : 12, width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1.5px solid rgba(255,107,53,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+                  <path d="M1 1L10 6.5L1 12V1Z" fill="#FF6B35" />
+                </svg>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif', fontWeight: 600, background: 'rgba(255,107,53,0.2)', padding: '3px 11px', borderRadius: 20 }}>
                 {exercise.sets} × {repsLabel}

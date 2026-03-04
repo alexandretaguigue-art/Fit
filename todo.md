@@ -15,5 +15,5 @@
 - [x] Mise en évidence orange des modifications nutritionnelles (quantités et aliments changés) dans NutritionPage
 - [x] Hologramme 3D avec Three.js : modèle anatomique 3D avec couleurs par muscle (rouge = fatigué, vert = récupéré) basé sur les séances enregistrées
 - [x] Moteur de récupération musculaire : calcul du niveau de fatigue/récupération de chaque groupe musculaire en fonction du temps écoulé depuis la dernière séance
-- [ ] Remplacer le hologramme géométrique par un vrai modèle anatomique humain GLTF/GLB avec groupes musculaires colorables
-- [ ] Enrichir le moteur de récupération : prendre en compte repos, nutrition, fréquence des séances
+- [x] Enrichir le moteur de récupération : prendre en compte repos, nutrition, fréquence des séances
+- [x] Remplacer le hologramme 3D géométrique par un SVG anatomique professionnel (silhouette humaine précise, muscles en paths, vue avant/arrière avec flip animé)

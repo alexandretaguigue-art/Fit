@@ -5,8 +5,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Zap, Bike, Bed, Check, GripVertical, X } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
-import BodyHologram3D from '../components/BodyHologram3D';
-import { computeMuscleStates, type SessionRecord } from '../lib/muscleRecovery';
+import BodyAnatomySVG from '../components/BodyAnatomySVG';
+import { computeMuscleStates, fatigueToStateLabel, MUSCLE_LABELS, type SessionRecord } from '../lib/muscleRecovery';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
 import { useAuth } from '../_core/hooks/useAuth';
@@ -729,7 +729,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hologramme 3D */}
+          {/* Hologramme anatomique SVG */}
           {(() => {
             // Construire les SessionRecords depuis les sessionLogs
             const sessionRecords: SessionRecord[] = data.sessionLogs.map(log => ({
@@ -738,11 +738,30 @@ export default function Home() {
               completedAt: new Date(log.date).getTime(),
             }));
             const muscleStates = computeMuscleStates(sessionRecords);
+            // Mapper vers le format MuscleStatus attendu par BodyAnatomySVG
+            const muscleStatuses = Array.from(muscleStates.entries()).map(([group, state]) => ({
+              id: group,
+              name: MUSCLE_LABELS[group],
+              state: fatigueToStateLabel(state.fatigue),
+              fatigue: state.fatigue,
+              recoveryHoursLeft: state.hoursUntilRecovered,
+            }));
             return (
-              <BodyHologram3D
-                muscleStates={muscleStates}
-                height={340}
-              />
+              <div className="px-4 pb-2">
+                <BodyAnatomySVG
+                  muscleStatuses={muscleStatuses}
+                  onMuscleClick={(m) => {
+                    // Afficher un toast avec l'état du muscle
+                    const label = m.state === 'fresh' ? 'Non sollicité'
+                      : m.state === 'recovered' ? 'Récupéré ✓'
+                      : m.state === 'light' ? 'Légère fatigue'
+                      : m.state === 'moderate' ? 'Fatigue modérée'
+                      : m.state === 'fatigued' ? 'Fatigué — repos conseillé'
+                      : 'Épuisé — repos obligatoire';
+                    toast(`${m.name} : ${label}${m.recoveryHoursLeft > 0 ? ` (récup dans ~${m.recoveryHoursLeft}h)` : ''}`);
+                  }}
+                />
+              </div>
             );
           })()}
 

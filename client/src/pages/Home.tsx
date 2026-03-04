@@ -99,6 +99,42 @@ export default function Home() {
   const isDragging = useRef(false);
   const cardRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const floatCardRef = useRef<HTMLDivElement | null>(null);
+  // Refs sur les deux conteneurs de scroll horizontal (Semaine 1 et Semaine 2)
+  const scrollContainerRefs = useRef<Array<HTMLDivElement | null>>([null, null]);
+  // Ref pour le timer d'auto-scroll aux extrémités
+  const autoScrollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Bloquer/débloquer le scroll horizontal des conteneurs calendrier
+  const setScrollLocked = useCallback((locked: boolean) => {
+    scrollContainerRefs.current.forEach(el => {
+      if (!el) return;
+      if (locked) {
+        el.style.overflowX = 'hidden';
+        el.style.scrollSnapType = 'none';
+      } else {
+        el.style.overflowX = 'auto';
+        el.style.scrollSnapType = 'x mandatory';
+      }
+    });
+  }, []);
+
+  // Démarrer l'auto-scroll vers la gauche ou la droite (pour atteindre les cartes hors écran)
+  const startAutoScroll = useCallback((direction: 'left' | 'right') => {
+    if (autoScrollTimer.current) return;
+    autoScrollTimer.current = setInterval(() => {
+      scrollContainerRefs.current.forEach(el => {
+        if (!el) return;
+        el.scrollLeft += direction === 'right' ? 6 : -6;
+      });
+    }, 16);
+  }, []);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollTimer.current) {
+      clearInterval(autoScrollTimer.current);
+      autoScrollTimer.current = null;
+    }
+  }, []);
 
   // Résoudre le sessionId effectif d'un jour (override visuel > override persisté > défaut)
   const getEffectiveSessionId = useCallback((dayNumber: number): string => {
@@ -395,12 +431,15 @@ export default function Home() {
           {(['Semaine 1', 'Semaine 2'] as const).map((weekLabel, weekIdx) => (
             <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 14 : 0 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 8 }}>{weekLabel}</p>
-              <div style={{
-                display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4,
-                scrollSnapType: 'x mandatory',
-                WebkitOverflowScrolling: 'touch',
-                msOverflowStyle: 'none', scrollbarWidth: 'none',
-              }}>
+              <div
+                ref={el => { scrollContainerRefs.current[weekIdx] = el; }}
+                style={{
+                  display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4,
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                  msOverflowStyle: 'none', scrollbarWidth: 'none',
+                }}
+              >
                 {cycle14Days.slice(weekIdx * 7, weekIdx * 7 + 7).map(day => {
                   const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
                   const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
@@ -443,6 +482,8 @@ export default function Home() {
                           isDragging.current = true;
                           setDraggingDay(day.dayNumber);
                           setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                          // Bloquer le scroll horizontal dès que le drag commence
+                          setScrollLocked(true);
                           if (navigator.vibrate) navigator.vibrate([30, 10, 30]);
                         }, 450);
                       }}
@@ -450,16 +491,31 @@ export default function Home() {
                         if (!dragStartPos.current) return;
                         const dx = e.touches[0].clientX - dragStartPos.current.x;
                         const dy = e.touches[0].clientY - dragStartPos.current.y;
+                        // Annuler le long press si le doigt bouge avant le déclenchement
                         if (Math.sqrt(dx*dx + dy*dy) > 6 && longPressTimer.current) {
                           clearTimeout(longPressTimer.current);
                           longPressTimer.current = null;
                         }
                         if (!isDragging.current) return;
+                        // Bloquer TOUT scroll natif pendant le drag
                         e.preventDefault();
+                        e.stopPropagation();
+                        const touchX = e.touches[0].clientX;
+                        const touchY = e.touches[0].clientY;
                         // Mettre à jour la position de la card flottante
-                        setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                        setFloatPos({ x: touchX, y: touchY });
+                        // Auto-scroll aux extrémités : zone de 60px sur les bords de l'écran
+                        const EDGE_ZONE = 60;
+                        const screenW = window.innerWidth;
+                        if (touchX < EDGE_ZONE) {
+                          startAutoScroll('left');
+                        } else if (touchX > screenW - EDGE_ZONE) {
+                          startAutoScroll('right');
+                        } else {
+                          stopAutoScroll();
+                        }
                         // Détecter la card cible sous le doigt
-                        const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+                        const el = document.elementFromPoint(touchX, touchY);
                         const card = el?.closest('[data-day]') as HTMLElement | null;
                         const targetDay = card ? parseInt(card.dataset.day || '0') : null;
                         if (targetDay && targetDay !== draggingDay) {
@@ -500,6 +556,9 @@ export default function Home() {
                         setDragOverDay(null);
                         setFloatPos(null);
                         setVisualOrder({});
+                        // Débloquer le scroll et arrêter l'auto-scroll
+                        stopAutoScroll();
+                        setScrollLocked(false);
                       }}
                       data-day={day.dayNumber}
                       style={{

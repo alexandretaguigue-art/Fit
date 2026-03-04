@@ -740,116 +740,131 @@ export default function Home() {
             exhausted: 'Épuisé',
           };
 
+          // Score de récupération global
+          const recoveryScore = muscleStatuses.length > 0
+            ? Math.round(muscleStatuses.reduce((acc, m) => acc + (1 - m.fatigue), 0) / muscleStatuses.length * 100)
+            : 100;
+
           return (
             <div
               className="rounded-2xl overflow-hidden"
-              style={{ background: '#0a0d14', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: '#080b12', border: '1px solid rgba(255,255,255,0.07)' }}
             >
-              <div className="flex flex-row" style={{ minHeight: 480 }}>
+              {/* Header fin */}
+              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <div>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase' }}>Analyse musculaire</p>
+                  <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 17, fontWeight: 700, color: '#fff', marginTop: 2, lineHeight: 1.2 }}>
+                    {todaySession?.name || 'Repos'}
+                  </p>
+                  {todaySession?.focus && (
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{todaySession.focus}</p>
+                  )}
+                </div>
+                {/* Score de récupération */}
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Récupération</p>
+                  <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 26, fontWeight: 800, lineHeight: 1, marginTop: 2, color: recoveryScore >= 80 ? '#22c55e' : recoveryScore >= 50 ? '#f97316' : '#ef4444' }}>
+                    {recoveryScore}<span style={{ fontSize: 13, fontWeight: 500, marginLeft: 2, color: 'rgba(255,255,255,0.3)' }}>%</span>
+                  </p>
+                </div>
+              </div>
 
-                {/* Colonne gauche : modèle 3D */}
-                <div
-                  className="flex-none"
-                  style={{ width: '55%', background: 'rgba(0,8,30,0.6)', borderRight: '1px solid rgba(255,255,255,0.06)' }}
-                >
-                  {/* Label discret */}
-                  <div className="px-4 pt-4 pb-1">
-                    <p className="text-white/30 text-xs uppercase tracking-widest" style={{ fontFamily: 'Inter, sans-serif' }}>Analyse musculaire</p>
-                  </div>
+              {/* Ligne de séparation ultra fine */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 0 }} />
+
+              {/* Corps du bloc : 2 colonnes */}
+              <div className="flex flex-row" style={{ minHeight: 460 }}>
+
+                {/* Colonne gauche : modèle 3D — fond identique au bloc */}
+                <div className="flex-none" style={{ width: '55%' }}>
                   <BodyModel3D
                     muscleStatuses={muscleStatuses}
-                    height={440}
+                    height={460}
                     onMuscleClick={(m) => {
                       const label = stateLabels[m.state] || m.state;
-                      toast(`${m.name} : ${label}${m.recoveryHoursLeft > 0 ? ` (récup dans ~${m.recoveryHoursLeft}h)` : ''}`);
+                      toast(`${m.name} : ${label}${m.recoveryHoursLeft > 0 ? ` — récup dans ~${m.recoveryHoursLeft}h` : ''}`);
                     }}
                   />
+                  {/* Hint glisse */}
+                  <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.15)', paddingBottom: 12, fontFamily: 'Inter, sans-serif', letterSpacing: '0.04em' }}>
+                    Glisse pour tourner · Tape pour les détails
+                  </p>
                 </div>
 
                 {/* Colonne droite : infos */}
-                <div className="flex-1 flex flex-col p-4 gap-4" style={{ overflowY: 'auto' }}>
+                <div
+                  className="flex-1 flex flex-col"
+                  style={{ padding: '20px 18px', gap: 0, borderLeft: '1px solid rgba(255,255,255,0.05)', overflowY: 'auto' }}
+                >
 
-                  {/* Séance du jour + objectif */}
-                  <div>
-                    <p className="text-white/40 text-xs uppercase tracking-wider mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>Séance du jour</p>
-                    <p className="text-white font-bold text-base leading-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-                      {todaySession?.name || 'Repos'}
-                    </p>
-                    {todaySession?.focus && (
-                      <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>{todaySession.focus}</p>
-                    )}
-                    <div
-                      className="mt-2 rounded-xl px-3 py-2 inline-flex flex-col"
-                      style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.2)' }}
-                    >
-                      <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique</p>
-                      <p className="font-bold text-xl leading-none mt-0.5" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>
+                  {/* Objectif calorique */}
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: 8 }}>Objectif du jour</p>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                      <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 28, fontWeight: 800, color: '#FF6B35', lineHeight: 1 }}>
                         {SESSION_CALORIES_EAT[todaySessionId]?.kcal ?? 2500}
-                        <span className="text-sm font-normal ml-1" style={{ color: 'rgba(255,107,53,0.5)' }}>kcal</span>
-                      </p>
+                      </span>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: 'rgba(255,107,53,0.5)', fontWeight: 500 }}>kcal</span>
                     </div>
                   </div>
 
                   {/* Muscles sollicités */}
-                  {activeMuscles.length > 0 ? (
-                    <div>
-                      <p className="text-white/40 text-xs uppercase tracking-wider mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Muscles sollicités</p>
-                      <div className="flex flex-col gap-1.5">
-                        {activeMuscles.slice(0, 6).map(m => (
-                          <div key={m.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full flex-none" style={{ background: stateColors[m.state] }} />
-                              <span className="text-white/70 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{m.name}</span>
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: 10 }}>Muscles sollicités</p>
+                    {activeMuscles.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {activeMuscles.slice(0, 5).map(m => (
+                          <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: stateColors[m.state], flexShrink: 0, boxShadow: `0 0 6px ${stateColors[m.state]}80` }} />
+                              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 400 }}>{m.name}</span>
                             </div>
-                            <div className="text-right">
-                              <span className="text-xs font-medium" style={{ color: stateColors[m.state], fontFamily: 'Inter, sans-serif' }}>
-                                {stateLabels[m.state]}
-                              </span>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 600, color: stateColors[m.state] }}>{stateLabels[m.state]}</span>
                               {m.recoveryHoursLeft > 0 && (
-                                <p className="text-white/25 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>~{m.recoveryHoursLeft}h</p>
+                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 1 }}>~{m.recoveryHoursLeft}h</p>
                               )}
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-white/40 text-xs uppercase tracking-wider mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Muscles sollicités</p>
-                      <p className="text-white/25 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Aucune séance enregistrée — tous les muscles sont frais.</p>
+                    ) : (
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.2)', lineHeight: 1.5 }}>Tous les muscles sont frais — prêt pour l'entraînement.</p>
+                    )}
+                  </div>
+
+                  {/* Stats si programme démarré */}
+                  {data.startDate && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: 10 }}>Progression</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {[
+                          { label: 'Séances', value: stats.totalSessions, unit: '' },
+                          { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm' },
+                          { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm' },
+                        ].map(({ label, value, unit }) => (
+                          <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.03)' }}>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{label}</span>
+                            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 13, fontWeight: 700, color: '#FF6B35' }}>{value}<span style={{ fontSize: 10, marginLeft: 2, color: 'rgba(255,107,53,0.4)', fontWeight: 400 }}>{unit}</span></span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Légende */}
-                  <div className="mt-auto">
-                    <p className="text-white/25 text-xs uppercase tracking-wider mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Légende</p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                  {/* Légende en bas */}
+                  <div style={{ marginTop: 'auto' }}>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', marginBottom: 8 }}>Légende</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 8px' }}>
                       {Object.entries(stateColors).map(([state, color]) => (
-                        <div key={state} className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full flex-none" style={{ background: color }} />
-                          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{stateLabels[state]}</span>
+                        <div key={state} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{stateLabels[state]}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-
-                  {/* Stats */}
-                  {data.startDate && (
-                    <div className="grid grid-cols-1 gap-2">
-                      {[
-                        { label: 'Séances totales', value: stats.totalSessions, unit: '' },
-                        { label: 'Gain bras', value: stats.armGain > 0 ? `+${stats.armGain.toFixed(1)}` : stats.armGain.toFixed(1), unit: 'cm' },
-                        { label: 'Gain cuisse', value: stats.thighGain > 0 ? `+${stats.thighGain.toFixed(1)}` : stats.thighGain.toFixed(1), unit: 'cm' },
-                      ].map(({ label, value, unit }) => (
-                        <div key={label} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{label}</p>
-                          <p className="font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif', color: '#FF6B35' }}>
-                            {value}<span className="text-xs ml-0.5" style={{ color: 'rgba(255,107,53,0.4)' }}>{unit}</span>
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                 </div>
               </div>

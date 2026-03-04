@@ -417,18 +417,15 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 40
         style={{
           width: '100%',
           height,
-          borderRadius: 16,
           overflow: 'hidden',
-          background: 'radial-gradient(ellipse at 50% 20%, #0a1628 0%, #030810 100%)',
-          border: '1px solid rgba(74,158,255,0.12)',
-          boxShadow: 'inset 0 0 60px rgba(0,30,80,0.4)',
+          background: 'transparent',
         }}
       >
         <Canvas
           camera={{ position: [0, 0.3, 5.5], fov: 42 }}
           gl={{
             antialias: true,
-            alpha: false,
+            alpha: true,
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.3,
             powerPreference: 'high-performance',
@@ -502,24 +499,7 @@ export default function BodyModel3D({ muscleStatuses, onMuscleClick, height = 40
         </div>
       )}
 
-      {/* Légende */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10, justifyContent: 'center' }}>
-        {[
-          { color: '#4a9eff', label: 'Frais' },
-          { color: '#22c55e', label: 'Récupéré' },
-          { color: '#f97316', label: 'Fatigué' },
-          { color: '#ef4444', label: 'Épuisé' },
-        ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 5px ${color}` }} />
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>{label}</span>
-          </div>
-        ))}
-      </div>
 
-      <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 4, fontFamily: 'Inter, sans-serif' }}>
-        Glisse pour tourner · Tape sur un muscle pour les détails
-      </p>
     </div>
   );
 }

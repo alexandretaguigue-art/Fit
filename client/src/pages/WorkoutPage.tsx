@@ -16,6 +16,53 @@ import { EXERCISE_LIBRARY, searchExercises, getExercisesByCategory, CATEGORY_LAB
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
 
 // ============================================================
+// COMPOSANT : swipe gauche pour supprimer une série
+// ============================================================
+function SwipeToDeleteSet({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
+  const startX = useRef<number | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiped, setSwiped] = useState(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    setSwiped(false);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startX.current === null) return;
+    const dx = e.touches[0].clientX - startX.current;
+    if (dx < 0) setOffsetX(Math.max(dx, -90));
+  };
+  const handleTouchEnd = () => {
+    if (offsetX < -60) { setSwiped(true); setOffsetX(-90); }
+    else setOffsetX(0);
+    startX.current = null;
+  };
+  const handleReset = () => { setOffsetX(0); setSwiped(false); };
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 14 }}>
+      {/* Fond rouge — action supprimer */}
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 90, background: 'rgba(239,68,68,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button onClick={onDelete} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <Trash2 size={16} />
+          <span style={{ fontSize: 10, fontFamily: 'Inter, sans-serif' }}>Supprimer</span>
+        </button>
+      </div>
+      {/* Contenu glissant */}
+      <div
+        style={{ transform: `translateX(${offsetX}px)`, transition: offsetX === 0 || swiped ? 'transform 0.2s ease' : 'none', position: 'relative', zIndex: 1 }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={swiped ? handleReset : undefined}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // HOOK : gestion des exercices custom et supprimés par session
 // ============================================================
 
@@ -478,6 +525,27 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
       return next;
     });
   };
+
+  const removeSet = (idx: number) => {
+    setSets(prev => {
+      if (prev.length <= 1) { toast.error('Il faut au moins 1 série'); return prev; }
+      const next = prev.filter((_, i) => i !== idx);
+      persistSets(next);
+      toast.success('Série supprimée');
+      return next;
+    });
+  };
+
+  const addSet = () => {
+    setSets(prev => {
+      const last = prev[prev.length - 1];
+      const next = [...prev, { weight: last?.weight ?? baseWeight, reps: last?.reps ?? suggestedRepsMin, completed: false }];
+      persistSets(next);
+      toast.success('Série ajoutée');
+      return next;
+    });
+  };
+
   const toggleSet = (idx: number) => {
     setSets(prev => {
       const next = prev.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s);
@@ -719,8 +787,8 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
           const note = exercise.setScheme?.[idx]?.note;
 
           return (
+            <SwipeToDeleteSet key={idx} onDelete={() => removeSet(idx)}>
             <div
-              key={idx}
               style={{
                 borderRadius: 14,
                 overflow: 'hidden',
@@ -820,9 +888,23 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
                 </div>
               </div>
             </div>
+            </SwipeToDeleteSet>
           );
         })}
       </div>
+
+      {/* Bouton ajouter une série */}
+      <button
+        onClick={addSet}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          padding: '10px 14px', borderRadius: 12, border: '1px dashed rgba(255,107,53,0.3)',
+          background: 'rgba(255,107,53,0.04)', color: 'rgba(255,107,53,0.7)',
+          fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
+        }}
+      >
+        <Plus size={14} /> Ajouter une série
+      </button>
 
       {/* Conseils d'exécution */}
       {exercise.tips.length > 0 && (

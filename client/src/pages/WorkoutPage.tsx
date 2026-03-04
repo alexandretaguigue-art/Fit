@@ -1567,7 +1567,8 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
 
 export default function WorkoutPage() {
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
-  const { data } = useFitnessTracker();
+  const { data, setScheduleOverride, logSession } = useFitnessTracker();
+  const [sessionDone, setSessionDone] = useState<'done' | 'skipped' | null>(null);
 
   // Ouvrir automatiquement une séance si un sessionId est passé depuis le calendrier
   useEffect(() => {
@@ -1668,6 +1669,71 @@ export default function WorkoutPage() {
               <h2 className="text-white text-xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Repos total</h2>
               <p className="text-white/60 text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedSession.coachNote}</p>
             </div>
+          </div>
+        )}
+
+        {/* Boutons de fin de séance — uniquement pour les séances non-repos */}
+        {selectedSession.type !== 'rest' && (
+          <div className="px-4 pb-8 pt-2 space-y-3">
+            {sessionDone === 'done' && (
+              <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                <div className="text-2xl mb-1">🌟</div>
+                <p className="text-green-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Séance validée !</p>
+                <p className="text-white/50 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Calendrier et nutrition mis à jour</p>
+              </div>
+            )}
+            {sessionDone === 'skipped' && (
+              <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <div className="text-2xl mb-1">😴</div>
+                <p className="text-red-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Séance marquée comme repos</p>
+                <p className="text-white/50 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique ajusté à 2300 kcal</p>
+              </div>
+            )}
+            {sessionDone === null && (
+              <>
+                <button
+                  onClick={() => {
+                    // Marquer la séance comme complétée dans sessionLogs
+                    const today = new Date();
+                    const programStart = data.startDate ? new Date(data.startDate) : today;
+                    const weekNum = data.startDate
+                      ? Math.max(1, Math.ceil((today.getTime() - programStart.getTime()) / (7 * 24 * 3600 * 1000)))
+                      : 1;
+                    const sessionLog = {
+                      sessionId: selectedSession.id,
+                      date: today.toISOString(),
+                      weekNumber: weekNum,
+                      exercises: [],
+                      perceivedDifficulty: 7,
+                      energyLevel: 7,
+                    };
+                    logSession(sessionLog);
+                    setSessionDone('done');
+                    toast.success('✅ Séance validée ! Bravo !');
+                  }}
+                  className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', fontFamily: 'Syne, sans-serif', boxShadow: '0 8px 30px rgba(34,197,94,0.3)' }}
+                >
+                  ✅ Valider la séance
+                </button>
+                <button
+                  onClick={() => {
+                    // Remplacer la séance par repos dans le planning
+                    // Trouver le jour du cycle correspondant à cette séance
+                    const matchingDay = cycle14Days.find(d => d.sessionId === selectedSession.id);
+                    if (matchingDay) {
+                      setScheduleOverride(`cycle_day_${matchingDay.dayNumber}`, 'rest');
+                    }
+                    setSessionDone('skipped');
+                    toast.success('😴 Repos enregistré — objectif calorique adapté');
+                  }}
+                  className="w-full py-3 rounded-2xl font-semibold text-red-400 text-sm transition-all duration-300 active:scale-95"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: 'Inter, sans-serif' }}
+                >
+                  ❌ Je n’ai pas fait la séance
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -509,6 +509,9 @@ export default function Home() {
                         padding: 0,
                         display: 'flex',
                         flexDirection: 'column',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
                       }}
                     >
                       {/* Photo de fond */}
@@ -534,6 +537,9 @@ export default function Home() {
                           </div>
                         )}
                         <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
+                          <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+                            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][(day.dayNumber - 1) % 7]}
+                          </div>
                           <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)', fontFamily: 'Syne, sans-serif' }}>J{absoluteDayNumber}</div>
                           {effectiveSessionId === 'rest' ? (
                             <div style={{ fontSize: 22, lineHeight: 1, marginTop: 4 }}>😴</div>

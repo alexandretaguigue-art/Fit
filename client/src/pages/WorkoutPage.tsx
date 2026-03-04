@@ -25,6 +25,110 @@ const SESSION_TYPE_COLORS: Record<string, { bg: string; border: string; text: st
 };
 
 // ============================================================
+// SESSION CAROUSEL
+// ============================================================
+
+function SessionCarousel({
+  cycleDayToday,
+  sessionImages,
+  onSelectSession,
+  data,
+}: {
+  cycleDayToday: number;
+  sessionImages: Record<string, string>;
+  onSelectSession: (s: WorkoutSession) => void;
+  data: { startDate?: string | null };
+}) {
+  const [activeIdx, setActiveIdx] = useState(Math.max(0, cycleDayToday - 1));
+  const swipeX = useRef<number | null>(null);
+  const swipeY = useRef<number | null>(null);
+  const validDays = cycle14Days.filter(d => getSessionForCycleDay(d.dayNumber));
+
+  const sessionImgMap: Record<string, string> = {
+    gym: sessionImages.upper_a,
+    football: sessionImages.football,
+    running: sessionImages.running_endurance,
+    cycling: sessionImages.cycling,
+    rest: sessionImages.rest,
+  };
+
+  return (
+    <div>
+      <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>Toutes les séances</p>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+        {validDays.map((d, i) => (
+          <button key={d.dayNumber} onClick={() => setActiveIdx(i)}
+            style={{ width: i === activeIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === activeIdx ? '#FF6B35' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s', border: 'none', cursor: 'pointer', padding: 0 }} />
+        ))}
+      </div>
+      <div
+        onTouchStart={e => { swipeX.current = e.touches[0].clientX; swipeY.current = e.touches[0].clientY; }}
+        onTouchEnd={e => {
+          if (swipeX.current === null || swipeY.current === null) return;
+          const dx = e.changedTouches[0].clientX - swipeX.current;
+          const dy = Math.abs(e.changedTouches[0].clientY - swipeY.current);
+          if (Math.abs(dx) > 45 && Math.abs(dx) > dy * 1.5) {
+            if (dx < 0 && activeIdx < validDays.length - 1) setActiveIdx(i => i + 1);
+            else if (dx > 0 && activeIdx > 0) setActiveIdx(i => i - 1);
+          }
+          swipeX.current = null; swipeY.current = null;
+        }}
+        style={{ overflow: 'hidden', position: 'relative' }}
+      >
+        <div style={{ display: 'flex', gap: 12, transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)', transform: `translateX(calc(${-activeIdx * 88}% - ${activeIdx * 12}px + 6%))` }}>
+          {validDays.map((cycleDay, i) => {
+            const session = getSessionForCycleDay(cycleDay.dayNumber)!;
+            const colors = SESSION_TYPE_COLORS[cycleDay.type];
+            const isToday = data.startDate && cycleDay.dayNumber === cycleDayToday;
+            const isActive = i === activeIdx;
+            const img = sessionImgMap[cycleDay.type] || sessionImages.rest;
+            return (
+              <div
+                key={cycleDay.dayNumber}
+                onClick={() => isActive ? onSelectSession(session) : setActiveIdx(i)}
+                style={{
+                  minWidth: '88%', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+                  transform: isActive ? 'scale(1)' : 'scale(0.93)',
+                  opacity: isActive ? 1 : 0.5,
+                  transition: 'transform 0.35s ease, opacity 0.35s ease',
+                  border: isToday ? `2px solid ${colors.text}60` : '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <div style={{ position: 'relative', height: 165, overflow: 'hidden' }}>
+                  <img src={img} alt={session.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.4)' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,15,20,0.2), rgba(15,15,20,0.9))' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontSize: 15 }}>{cycleDay.icon}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: colors.text, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Jour {cycleDay.dayNumber}</span>
+                      {isToday && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: `${colors.text}25`, color: colors.text, fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>Aujourd'hui</span>}
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>{session.name}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{session.focus} · {session.durationMin} min</div>
+                  </div>
+                </div>
+                {isActive && (
+                  <div style={{ background: '#16161E', padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {session.exercises.slice(0, 3).map(ex => (
+                        <span key={ex.id} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: `${colors.text}15`, color: colors.text, fontFamily: 'Inter, sans-serif' }}>{ex.name.split(' ')[0]}</span>
+                      ))}
+                      {session.exercises.length > 3 && <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif' }}>+{session.exercises.length - 3}</span>}
+                      {session.exercises.length === 0 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif' }}>{session.coachNote?.substring(0, 40)}...</span>}
+                    </div>
+                    <span style={{ fontSize: 11, color: colors.text, fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>Ouvrir →</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // EXERCISE CARD (Musculation)
 // ============================================================
 
@@ -1088,54 +1192,13 @@ export default function WorkoutPage() {
           </div>
         )}
 
-        {/* Toutes les séances du cycle */}
-        <p className="text-white/50 text-xs uppercase tracking-wider mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>Toutes les séances</p>
-        <div className="space-y-3">
-          {cycle14Days.map(cycleDay => {
-            const session = getSessionForCycleDay(cycleDay.dayNumber);
-            if (!session) return null;
-            const colors = SESSION_TYPE_COLORS[cycleDay.type];
-            const isToday = data.startDate && cycleDay.dayNumber === cycleDayToday;
-            const avgScore = session.exercises.length > 0
-              ? Math.round(session.exercises.reduce((acc, e) => acc + e.relevanceScore, 0) / session.exercises.length)
-              : null;
-
-            return (
-              <div
-                key={cycleDay.dayNumber}
-                className="rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
-                style={{
-                  background: isToday ? colors.bg : 'rgba(255,255,255,0.03)',
-                  border: isToday ? `1px solid ${colors.text}50` : '1px solid rgba(255,255,255,0.07)',
-                }}
-                onClick={() => setSelectedSession(session)}
-              >
-                <div className="p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
-                    <span style={{ fontSize: '18px' }}>{cycleDay.icon}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-semibold" style={{ color: colors.text, fontFamily: 'Inter, sans-serif' }}>J{cycleDay.dayNumber}</span>
-                      {isToday && <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold" style={{ background: `${colors.text}20`, color: colors.text, fontFamily: 'Inter, sans-serif' }}>Aujourd'hui</span>}
-                    </div>
-                    <h3 className="text-white font-bold text-sm leading-tight" style={{ fontFamily: 'Syne, sans-serif' }}>{session.name}</h3>
-                    <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{session.focus} · {session.durationMin}min</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {avgScore !== null ? (
-                      <ScoreRing score={avgScore} size={44} strokeWidth={3} showLabel={false} />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
-                        <span style={{ fontSize: '16px' }}>{cycleDay.icon}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Toutes les séances du cycle — CAROUSEL */}
+        <SessionCarousel
+          cycleDayToday={cycleDayToday}
+          sessionImages={sessionImages}
+          onSelectSession={setSelectedSession}
+          data={data}
+        />
 
         {/* Légende */}
         <div className="mt-6 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>

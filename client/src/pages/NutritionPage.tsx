@@ -527,13 +527,22 @@ function JournalTab() {
   // Swipe carousel
   const carouselRef = useRef<HTMLDivElement>(null);
   const swipeStartX = useRef<number | null>(null);
-  const handleCarouselTouchStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; };
+  const swipeStartY = useRef<number | null>(null);
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX;
+    swipeStartY.current = e.touches[0].clientY;
+  };
   const handleCarouselTouchEnd = (e: React.TouchEvent) => {
-    if (swipeStartX.current === null) return;
+    if (swipeStartX.current === null || swipeStartY.current === null) return;
     const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    if (dx < -50 && activeMealIdx < MEAL_ORDER.length - 1) setActiveMealIdx(i => i + 1);
-    else if (dx > 50 && activeMealIdx > 0) setActiveMealIdx(i => i - 1);
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY.current);
+    // Ne swipe que si mouvement horizontal dominant et > 50px (pas un tap)
+    if (Math.abs(dx) > 50 && Math.abs(dx) > dy * 1.5) {
+      if (dx < 0 && activeMealIdx < MEAL_ORDER.length - 1) setActiveMealIdx(i => i + 1);
+      else if (dx > 0 && activeMealIdx > 0) setActiveMealIdx(i => i - 1);
+    }
     swipeStartX.current = null;
+    swipeStartY.current = null;
   };
 
   // Repas ajustés (Prompt Ultime — ajustement quantités à la demande)
@@ -826,7 +835,7 @@ function JournalTab() {
                               <button onClick={() => { setEditingEntry(entry.id); setEditQty(entry.quantity); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
                                 <Edit3 size={11} className="text-white/40" />
                               </button>
-                              <button onClick={() => { deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                              <button onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} onClick={e => { e.stopPropagation(); deleteFoodEntry(dateKey, entry.id); toast.success('Supprimé'); }} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
                                 <Trash2 size={11} className="text-red-400" />
                               </button>
                             </>

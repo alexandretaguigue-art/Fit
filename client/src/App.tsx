@@ -12,8 +12,8 @@ import NutritionPage from "./pages/NutritionPage";
 import ProgressPage from "./pages/ProgressPage";
 import TipsPage from "./pages/TipsPage";
 import Nav from "./components/Nav";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Switch>

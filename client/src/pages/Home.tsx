@@ -7,6 +7,7 @@ import { Dumbbell, Target, Flame, ChevronRight, ChevronLeft, Trophy, Calendar, Z
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay } from '../lib/programData';
 import { toast } from 'sonner';
+import { useAuth } from '../_core/hooks/useAuth';
 
 const HERO_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/hero-fitness-5h7p34NBzccTy9ggEni2uM.webp";
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
@@ -68,6 +69,10 @@ function SessionTypeIcon({ type, size = 16 }: { type: string; size?: number }) {
 }
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride } = useFitnessTracker();
   const [editingDay, setEditingDay] = useState<number | null>(null);

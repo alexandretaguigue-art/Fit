@@ -1567,7 +1567,7 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
 
 export default function WorkoutPage() {
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
-  const { data, setScheduleOverride, logSession } = useFitnessTracker();
+  const { data, setScheduleOverride, logSession, adaptNutritionForSession } = useFitnessTracker();
   const [sessionDone, setSessionDone] = useState<'done' | 'skipped' | null>(null);
 
   // Ouvrir automatiquement une séance si un sessionId est passé depuis le calendrier
@@ -1686,7 +1686,7 @@ export default function WorkoutPage() {
               <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <div className="text-2xl mb-1">😴</div>
                 <p className="text-red-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Séance marquée comme repos</p>
-                <p className="text-white/50 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique ajusté à 2300 kcal</p>
+                <p className="text-white/50 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Objectif calorique adapté à 2500 kcal — nutrition mise à jour</p>
               </div>
             )}
             {sessionDone === null && (
@@ -1719,18 +1719,23 @@ export default function WorkoutPage() {
                 <button
                   onClick={() => {
                     // Remplacer la séance par repos dans le planning
-                    // Trouver le jour du cycle correspondant à cette séance
                     const matchingDay = cycle14Days.find(d => d.sessionId === selectedSession.id);
                     if (matchingDay) {
                       setScheduleOverride(`cycle_day_${matchingDay.dayNumber}`, 'rest');
                     }
+                    // Adapter la nutrition du jour actuel à un jour de repos
+                    const todayKey = (() => {
+                      const d = new Date();
+                      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    })();
+                    adaptNutritionForSession(todayKey, 'rest');
                     setSessionDone('skipped');
-                    toast.success('😴 Repos enregistré — objectif calorique adapté');
+                    toast.success('😴 Repos enregistré — objectif calorique adapté à 2500 kcal');
                   }}
                   className="w-full py-3 rounded-2xl font-semibold text-red-400 text-sm transition-all duration-300 active:scale-95"
                   style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: 'Inter, sans-serif' }}
                 >
-                  ❌ Je n’ai pas fait la séance
+                  ❌ Je n'ai pas fait la séance
                 </button>
               </>
             )}

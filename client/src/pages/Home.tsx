@@ -74,8 +74,18 @@ export default function Home() {
   let { user, loading, error, isAuthenticated, logout } = useAuth();
 
   const [, navigate] = useLocation();
-  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride } = useFitnessTracker();
+  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, adaptNutritionForSession } = useFitnessTracker();
   const [calendarOffset, setCalendarOffset] = useState(0);
+
+  // Modal de confirmation avant swap avec adaptation nutritionnelle
+  const [swapConfirm, setSwapConfirm] = useState<{
+    srcDay: number;
+    tgtDay: number;
+    srcId: string;
+    tgtId: string;
+    srcDateKey: string | null;
+    tgtDateKey: string | null;
+  } | null>(null);
 
   // Drag & drop iOS-style
   const [draggingDay, setDraggingDay] = useState<number | null>(null);
@@ -465,14 +475,26 @@ export default function Home() {
                       onTouchEnd={() => {
                         if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
                         if (isDragging.current && draggingDay !== null && dragOverDay !== null && draggingDay !== dragOverDay) {
-                          // Persister le swap
+                          // Calculer les dateKeys des deux jours pour l'adaptation nutritionnelle
                           const srcId = getEffectiveSessionId(draggingDay);
                           const tgtId = getEffectiveSessionId(dragOverDay);
-                          setScheduleOverride(`cycle_day_${draggingDay}`, tgtId);
-                          setScheduleOverride(`cycle_day_${dragOverDay}`, srcId);
-                          toast.success(`J${draggingDay} ⇄ J${dragOverDay} — séances échangées ✓`);
+                          const getSrcDateKey = (dayNum: number) => {
+                            if (!data.startDate) return null;
+                            const ms = new Date(data.startDate).getTime() + (dayNum + calendarOffset * 14 - 1) * 86400000;
+                            const d = new Date(ms);
+                            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                          };
+                          // Afficher le modal de confirmation
+                          setSwapConfirm({
+                            srcDay: draggingDay,
+                            tgtDay: dragOverDay,
+                            srcId,
+                            tgtId,
+                            srcDateKey: getSrcDateKey(draggingDay),
+                            tgtDateKey: getSrcDateKey(dragOverDay),
+                          });
                         }
-                        // Réinitialiser
+                        // Réinitialiser le drag
                         isDragging.current = false;
                         setDraggingDay(null);
                         setDragOverDay(null);
@@ -667,6 +689,124 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* Modal de confirmation swap + adaptation nutritionnelle */}
+        {swapConfirm && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              padding: '0 0 env(safe-area-inset-bottom, 0)',
+            }}
+            onClick={() => setSwapConfirm(null)}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#1a1a24',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '24px 24px 0 0',
+                padding: '24px 20px 32px',
+                width: '100%',
+                maxWidth: 480,
+              }}
+            >
+              {/* Poignée */}
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
+
+              {/* Titre */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,107,53,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🔄</div>
+                <div>
+                  <p style={{ color: '#fff', fontWeight: 700, fontSize: 16, fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>Modifier le planning</p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'Inter, sans-serif', marginTop: 2 }}>
+                    J{swapConfirm.srcDay} ⇄ J{swapConfirm.tgtDay}
+                  </p>
+                </div>
+              </div>
+
+              {/* Aperçu du swap */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>J{swapConfirm.srcDay}</p>
+                    <p style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>{getSessionInfo(swapConfirm.srcId).label}</p>
+                    <p style={{ color: getSessionInfo(swapConfirm.srcId).eatInfo.color, fontSize: 11, fontFamily: 'Inter, sans-serif' }}>{getSessionInfo(swapConfirm.srcId).eatInfo.kcal} kcal</p>
+                  </div>
+                  <div style={{ color: '#FF6B35', fontSize: 20 }}>⇄</div>
+                  <div style={{ flex: 1, textAlign: 'right' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>J{swapConfirm.tgtDay}</p>
+                    <p style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>{getSessionInfo(swapConfirm.tgtId).label}</p>
+                    <p style={{ color: getSessionInfo(swapConfirm.tgtId).eatInfo.color, fontSize: 11, fontFamily: 'Inter, sans-serif' }}>{getSessionInfo(swapConfirm.tgtId).eatInfo.kcal} kcal</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message adaptation */}
+              <div style={{ background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 12, padding: '10px 14px', marginBottom: 20 }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontFamily: 'Inter, sans-serif', lineHeight: 1.5 }}>
+                  🥗 Ton plan nutritionnel sera automatiquement ajusté pour ces deux jours. Les repas déjà consommés ne seront pas modifiés.
+                </p>
+              </div>
+
+              {/* Boutons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  onClick={() => {
+                    const { srcDay, tgtDay, srcId, tgtId, srcDateKey, tgtDateKey } = swapConfirm;
+                    // 1. Persister le swap dans le planning
+                    setScheduleOverride(`cycle_day_${srcDay}`, tgtId);
+                    setScheduleOverride(`cycle_day_${tgtDay}`, srcId);
+                    // 2. Adapter la nutrition pour les deux jours (si date connue)
+                    if (srcDateKey) adaptNutritionForSession(srcDateKey, tgtId);
+                    if (tgtDateKey) adaptNutritionForSession(tgtDateKey, srcId);
+                    toast.success(`J${srcDay} ⇄ J${tgtDay} — planning et nutrition adaptés ✓`);
+                    setSwapConfirm(null);
+                  }}
+                  style={{
+                    width: '100%', padding: '14px 0', borderRadius: 14,
+                    background: 'linear-gradient(135deg, #FF6B35, #FF3366)',
+                    color: '#fff', fontWeight: 700, fontSize: 15, fontFamily: 'Syne, sans-serif',
+                    border: 'none', cursor: 'pointer',
+                    boxShadow: '0 6px 24px rgba(255,107,53,0.3)',
+                  }}
+                >
+                  Oui, adapter mon plan
+                </button>
+                <button
+                  onClick={() => {
+                    const { srcDay, tgtDay, srcId, tgtId } = swapConfirm;
+                    // Swap sans adaptation nutritionnelle
+                    setScheduleOverride(`cycle_day_${srcDay}`, tgtId);
+                    setScheduleOverride(`cycle_day_${tgtDay}`, srcId);
+                    toast.success(`J${srcDay} ⇄ J${tgtDay} — séances échangées (nutrition inchangée)`);
+                    setSwapConfirm(null);
+                  }}
+                  style={{
+                    width: '100%', padding: '12px 0', borderRadius: 14,
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: 14, fontFamily: 'Inter, sans-serif',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Non, garder mon plan actuel
+                </button>
+                <button
+                  onClick={() => setSwapConfirm(null)}
+                  style={{
+                    width: '100%', padding: '10px 0', borderRadius: 14,
+                    background: 'transparent', border: 'none',
+                    color: 'rgba(255,255,255,0.35)', fontWeight: 500, fontSize: 13, fontFamily: 'Inter, sans-serif',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CTA si programme non démarré */}
         {!data.startDate && (

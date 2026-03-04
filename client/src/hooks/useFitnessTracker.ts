@@ -643,6 +643,56 @@ export function useFitnessTracker() {
     return null;
   }, [data.workoutDraft]);
 
+  // ============================================================
+  // ADAPTATION NUTRITIONNELLE
+  // ============================================================
+
+  /**
+   * Mappe un sessionId vers le sessionType nutritionnel correspondant.
+   * Utilisé pour adapter les objectifs caloriques/macros d'un jour.
+   */
+  const sessionIdToNutritionType = useCallback((sessionId: string): DayLog['sessionType'] => {
+    if (sessionId === 'rest') return 'rest';
+    if (sessionId === 'football') return 'football';
+    if (sessionId === 'running_endurance' || sessionId === 'running_intervals') return 'running';
+    if (sessionId === 'cycling') return 'cycling';
+    // upper_a, upper_b, lower_a, lower_b → training
+    return 'training';
+  }, []);
+
+  /**
+   * Adapte le plan nutritionnel d'un jour donné (dateKey YYYY-MM-DD) pour
+   * correspondre au nouveau sessionId. Met à jour sessionType et isTrainingDay
+   * dans le DayLog sans toucher aux repas déjà consommés (entries).
+   * Retourne le nouveau sessionType pour affichage dans un toast.
+   */
+  const adaptNutritionForSession = useCallback((
+    dateKey: string,
+    newSessionId: string
+  ): DayLog['sessionType'] => {
+    const newType = sessionIdToNutritionType(newSessionId);
+    const isTraining = newType !== 'rest';
+    setData(prev => {
+      const existing = prev.nutritionLogs[dateKey];
+      const updatedLog: DayLog = {
+        date: dateKey,
+        entries: existing?.entries ?? [],
+        notes: existing?.notes,
+        isTrainingDay: isTraining,
+        sessionType: newType,
+        sessionId: newSessionId,
+      };
+      return {
+        ...prev,
+        nutritionLogs: {
+          ...prev.nutritionLogs,
+          [dateKey]: updatedLog,
+        },
+      };
+    });
+    return newType;
+  }, [sessionIdToNutritionType]);
+
   const setScheduleOverride = useCallback((dateKey: string, sessionId: string | null) => {
     setData(prev => {
       const overrides = { ...prev.scheduleOverrides };
@@ -693,6 +743,9 @@ export function useFitnessTracker() {
     // Planning personnalisé
     setScheduleOverride,
     getScheduleOverride,
+    // Adaptation nutritionnelle
+    adaptNutritionForSession,
+    sessionIdToNutritionType,
     // Récap hebdomadaire
     getWeeklyRecap,
     getMealAdjustments,

@@ -783,8 +783,8 @@ function JournalTab() {
                         ))}
                       </div>
 
-                      {/* Boutons J'ai mangé ça / Autre chose */}
-                      <div className="flex gap-2">
+                      {/* Boutons Valider ce repas / Autre chose */}
+                      <div className="flex flex-col gap-2">
                         <button
                           onClick={() => {
                             const itemsToValidate = adjustedMeals[meal] ?? planMeal.items;
@@ -800,15 +800,22 @@ function JournalTab() {
                             setOpenMeal(null);
                             toast.success(`${MEAL_LABELS[meal]} validé ✓`);
                           }}
-                          className="flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
-                          style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', fontFamily: 'Syne, sans-serif' }}>
-                          <CheckCircle size={15} /> J'ai mangé ça
+                          className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+                          style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.35)', fontFamily: 'Syne, sans-serif' }}>
+                          <CheckCircle size={15} /> Valider ce repas
                         </button>
-                        <button onClick={() => handleInvalidateMeal(meal)}
-                          className="flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
-                          style={{ background: 'rgba(255,107,53,0.1)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.25)', fontFamily: 'Syne, sans-serif' }}>
-                          <XCircle size={15} /> Autre chose
-                        </button>
+                        <div className="flex gap-2">
+                          <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Syne, sans-serif' }}>
+                            <Plus size={13} /> Ajouter un aliment
+                          </button>
+                          <button onClick={() => handleInvalidateMeal(meal)}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                            style={{ background: 'rgba(255,107,53,0.08)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.2)', fontFamily: 'Syne, sans-serif' }}>
+                            <XCircle size={13} /> Autre chose
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -856,13 +863,15 @@ function JournalTab() {
                     </div>
                   )}
 
-                  {/* Bouton ajouter */}
-                  <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }}
-                      className="flex items-center gap-1.5 text-white/40 text-xs hover:text-white/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-                      <Plus size={12} /> Ajouter un aliment
-                    </button>
-                  </div>
+                  {/* Bouton ajouter — uniquement si repas déjà validé ou modifié */}
+                  {mealStatus && (
+                    <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <button onClick={() => { setAddModalMeal(meal as FoodEntry['meal']); setShowAddModal(true); }}
+                        className="flex items-center gap-1.5 text-white/40 text-xs hover:text-white/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+                        <Plus size={12} /> Ajouter un aliment
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

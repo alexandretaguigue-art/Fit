@@ -1155,8 +1155,12 @@ function ExerciseCarousel({
           width: isCarousel ? '88%' : '100%',
         }}
       >
-        {/* Photo avec overlay */}
-        <div style={{ position: 'relative', height: 180, overflow: 'hidden' }}>
+        {/* Photo avec overlay — zone de swipe en mode carousel */}
+        <div
+          style={{ position: 'relative', height: 180, overflow: 'hidden' }}
+          onTouchStart={isCarousel ? handleTouchStart : undefined}
+          onTouchEnd={isCarousel ? handleTouchEnd : undefined}
+        >
           <img src={img} alt={exercise.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.38)' }}
           />
@@ -1309,8 +1313,6 @@ function ExerciseCarousel({
 
           {/* Piste carousel */}
           <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
             style={{ overflow: 'hidden', width: '100%' }}
           >
             <div style={{

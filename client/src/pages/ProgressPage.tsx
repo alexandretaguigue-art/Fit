@@ -55,26 +55,40 @@ const EXERCISE_NORMS: Record<string, {
   // Contexte : certains exercices sont naturellement plus lourds
   context: string;
 }> = {
-  developpe_couche:       { name: 'Développé couché',    group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.25, context: 'Exercice de référence haut du corps' },
-  developpe_halteres:     { name: 'Dév. haltères',        group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.2, intermediateRatio: 0.35, advancedRatio: 0.5,  context: 'Par haltère — diviser par 2 pour comparer au DC' },
-  squat:                  { name: 'Squat',                 group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.75, intermediateRatio: 1.25, advancedRatio: 1.75, context: 'Naturellement plus lourd que les exos haut du corps' },
-  presse_cuisse:          { name: 'Presse cuisse',         group: 'Jambes',     color: '#22C55E', beginnerRatio: 1.5, intermediateRatio: 2.5, advancedRatio: 3.5,  context: 'Presse : charge élevée normale (levier mécanique)' },
-  souleve_de_terre:       { name: 'Soulevé de terre',     group: 'Postérieur', color: '#8B5CF6', beginnerRatio: 0.75, intermediateRatio: 1.4, advancedRatio: 2.0,  context: 'Exercice roi du postérieur de cuisse + dos' },
-  sdt_roumain:            { name: 'SDT roumain',           group: 'Ischio',     color: '#8B5CF6', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.3,  context: 'Ischio-jambiers — charge inférieure au SDT classique' },
-  fentes_marche:          { name: 'Fentes marchées',      group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.3, intermediateRatio: 0.6, advancedRatio: 0.9,  context: 'Par haltère — unilatéral, charge relative plus faible' },
-  hip_thrust:             { name: 'Hip thrust',            group: 'Fessiers',   color: '#EC4899', beginnerRatio: 0.8, intermediateRatio: 1.5, advancedRatio: 2.2,  context: 'Fessiers — charge naturellement élevée' },
-  tractions:              { name: 'Tractions',             group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.0, intermediateRatio: 0.1, advancedRatio: 0.3,  context: 'Lest ajouté au poids de corps (0 = poids de corps)' },
-  rowing_barre:           { name: 'Rowing barre',          group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.5, intermediateRatio: 0.9, advancedRatio: 1.3,  context: 'Dos épais — comparable au DC' },
-  curl_barre:             { name: 'Curl barre',            group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.2, intermediateRatio: 0.35, advancedRatio: 0.5,  context: 'Biceps — charges faibles normales vs jambes' },
-  curl_incline:           { name: 'Curl incliné',         group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.3,  context: 'Par haltère — étirement maximal biceps' },
-  curl_marteau:           { name: 'Curl marteau',          group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.15, intermediateRatio: 0.25, advancedRatio: 0.4,  context: 'Brachial + biceps — souvent plus lourd que curl classique' },
-  dips:                   { name: 'Dips',                  group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.0, intermediateRatio: 0.15, advancedRatio: 0.4,  context: 'Lest ajouté au poids de corps' },
-  extension_triceps_poulie: { name: 'Extension triceps',  group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.35, context: 'Poulie haute — isolation triceps' },
-  face_pull:              { name: 'Face pull',             group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.1, intermediateRatio: 0.2, advancedRatio: 0.35, context: 'Deltoïdes postérieurs — charge légère normale' },
-  elevation_laterale:     { name: 'Élév. latérales',       group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.05, intermediateRatio: 0.1, advancedRatio: 0.18, context: 'Deltoïdes latéraux — toujours léger, c’est normal' },
-  leg_extension:          { name: 'Leg extension',         group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.4, intermediateRatio: 0.7, advancedRatio: 1.0,  context: 'Isolation quadriceps' },
-  leg_curl:               { name: 'Leg curl',              group: 'Ischio',     color: '#8B5CF6', beginnerRatio: 0.3, intermediateRatio: 0.5, advancedRatio: 0.75, context: 'Isolation ischio-jambiers' },
-  mollets:                { name: 'Mollets',               group: 'Mollets',    color: '#06B6D4', beginnerRatio: 0.8, intermediateRatio: 1.5, advancedRatio: 2.5,  context: 'Mollets — charge élevée normale (muscle endurance)' },
+  // IDs alignés avec programData.ts
+  developpe_couche:         { name: 'Développé couché',    group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.5,  intermediateRatio: 0.9,  advancedRatio: 1.25, context: 'Exercice de référence haut du corps' },
+  developpe_couche_full:    { name: 'DC complet',           group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.5,  intermediateRatio: 0.9,  advancedRatio: 1.25, context: 'Variante amplitude complète' },
+  ecarte_incline:           { name: 'Écarté incliné',       group: 'Pectoraux',  color: '#FF6B35', beginnerRatio: 0.15, intermediateRatio: 0.25, advancedRatio: 0.4,  context: 'Isolation pectoraux supérieurs' },
+  developpe_militaire:      { name: 'Dév. militaire',      group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.3,  intermediateRatio: 0.55, advancedRatio: 0.8,  context: 'Deltoïdes antérieurs + triceps' },
+  developpe_militaire_full: { name: 'Dév. militaire complet', group: 'Épaules', color: '#A78BFA', beginnerRatio: 0.3,  intermediateRatio: 0.55, advancedRatio: 0.8,  context: 'Variante amplitude complète' },
+  elevations_laterales:     { name: 'Élév. latérales',       group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.05, intermediateRatio: 0.1,  advancedRatio: 0.18, context: 'Deltoïdes latéraux — toujours léger, c’est normal' },
+  elevations_lat_full:      { name: 'Élév. lat. complètes',  group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.05, intermediateRatio: 0.1,  advancedRatio: 0.18, context: 'Variante amplitude complète' },
+  face_pull:                { name: 'Face pull',             group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Deltoïdes postérieurs — charge légère normale' },
+  face_pull_full:           { name: 'Face pull complet',    group: 'Épaules',    color: '#A78BFA', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Variante amplitude complète' },
+  dips:                     { name: 'Dips',                  group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.0,  intermediateRatio: 0.15, advancedRatio: 0.4,  context: 'Lest ajouté au poids de corps' },
+  extension_triceps_poulie: { name: 'Extension triceps',    group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Poulie haute — isolation triceps' },
+  extension_triceps_tete:   { name: 'Ext. triceps tête',   group: 'Triceps',    color: '#EF4444', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Isolation triceps — longue portion' },
+  curl_incline:             { name: 'Curl incliné',         group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.3,  context: 'Par haltère — étirement maximal biceps' },
+  curl_marteau:             { name: 'Curl marteau',          group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.15, intermediateRatio: 0.25, advancedRatio: 0.4,  context: 'Brachial + biceps — souvent plus lourd que curl classique' },
+  curl_marteau_cable:       { name: 'Curl marteau câble',   group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Brachial — tension constante' },
+  curl_barre_debout:        { name: 'Curl barre debout',    group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.2,  intermediateRatio: 0.35, advancedRatio: 0.5,  context: 'Biceps — charges faibles normales vs jambes' },
+  curl_poulie_basse:        { name: 'Curl poulie basse',    group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Tension constante sur les biceps' },
+  reverse_curl:             { name: 'Reverse curl',          group: 'Biceps',     color: '#F59E0B', beginnerRatio: 0.1,  intermediateRatio: 0.18, advancedRatio: 0.28, context: 'Brachioradial + biceps' },
+  tractions:                { name: 'Tractions',             group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.0,  intermediateRatio: 0.1,  advancedRatio: 0.3,  context: 'Lest ajouté au poids de corps (0 = poids de corps)' },
+  tractions_full:           { name: 'Tractions complètes',  group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.0,  intermediateRatio: 0.1,  advancedRatio: 0.3,  context: 'Variante amplitude complète' },
+  rowing_barre:             { name: 'Rowing barre',          group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.5,  intermediateRatio: 0.9,  advancedRatio: 1.3,  context: 'Dos épais — comparable au DC' },
+  rowing_full:              { name: 'Rowing complet',        group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.5,  intermediateRatio: 0.9,  advancedRatio: 1.3,  context: 'Variante amplitude complète' },
+  tirage_horizontal:        { name: 'Tirage horizontal',    group: 'Dos',        color: '#3B82F6', beginnerRatio: 0.4,  intermediateRatio: 0.7,  advancedRatio: 1.0,  context: 'Dos large — poulie basse' },
+  squat:                    { name: 'Squat',                 group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.75, intermediateRatio: 1.25, advancedRatio: 1.75, context: 'Naturellement plus lourd que les exos haut du corps' },
+  presse_cuisses:           { name: 'Presse cuisses',        group: 'Jambes',     color: '#22C55E', beginnerRatio: 1.5,  intermediateRatio: 2.5,  advancedRatio: 3.5,  context: 'Presse : charge élevée normale (levier mécanique)' },
+  leg_extension:            { name: 'Leg extension',         group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.4,  intermediateRatio: 0.7,  advancedRatio: 1.0,  context: 'Isolation quadriceps' },
+  fentes_bulgares:          { name: 'Fentes bulgares',       group: 'Jambes',     color: '#22C55E', beginnerRatio: 0.2,  intermediateRatio: 0.4,  advancedRatio: 0.65, context: 'Par haltère — unilatéral, charge relative plus faible' },
+  hip_thrust:               { name: 'Hip thrust',            group: 'Fessiers',   color: '#EC4899', beginnerRatio: 0.8,  intermediateRatio: 1.5,  advancedRatio: 2.2,  context: 'Fessiers — charge naturellement élevée' },
+  souleve_de_terre:         { name: 'Soulevé de terre',     group: 'Postérieur', color: '#8B5CF6', beginnerRatio: 0.75, intermediateRatio: 1.4,  advancedRatio: 2.0,  context: 'Exercice roi du postérieur de cuisse + dos' },
+  leg_curl:                 { name: 'Leg curl',              group: 'Ischio',     color: '#8B5CF6', beginnerRatio: 0.3,  intermediateRatio: 0.5,  advancedRatio: 0.75, context: 'Isolation ischio-jambiers' },
+  extensions_mollets:       { name: 'Mollets',               group: 'Mollets',    color: '#06B6D4', beginnerRatio: 0.8,  intermediateRatio: 1.5,  advancedRatio: 2.5,  context: 'Mollets — charge élevée normale (muscle endurance)' },
+  crunches_poulie:          { name: 'Crunches poulie',       group: 'Abdos',      color: '#94A3B8', beginnerRatio: 0.1,  intermediateRatio: 0.2,  advancedRatio: 0.35, context: 'Abdos — isolation avec résistance' },
+  russian_twist:            { name: 'Russian twist',         group: 'Abdos',      color: '#94A3B8', beginnerRatio: 0.05, intermediateRatio: 0.1,  advancedRatio: 0.2,  context: 'Obliques — rotation du tronc' },
 };
 
 function getStrengthLevel(exerciseId: string, maxWeight: number, bodyWeight = 68): {
@@ -102,13 +116,34 @@ function getStrengthLevel(exerciseId: string, maxWeight: number, bodyWeight = 68
   }
 }
 
-function ExercisesTab({ getExerciseProgress, totalSessions }: {
+function ExercisesTab({ getExerciseProgress, totalSessions, sessionLogs }: {
   getExerciseProgress: (id: string) => Array<{ maxWeight: number; totalVolume: number; date: string }> | null;
   totalSessions: number;
+  sessionLogs: import('../lib/programData').SessionLog[];
 }) {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
-  const EXERCISE_LIST = Object.entries(EXERCISE_NORMS).map(([id, norm]) => ({ id, ...norm }));
+  // Construire la liste de tous les exercices ayant des données réelles
+  // Priorité : exercices connus dans EXERCISE_NORMS, puis exercices inconnus depuis sessionLogs
+  const knownIds = new Set(Object.keys(EXERCISE_NORMS));
+  const allExerciseIdsFromLogs = Array.from(
+    new Set(sessionLogs.flatMap(log => log.exercises.map(e => e.exerciseId)))
+  );
+  // Exercices inconnus (custom ou hors EXERCISE_NORMS)
+  const unknownExerciseIds = allExerciseIdsFromLogs.filter(id => !knownIds.has(id));
+
+  const EXERCISE_LIST = [
+    ...Object.entries(EXERCISE_NORMS).map(([id, norm]) => ({ id, ...norm })),
+    // Ajouter les exercices custom avec un groupe générique
+    ...unknownExerciseIds.map(id => ({
+      id,
+      name: id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      group: 'Autre',
+      color: '#94A3B8',
+      beginnerRatio: 0, intermediateRatio: 0, advancedRatio: 0,
+      context: 'Exercice personnalisé',
+    })),
+  ];
   const GROUPS = ['all', ...Array.from(new Set(EXERCISE_LIST.map(e => e.group)))];
 
   const exercisesWithData = EXERCISE_LIST.map(ex => {
@@ -776,7 +811,7 @@ export default function ProgressPage() {
         {/* ONGLET CHARGES */}
         {/* ============================================================ */}
         {activeTab === 'exercises' && (
-          <ExercisesTab getExerciseProgress={getExerciseProgress} totalSessions={stats.totalSessions} />
+          <ExercisesTab getExerciseProgress={getExerciseProgress} totalSessions={stats.totalSessions} sessionLogs={data.sessionLogs} />
         )}
       </div>
     </div>

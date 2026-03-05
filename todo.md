@@ -37,3 +37,6 @@
 - [x] Nutrition : ajustement proportionnel des quantités d'aliments après swap de séance (mêmes aliments, nouvelles quantités)
 - [x] Nutrition : afficher en orange les quantités modifiées par rapport au plan de base
 - [x] Nutrition : tap sur un aliment modifié → détail avant/après (quantité initiale vs nouvelle quantité)
+- [x] Page Progrès : courbes d'évolution de charge/performance par exercice (1RM estimé, charge max, volume total)
+- [x] Page Progrès : courbes d'évolution par groupe musculaire (volume hebdomadaire, progression globale)
+- [x] Page Progrès : connexion automatique aux séances validées (données réelles des séries/reps/poids)

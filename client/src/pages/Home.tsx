@@ -227,6 +227,10 @@ export default function Home() {
   const today = new Date();
   const programStart = data.startDate ? new Date(data.startDate) : today;
   const cycleDayToday = data.startDate ? getCycleDayForDate(today, programStart) : 1;
+  // Quel cycle (offset) correspond au jour actuel ?
+  const todayCycleOffset = data.startDate
+    ? Math.floor((today.getTime() - programStart.getTime()) / (14 * 24 * 60 * 60 * 1000))
+    : 0;
 
   // Calcul du vrai jour de la semaine pour une card du calendrier
   // absoluteDayNumber = position dans le programme (1 = J1 du programme)
@@ -507,8 +511,13 @@ export default function Home() {
               >
                 {cycle14Days.slice(weekIdx * 7, weekIdx * 7 + 7).map(day => {
                   const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
-                  const isToday = !!(data.startDate && absoluteDayNumber === cycleDayToday);
-                  const isPast = !!(data.startDate && absoluteDayNumber < cycleDayToday);
+                  // isToday : on est sur le bon cycle ET le bon jour dans ce cycle
+                  const isToday = !!(data.startDate && calendarOffset === todayCycleOffset && day.dayNumber === cycleDayToday);
+                  // isPast : soit un cycle précédent, soit le même cycle mais un jour antérieur
+                  const isPast = !!(data.startDate && (
+                    calendarOffset < todayCycleOffset ||
+                    (calendarOffset === todayCycleOffset && day.dayNumber < cycleDayToday)
+                  ));
                   const isDraggingThis = draggingDay === day.dayNumber;
                   const isDragTarget = dragOverDay === day.dayNumber && draggingDay !== null && draggingDay !== day.dayNumber;
 

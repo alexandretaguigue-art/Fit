@@ -722,9 +722,9 @@ export default function Home() {
                       onTouchEnd={() => {
                         if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
                         if (isDragging.current && draggingDay !== null && dragOverDay !== null && draggingDay !== dragOverDay) {
-                          // Calculer les dateKeys des deux jours pour l'adaptation nutritionnelle
-                          const srcId = getEffectiveSessionId(draggingDay);
-                          const tgtId = getEffectiveSessionId(dragOverDay);
+                          // Lire les IDs ORIGINAUX (figés au début du drag) pour ne pas lire visualOrder déjà swappé
+                          const srcId = dragOriginalIds.current[draggingDay] ?? getScheduleOverride(`cycle_day_${draggingDay}`) ?? (cycle14Days.find(d => d.dayNumber === draggingDay)?.sessionId ?? 'rest');
+                          const tgtId = dragOriginalIds.current[dragOverDay] ?? getScheduleOverride(`cycle_day_${dragOverDay}`) ?? (cycle14Days.find(d => d.dayNumber === dragOverDay)?.sessionId ?? 'rest');
                           const getSrcDateKey = (dayNum: number) => {
                             // Chercher la date réelle du slot correspondant à ce dayNumber dans la semaine affichée
                             const matchSlot = slots.find(s => s.programDayNumber === dayNum && !s.isPreProgram);

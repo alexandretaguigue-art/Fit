@@ -29,3 +29,4 @@
 - [x] Sélecteur de preset : plusieurs presets par type de séance, bouton "Changer de séance" avec liste + suppression individuelle, migration automatique depuis v1
 - [x] Fix calendrier accueil : afficher le vrai jour de semaine (Lun/Mar/Mer/Jeu...) basé sur la date de démarrage, et positionner automatiquement le calendrier sur le bon cycle (offset synchronisé)
 - [x] Fix calendrier : encadrer en orange la card du jour courant
+- [x] Calendrier : semaines fixes Lun-Dim, jours avant le démarrage du programme affichés en repos, cycle aligné sur la vraie date

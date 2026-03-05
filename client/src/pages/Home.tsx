@@ -82,14 +82,23 @@ export default function Home() {
 
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, adaptNutritionForSession } = useFitnessTracker();
-  // Initialiser l'offset du calendrier sur le cycle courant (ex. si on est J18 = cycle 2, offset=1)
-  const [calendarOffset, setCalendarOffset] = useState(() => {
+  // calendarWeekOffset : offset en semaines calendaires (0 = semaine contenant J1 du programme)
+  // Calculer le lundi de la semaine contenant startDate
+  const getStartMonday = (startDate: string): Date => {
+    const d = new Date(startDate);
+    d.setHours(0, 0, 0, 0);
+    const dow = d.getDay(); // 0=Dim, 1=Lun...
+    const diff = dow === 0 ? -6 : 1 - dow; // décalage pour aller au lundi
+    d.setDate(d.getDate() + diff);
+    return d;
+  };
+  const [calendarWeekOffset, setCalendarWeekOffset] = useState(() => {
     if (!data.startDate) return 0;
+    const startMonday = getStartMonday(data.startDate);
     const today = new Date();
-    const start = new Date(data.startDate);
-    const msPerDay = 24 * 60 * 60 * 1000;
-    const daysSinceStart = Math.floor((today.getTime() - start.getTime()) / msPerDay);
-    return Math.floor(daysSinceStart / 14);
+    today.setHours(0, 0, 0, 0);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    return Math.floor((today.getTime() - startMonday.getTime()) / msPerWeek);
   });
   const [pendingStart, setPendingStart] = useState(false);
 
@@ -102,18 +111,18 @@ export default function Home() {
     }
   }, [pendingStart, data.startDate, navigate]);
 
-  // Synchroniser l'offset du calendrier sur le cycle courant quand startDate change
+  // Synchroniser l'offset de semaine sur la semaine courante quand startDate change
   useEffect(() => {
     if (!data.startDate) {
-      setCalendarOffset(0);
+      setCalendarWeekOffset(0);
       return;
     }
+    const startMonday = getStartMonday(data.startDate);
     const today = new Date();
-    const start = new Date(data.startDate);
-    const msPerDay = 24 * 60 * 60 * 1000;
-    const daysSinceStart = Math.floor((today.getTime() - start.getTime()) / msPerDay);
-    const currentCycleOffset = Math.floor(daysSinceStart / 14);
-    setCalendarOffset(currentCycleOffset);
+    today.setHours(0, 0, 0, 0);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weekOffset = Math.floor((today.getTime() - startMonday.getTime()) / msPerWeek);
+    setCalendarWeekOffset(weekOffset);
   }, [data.startDate]);
 
   // Modal de confirmation avant swap avec adaptation nutritionnelle
@@ -439,18 +448,31 @@ export default function Home() {
               Appuie pour modifier
             </span>
           </div>
-          {/* Navigation du cycle */}
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={() => setCalendarOffset(o => o - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <ChevronLeft size={14} className="text-white/50" />
-            </button>
-            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {calendarOffset === 0 ? 'Cycle actuel (J1–J14)' : calendarOffset > 0 ? `Cycle +${calendarOffset}` : `Cycle ${calendarOffset}`}
-            </span>
-            <button onClick={() => setCalendarOffset(o => o + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <ChevronRight size={14} className="text-white/50" />
-            </button>
-          </div>
+          {/* Navigation par semaine calendaire */}
+          {(() => {
+            // Calcul du label de la semaine affichée
+            let weekNavLabel = 'Semaine du programme';
+            if (data.startDate) {
+              const startMonday = getStartMonday(data.startDate);
+              const weekMonday = new Date(startMonday.getTime() + calendarWeekOffset * 7 * 24 * 60 * 60 * 1000);
+              const weekSunday = new Date(weekMonday.getTime() + 6 * 24 * 60 * 60 * 1000);
+              const fmt = (d: Date) => `${d.getDate()} ${['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][d.getMonth()]}`;
+              weekNavLabel = `${fmt(weekMonday)} – ${fmt(weekSunday)}`;
+            }
+            return (
+              <div className="flex items-center justify-between mb-4">
+                <button onClick={() => setCalendarWeekOffset(o => o - 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <ChevronLeft size={14} className="text-white/50" />
+                </button>
+                <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {weekNavLabel}
+                </span>
+                <button onClick={() => setCalendarWeekOffset(o => o + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <ChevronRight size={14} className="text-white/50" />
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Card flottante qui suit le doigt */}
           {draggingDay !== null && floatPos !== null && (() => {
@@ -496,65 +518,135 @@ export default function Home() {
             );
           })()}
 
-          {/* Grille calendrier — scroll horizontal, grandes cards */}
-          {(['Semaine 1', 'Semaine 2'] as const).map((weekLabel, weekIdx) => (
-            <div key={weekLabel} style={{ marginBottom: weekIdx === 0 ? 14 : 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', marginBottom: 8 }}>{weekLabel}</p>
-              <div
-                ref={el => { scrollContainerRefs.current[weekIdx] = el; }}
-                style={{
-                  display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4,
-                  scrollSnapType: 'x mandatory',
-                  WebkitOverflowScrolling: 'touch',
-                  msOverflowStyle: 'none', scrollbarWidth: 'none',
-                }}
-              >
-                {cycle14Days.slice(weekIdx * 7, weekIdx * 7 + 7).map(day => {
-                  const absoluteDayNumber = day.dayNumber + calendarOffset * 14;
-                  // isToday : on est sur le bon cycle ET le bon jour dans ce cycle
-                  const isToday = !!(data.startDate && calendarOffset === todayCycleOffset && day.dayNumber === cycleDayToday);
-                  // isPast : soit un cycle précédent, soit le même cycle mais un jour antérieur
-                  const isPast = !!(data.startDate && (
-                    calendarOffset < todayCycleOffset ||
-                    (calendarOffset === todayCycleOffset && day.dayNumber < cycleDayToday)
-                  ));
-                  const isDraggingThis = draggingDay === day.dayNumber;
-                  const isDragTarget = dragOverDay === day.dayNumber && draggingDay !== null && draggingDay !== day.dayNumber;
+          {/* Grille calendrier — une semaine calendaire Lun-Dim */}
+          {(() => {
+            // Construire les 7 jours de la semaine affichée (Lun à Dim)
+            // Chaque slot a : date réelle, programDayNumber (1-based depuis startDate, null si avant démarrage)
+            const slots = Array.from({ length: 7 }, (_, i) => {
+              if (!data.startDate) {
+                // Sans programme, afficher J1-J7 par défaut
+                return { programDayNumber: i + 1, isPreProgram: false, date: null };
+              }
+              const startMonday = getStartMonday(data.startDate);
+              const slotDate = new Date(startMonday.getTime() + (calendarWeekOffset * 7 + i) * 24 * 60 * 60 * 1000);
+              const startDate = new Date(data.startDate);
+              startDate.setHours(0, 0, 0, 0);
+              slotDate.setHours(0, 0, 0, 0);
+              const diffDays = Math.round((slotDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+              if (diffDays < 0) {
+                // Avant le démarrage du programme
+                return { programDayNumber: null, isPreProgram: true, date: slotDate };
+              }
+              // programDayNumber dans le cycle 14j (1-14)
+              const cycleDay = (diffDays % 14) + 1;
+              return { programDayNumber: cycleDay, isPreProgram: false, date: slotDate };
+            });
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+            return (
+              <div style={{ marginBottom: 0 }}>
+                <div
+                  ref={el => { scrollContainerRefs.current[0] = el; }}
+                  style={{
+                    display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4,
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                    msOverflowStyle: 'none', scrollbarWidth: 'none',
+                  }}
+                >
+                  {slots.map((slot, slotIdx) => {
+                    const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+                    const weekdayLabel = WEEKDAY_LABELS[slotIdx];
 
-                  // Utiliser le sessionId effectif (avec overrides visuels)
-                  const effectiveSessionId = getEffectiveSessionId(day.dayNumber);
-                  const sessionInfo = getSessionInfo(effectiveSessionId);
-                  const colors = SESSION_TYPE_COLORS[sessionInfo.type];
-                  const sessionImg = sessionInfo.img;
-                  const eatInfo = sessionInfo.eatInfo;
-
-                  const sessionDateMs = data.startDate ? new Date(data.startDate).getTime() + (absoluteDayNumber - 1) * 86400000 : null;
-                  const sessionDateKey = sessionDateMs ? (() => { const d = new Date(sessionDateMs); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : null;
-                  const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
-
-                  // Animation iOS : gigote si en mode drag et pas la card draggée
-                  const shouldWiggle = draggingDay !== null && !isDraggingThis;
-
-                  const handleTap = () => {
-                    if (isDragging.current) return;
-                    if (effectiveSessionId !== 'rest' && calendarOffset === 0) {
-                      localStorage.setItem('pendingSessionId', effectiveSessionId);
-                      navigate('/workout');
+                    // Jour avant démarrage du programme : repos forcé
+                    if (slot.isPreProgram) {
+                      const isSlotToday = !!(slot.date && slot.date.getTime() === todayDate.getTime());
+                      const restColors = SESSION_TYPE_COLORS['rest'];
+                      const restEatInfo = getEatInfo('rest');
+                      return (
+                        <div
+                          key={`pre-${slotIdx}`}
+                          style={{
+                            position: 'relative', borderRadius: 16, overflow: 'hidden', flexShrink: 0,
+                            width: 'calc((100vw - 64px) / 2.5)', minWidth: 110, maxWidth: 160,
+                            aspectRatio: '3/4', scrollSnapAlign: 'start',
+                            border: isSlotToday ? '2px solid #FF6B35' : '1px solid rgba(255,255,255,0.05)',
+                            background: '#0a0a10',
+                            boxShadow: isSlotToday ? '0 0 20px rgba(255,107,53,0.4)' : '0 4px 16px rgba(0,0,0,0.4)',
+                            opacity: 0.3,
+                            display: 'flex', flexDirection: 'column',
+                          }}
+                        >
+                          <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.01)' }} />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.82) 100%)' }} />
+                            <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
+                              <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{weekdayLabel}</div>
+                              <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: 'rgba(255,255,255,0.3)', fontFamily: 'Syne, sans-serif' }}>
+                                {slot.date ? `${slot.date.getDate()} ${['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'][slot.date.getMonth()]}` : ''}
+                              </div>
+                              <div style={{ fontSize: 22, lineHeight: 1, marginTop: 4 }}>💤</div>
+                            </div>
+                          </div>
+                          <div style={{ background: `${restEatInfo.color}10`, borderTop: '1px solid rgba(255,255,255,0.05)', padding: '7px 10px 8px', display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                            <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1, color: 'rgba(255,255,255,0.2)', fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em' }}>{restEatInfo.kcal}</div>
+                            <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.15)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>kcal</div>
+                          </div>
+                        </div>
+                      );
                     }
-                  };
 
-                  return (
+                    // Jour du programme
+                    const dayNumber = slot.programDayNumber!;
+                    const isSlotToday = !!(slot.date && slot.date.getTime() === todayDate.getTime());
+                    const isPast = !!(slot.date && slot.date.getTime() < todayDate.getTime());
+
+                    const isDraggingThis = draggingDay === dayNumber;
+                    const isDragTarget = dragOverDay === dayNumber && draggingDay !== null && draggingDay !== dayNumber;
+
+                    const effectiveSessionId = getEffectiveSessionId(dayNumber);
+                    const sessionInfo = getSessionInfo(effectiveSessionId);
+                    const colors = SESSION_TYPE_COLORS[sessionInfo.type];
+                    const sessionImg = sessionInfo.img;
+                    const eatInfo = sessionInfo.eatInfo;
+
+                    const sessionDateKey = slot.date ? `${slot.date.getFullYear()}-${String(slot.date.getMonth()+1).padStart(2,'0')}-${String(slot.date.getDate()).padStart(2,'0')}` : null;
+                    const isCompleted = !!(sessionDateKey && Object.keys(data.sessionLogs || {}).some(k => k.startsWith(sessionDateKey)));
+
+                    const shouldWiggle = draggingDay !== null && !isDraggingThis;
+
+                    // Calcul du numéro de jour absolu dans le programme (pour affichage)
+                    const absoluteDayNumber = data.startDate && slot.date
+                      ? Math.round((slot.date.getTime() - new Date(data.startDate).setHours(0,0,0,0)) / (24*60*60*1000)) + 1
+                      : dayNumber;
+
+                    const handleTap = () => {
+                      if (isDragging.current) return;
+                      if (effectiveSessionId !== 'rest' && isSlotToday) {
+                        localStorage.setItem('pendingSessionId', effectiveSessionId);
+                        navigate('/workout');
+                      }
+                    };
+
+                    // Drag & drop uniquement sur la semaine courante
+                    const isCurrentWeek = !!(data.startDate && (() => {
+                      const startMonday = getStartMonday(data.startDate);
+                      const todayMon = getStartMonday(new Date().toISOString());
+                      return startMonday.getTime() + calendarWeekOffset * 7 * 24 * 60 * 60 * 1000 === todayMon.getTime();
+                    })());
+
+                    return (
                     <button
-                      key={day.dayNumber}
-                      ref={el => { cardRefs.current[day.dayNumber] = el; }}
+                      key={`day-${slotIdx}`}
+                      ref={el => { cardRefs.current[dayNumber] = el; }}
                       onClick={handleTap}
                       onTouchStart={(e) => {
-                        if (calendarOffset !== 0) return;
+                        if (!isCurrentWeek) return;
                         dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
                         isDragging.current = false;
                         longPressTimer.current = setTimeout(() => {
                           isDragging.current = true;
-                          setDraggingDay(day.dayNumber);
+                          setDraggingDay(dayNumber);
                           setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
                           // Bloquer le scroll horizontal dès que le drag commence
                           setScrollLocked(true);
@@ -609,9 +701,10 @@ export default function Home() {
                           const srcId = getEffectiveSessionId(draggingDay);
                           const tgtId = getEffectiveSessionId(dragOverDay);
                           const getSrcDateKey = (dayNum: number) => {
-                            if (!data.startDate) return null;
-                            const ms = new Date(data.startDate).getTime() + (dayNum + calendarOffset * 14 - 1) * 86400000;
-                            const d = new Date(ms);
+                            // Chercher la date réelle du slot correspondant à ce dayNumber dans la semaine affichée
+                            const matchSlot = slots.find(s => s.programDayNumber === dayNum && !s.isPreProgram);
+                            if (!matchSlot?.date) return null;
+                            const d = matchSlot.date;
                             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                           };
                           // Afficher le modal de confirmation
@@ -634,7 +727,7 @@ export default function Home() {
                         stopAutoScroll();
                         setScrollLocked(false);
                       }}
-                      data-day={day.dayNumber}
+                      data-day={dayNumber}
                       style={{
                         position: 'relative',
                         borderRadius: 16,
@@ -649,15 +742,15 @@ export default function Home() {
                           ? '2px solid #FF6B35'
                           : isDragTarget
                           ? '2px solid rgba(255,107,53,0.8)'
-                          : isToday
-                          ? `2px solid ${colors.text}`
+                          : isSlotToday
+                          ? '2px solid #FF6B35'
                           : isCompleted
                           ? '1px solid rgba(34,197,94,0.5)'
                           : '1px solid rgba(255,255,255,0.08)',
-                        opacity: isDraggingThis ? 0 : isPast && !isCompleted && !isToday ? 0.45 : 1,
+                        opacity: isDraggingThis ? 0 : isPast && !isCompleted && !isSlotToday ? 0.45 : 1,
                         cursor: 'pointer',
                         background: isDragTarget ? 'rgba(255,107,53,0.08)' : '#0e0e14',
-                        boxShadow: isDragTarget ? '0 0 20px rgba(255,107,53,0.35)' : isToday ? `0 0 20px ${colors.text}66` : '0 4px 16px rgba(0,0,0,0.4)',
+                        boxShadow: isDragTarget ? '0 0 20px rgba(255,107,53,0.35)' : isSlotToday ? '0 0 20px #FF6B3566' : '0 4px 16px rgba(0,0,0,0.4)',
                         transform: isDragTarget ? 'scale(0.95)' : shouldWiggle ? undefined : 'scale(1)',
                         animation: shouldWiggle ? 'wiggle 0.4s ease-in-out infinite alternate' : 'none',
                         transition: isDraggingThis ? 'none' : 'all 0.18s',
@@ -693,9 +786,9 @@ export default function Home() {
                         )}
                         <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
                           <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-                            {getWeekdayLabel(absoluteDayNumber)}
+                            {weekdayLabel}
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)', fontFamily: 'Syne, sans-serif' }}>J{absoluteDayNumber}</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: isSlotToday ? '#FF6B35' : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)', fontFamily: 'Syne, sans-serif' }}>J{absoluteDayNumber}</div>
                           {effectiveSessionId === 'rest' ? (
                             <div style={{ fontSize: 22, lineHeight: 1, marginTop: 4 }}>😴</div>
                           ) : (
@@ -715,7 +808,8 @@ export default function Home() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })()}
 
           {/* Hint discret en mode drag */}
           {draggingDay !== null && (

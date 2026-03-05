@@ -145,6 +145,8 @@ export default function Home() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const isDragging = useRef(false);
+  // IDs originaux au moment du début du drag (figés pour tous les swaps visuels)
+  const dragOriginalIds = useRef<Record<number, string>>({});
   const cardRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const floatCardRef = useRef<HTMLDivElement | null>(null);
   // Refs sur les deux conteneurs de scroll horizontal (Semaine 1 et Semaine 2)
@@ -654,6 +656,13 @@ export default function Home() {
                           isDragging.current = true;
                           setDraggingDay(dayNumber);
                           setFloatPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                          // Mémoriser les IDs originaux de TOUS les jours au début du drag
+                          // pour que les swaps visuels soient toujours basés sur l'état initial
+                          dragOriginalIds.current = {};
+                          Object.keys(cardRefs.current).forEach(k => {
+                            const n = parseInt(k);
+                            dragOriginalIds.current[n] = getEffectiveSessionId(n);
+                          });
                           // Bloquer le scroll horizontal dès que le drag commence
                           setScrollLocked(true);
                           if (navigator.vibrate) navigator.vibrate([30, 10, 30]);
@@ -692,11 +701,21 @@ export default function Home() {
                         const targetDay = card ? parseInt(card.dataset.day || '0') : null;
                         if (targetDay && targetDay !== draggingDay) {
                           setDragOverDay(targetDay);
-                          // Swap visuel immédiat
-                          setVisualOrder(prev => {
-                            const srcId = getEffectiveSessionId(draggingDay!);
-                            const tgtId = getEffectiveSessionId(targetDay);
-                            return { ...prev, [draggingDay!]: tgtId, [targetDay]: srcId };
+                          // Swap visuel immédiat : utiliser les IDs ORIGINAUX (figés au début du drag)
+                          // pour éviter que les passages successifs sur différentes cards mélangent les IDs
+                          setVisualOrder(() => {
+                            const srcOrigId = dragOriginalIds.current[draggingDay!] ?? getEffectiveSessionId(draggingDay!);
+                            const tgtOrigId = dragOriginalIds.current[targetDay] ?? getEffectiveSessionId(targetDay);
+                            // Reconstruire l'ordre visuel depuis les originaux
+                            const newOrder: Record<number, string> = {};
+                            // Copier tous les originaux
+                            Object.entries(dragOriginalIds.current).forEach(([k, v]) => {
+                              newOrder[parseInt(k)] = v;
+                            });
+                            // Appliquer le swap src ↔ tgt
+                            newOrder[draggingDay!] = tgtOrigId;
+                            newOrder[targetDay] = srcOrigId;
+                            return newOrder;
                           });
                         }
                       }}

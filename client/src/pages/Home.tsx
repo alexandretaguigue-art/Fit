@@ -81,7 +81,7 @@ export default function Home() {
   let { user, loading, error, isAuthenticated, logout } = useAuth();
 
   const [, navigate] = useLocation();
-  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, adaptNutritionForSession } = useFitnessTracker();
+  const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, swapScheduleOverrides, adaptNutritionForSession } = useFitnessTracker();
   // calendarWeekOffset : offset en semaines calendaires (0 = semaine contenant J1 du programme)
   // Calculer le lundi de la semaine contenant startDate
   const getStartMonday = (startDate: string): Date => {
@@ -1151,10 +1151,14 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const { srcDay, tgtDay, srcId, tgtId, srcDateKey, tgtDateKey } = swapConfirm;
-                    // 1. Persister le swap dans le planning
-                    setScheduleOverride(`cycle_day_${srcDay}`, tgtId);
-                    setScheduleOverride(`cycle_day_${tgtDay}`, srcId);
-                    // 2. Adapter la nutrition pour les deux jours (si date connue)
+                    // 1. Persister le swap atomiquement (un seul setData pour éviter le batching React)
+                    swapScheduleOverrides(
+                      `cycle_day_${srcDay}`, tgtId,
+                      `cycle_day_${tgtDay}`, srcId
+                    );
+                    // 2. Réinitialiser l'ordre visuel pour forcer le re-render depuis les overrides
+                    setVisualOrder({});
+                    // 3. Adapter la nutrition pour les deux jours (si date connue)
                     if (srcDateKey) adaptNutritionForSession(srcDateKey, tgtId);
                     if (tgtDateKey) adaptNutritionForSession(tgtDateKey, srcId);
                     toast.success(`J${srcDay} ⇄ J${tgtDay} — planning et nutrition adaptés ✓`);
@@ -1173,9 +1177,13 @@ export default function Home() {
                 <button
                   onClick={() => {
                     const { srcDay, tgtDay, srcId, tgtId } = swapConfirm;
-                    // Swap sans adaptation nutritionnelle
-                    setScheduleOverride(`cycle_day_${srcDay}`, tgtId);
-                    setScheduleOverride(`cycle_day_${tgtDay}`, srcId);
+                    // Swap atomique sans adaptation nutritionnelle
+                    swapScheduleOverrides(
+                      `cycle_day_${srcDay}`, tgtId,
+                      `cycle_day_${tgtDay}`, srcId
+                    );
+                    // Réinitialiser l'ordre visuel pour forcer le re-render depuis les overrides
+                    setVisualOrder({});
                     toast.success(`J${srcDay} ⇄ J${tgtDay} — séances échangées (nutrition inchangée)`);
                     setSwapConfirm(null);
                   }}

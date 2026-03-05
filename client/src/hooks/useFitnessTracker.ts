@@ -807,6 +807,19 @@ export function useFitnessTracker() {
     return data.scheduleOverrides[dateKey] ?? null;
   }, [data.scheduleOverrides]);
 
+  // Swap atomique de deux overrides en un seul setData pour éviter le batching React
+  const swapScheduleOverrides = useCallback((
+    keyA: string, sessionIdA: string,
+    keyB: string, sessionIdB: string
+  ) => {
+    setData(prev => {
+      const overrides = { ...prev.scheduleOverrides };
+      overrides[keyA] = sessionIdA;
+      overrides[keyB] = sessionIdB;
+      return { ...prev, scheduleOverrides: overrides };
+    });
+  }, []);
+
   return {
     data,
     startProgram,
@@ -842,6 +855,7 @@ export function useFitnessTracker() {
     // Planning personnalisé
     setScheduleOverride,
     getScheduleOverride,
+    swapScheduleOverrides,
     // Adaptation nutritionnelle
     adaptNutritionForSession,
     sessionIdToNutritionType,

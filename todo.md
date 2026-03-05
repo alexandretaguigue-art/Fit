@@ -32,3 +32,4 @@
 - [x] Calendrier : semaines fixes Lun-Dim, jours avant le démarrage du programme affichés en repos, cycle aligné sur la vraie date
 - [x] Fix calendrier : J1 doit tomber sur le vrai jour de démarrage (ex. jeudi), pas sur le lundi de la semaine
 - [x] Fix swap calendrier : l'échange entre types différents (ex. course ↔ bras) ne met pas la séance source à la place de la destination
+- [x] Fix swap calendrier (persistance) : après confirmation, les cards ne s'échangent pas visuellement

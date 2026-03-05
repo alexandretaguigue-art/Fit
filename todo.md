@@ -34,3 +34,6 @@
 - [x] Fix swap calendrier : l'échange entre types différents (ex. course ↔ bras) ne met pas la séance source à la place de la destination
 - [x] Fix swap calendrier (persistance) : après confirmation, les cards ne s'échangent pas visuellement
 - [x] Réécriture complète swap calendrier : logique simple et fiable de A à Z
+- [x] Nutrition : ajustement proportionnel des quantités d'aliments après swap de séance (mêmes aliments, nouvelles quantités)
+- [x] Nutrition : afficher en orange les quantités modifiées par rapport au plan de base
+- [x] Nutrition : tap sur un aliment modifié → détail avant/après (quantité initiale vs nouvelle quantité)

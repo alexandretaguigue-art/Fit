@@ -1054,13 +1054,71 @@ function JournalTab() {
 }
 
 // ============================================================
+// COMPOSANT DÉTAIL ALIMENTS AVEC COMPARAISON AVANT/APRÈS
+// ============================================================
+type MealItemsDetailProps = {
+  meal: { name: string; time: string; totalCalories: number; items: Array<{ food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }> };
+  idx: number;
+  day: { date: string; totalMacros: { calories: number } };
+  basePlan: { days: Array<{ date: string; totalMacros: { calories: number }; meals: Array<{ items: Array<{ food: string; quantity: string; calories: number }> }> }> };
+  setDiffModal: (v: { food: string; baseQty: string; newQty: string; baseCalories: number; newCalories: number } | null) => void;
+};
+function MealItemsDetail({ meal, idx, day, basePlan, setDiffModal }: MealItemsDetailProps) {
+  const baseDay = basePlan.days.find(d => d.date === day.date);
+  const baseMeal = baseDay?.meals[idx];
+  const isDayAdapted = !!(baseDay && Math.abs(day.totalMacros.calories - baseDay.totalMacros.calories) > 20);
+  return (
+    <div className="px-4 pb-3 space-y-2">
+      {meal.items.map((item, i) => {
+        const baseItem = baseMeal?.items[i];
+        const isQtyChanged = isDayAdapted && !!baseItem && item.food === baseItem.food && item.quantity !== baseItem.quantity;
+        return (
+          <button
+            key={i}
+            className="w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all"
+            style={{ background: isQtyChanged ? 'rgba(255,107,53,0.08)' : 'rgba(255,255,255,0.04)', border: isQtyChanged ? '1px solid rgba(255,107,53,0.2)' : '1px solid transparent' }}
+            onClick={() => {
+              if (isQtyChanged && baseItem) {
+                setDiffModal({ food: item.food, baseQty: baseItem.quantity, newQty: item.quantity, baseCalories: baseItem.calories, newCalories: item.calories });
+              }
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isQtyChanged ? '#FF6B35' : 'rgba(255,255,255,0.3)' }} />
+              <span className="text-xs" style={{ color: isQtyChanged ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.8)', fontFamily: 'Inter, sans-serif', fontWeight: isQtyChanged ? 600 : 400 }}>{item.food}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-semibold" style={{ color: isQtyChanged ? '#FF6B35' : 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif' }}>
+                {item.quantity}{isQtyChanged ? ' ℹ️' : ''}
+              </span>
+              <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal · P:{item.proteins}g</p>
+            </div>
+          </button>
+        );
+      })}
+      {/* Total repas */}
+      <div className="flex justify-between pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Total repas</span>
+        <div className="flex gap-3">
+          <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.totalCalories} kcal</span>
+          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{meal.items.reduce((s, it) => s + it.proteins, 0)}g</span>
+          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{meal.items.reduce((s, it) => s + it.carbs, 0)}g</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // ONGLET PLAN HEBDOMADAIRE — Vue 7 jours en avance
 // ============================================================
 function PlanTab() {
-  const { getWeeklyMealPlan, getCurrentWeekMonday, getWeeklyNutritionSummary } = useFitnessTracker();
+  const { getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getWeeklyNutritionSummary } = useFitnessTracker();
   const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [expandedMeal, setExpandedMeal] = useState<string | null>(null);
+  // Modal avant/après pour les aliments modifiés par un swap de séance
+  const [diffModal, setDiffModal] = useState<{ food: string; baseQty: string; newQty: string; baseCalories: number; newCalories: number } | null>(null);
 
   const weekMonday = useMemo(() => {
     const monday = getCurrentWeekMonday();
@@ -1069,6 +1127,7 @@ function PlanTab() {
   }, [weekOffset, getCurrentWeekMonday]);
 
   const plan = useMemo(() => getWeeklyMealPlan(weekMonday), [weekMonday, getWeeklyMealPlan]);
+  const basePlan = useMemo(() => getBaseWeeklyMealPlan(weekMonday), [weekMonday, getBaseWeeklyMealPlan]);
   const weekStartKey = toLocalDateKey(weekMonday);
   const summary = getWeeklyNutritionSummary(weekStartKey);
 
@@ -1226,31 +1285,7 @@ function PlanTab() {
                       </button>
 
                       {/* Détail aliments */}
-                      {isMealExpanded && (
-                        <div className="px-4 pb-3 space-y-2">
-                          {meal.items.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#FF6B35' }} />
-                                <span className="text-white/80 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.food}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{item.quantity}</span>
-                                <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.calories} kcal · P:{item.proteins}g</p>
-                              </div>
-                            </div>
-                          ))}
-                          {/* Total repas */}
-                          <div className="flex justify-between pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                            <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Total repas</span>
-                            <div className="flex gap-3">
-                              <span className="text-white/60 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{meal.totalCalories} kcal</span>
-                              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>P:{meal.items.reduce((s, i) => s + i.proteins, 0)}g</span>
-                              <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>G:{meal.items.reduce((s, i) => s + i.carbs, 0)}g</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      {isMealExpanded && MealItemsDetail({ meal, idx, day, basePlan, setDiffModal })}
                     </div>
                   );
                 })}
@@ -1259,6 +1294,34 @@ function PlanTab() {
           </div>
         );
       })}
+
+      {/* Modal avant/après pour les aliments modifiés */}
+      {diffModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={() => setDiffModal(null)}>
+          <div className="w-full max-w-md mx-4 mb-8 rounded-2xl p-5" style={{ background: '#1A1A22', border: '1px solid rgba(255,107,53,0.3)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-base" style={{ fontFamily: 'Syne, sans-serif' }}>Quantité ajustée</h3>
+              <button onClick={() => setDiffModal(null)} className="text-white/40 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Fermer</button>
+            </div>
+            <p className="text-white/70 text-sm mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>{diffModal.food}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p className="text-white/40 text-xs mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>Quantité initiale</p>
+                <p className="text-white font-bold text-lg" style={{ fontFamily: 'Syne, sans-serif' }}>{diffModal.baseQty}</p>
+                <p className="text-white/30 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{diffModal.baseCalories} kcal</p>
+              </div>
+              <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.25)' }}>
+                <p className="text-xs mb-1" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>Nouvelle quantité</p>
+                <p className="font-bold text-lg" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>{diffModal.newQty}</p>
+                <p className="text-xs" style={{ color: 'rgba(255,107,53,0.6)', fontFamily: 'Inter, sans-serif' }}>{diffModal.newCalories} kcal</p>
+              </div>
+            </div>
+            <p className="text-white/30 text-xs mt-3 text-center" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Ajusté automatiquement suite au changement de séance
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

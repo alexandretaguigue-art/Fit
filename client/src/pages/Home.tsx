@@ -82,7 +82,15 @@ export default function Home() {
 
   const [, navigate] = useLocation();
   const { data, startProgram, getCurrentWeek, getStats, setScheduleOverride, getScheduleOverride, adaptNutritionForSession } = useFitnessTracker();
-  const [calendarOffset, setCalendarOffset] = useState(0);
+  // Initialiser l'offset du calendrier sur le cycle courant (ex. si on est J18 = cycle 2, offset=1)
+  const [calendarOffset, setCalendarOffset] = useState(() => {
+    if (!data.startDate) return 0;
+    const today = new Date();
+    const start = new Date(data.startDate);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysSinceStart = Math.floor((today.getTime() - start.getTime()) / msPerDay);
+    return Math.floor(daysSinceStart / 14);
+  });
   const [pendingStart, setPendingStart] = useState(false);
 
   // Naviguer vers /workout seulement après que startDate est effectivement persisté dans le state
@@ -93,6 +101,20 @@ export default function Home() {
       navigate('/workout');
     }
   }, [pendingStart, data.startDate, navigate]);
+
+  // Synchroniser l'offset du calendrier sur le cycle courant quand startDate change
+  useEffect(() => {
+    if (!data.startDate) {
+      setCalendarOffset(0);
+      return;
+    }
+    const today = new Date();
+    const start = new Date(data.startDate);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysSinceStart = Math.floor((today.getTime() - start.getTime()) / msPerDay);
+    const currentCycleOffset = Math.floor(daysSinceStart / 14);
+    setCalendarOffset(currentCycleOffset);
+  }, [data.startDate]);
 
   // Modal de confirmation avant swap avec adaptation nutritionnelle
   const [swapConfirm, setSwapConfirm] = useState<{
@@ -205,6 +227,19 @@ export default function Home() {
   const today = new Date();
   const programStart = data.startDate ? new Date(data.startDate) : today;
   const cycleDayToday = data.startDate ? getCycleDayForDate(today, programStart) : 1;
+
+  // Calcul du vrai jour de la semaine pour une card du calendrier
+  // absoluteDayNumber = position dans le programme (1 = J1 du programme)
+  const getWeekdayLabel = (absoluteDayNumber: number): string => {
+    if (!data.startDate) {
+      // Sans date de démarrage, on affiche juste J1=Lun par convention
+      return ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][(absoluteDayNumber - 1) % 7];
+    }
+    const startMs = new Date(data.startDate).getTime();
+    const dayMs = startMs + (absoluteDayNumber - 1) * 24 * 60 * 60 * 1000;
+    const dayOfWeek = new Date(dayMs).getDay(); // 0=Dim, 1=Lun, ..., 6=Sam
+    return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][dayOfWeek];
+  };
   const todayCycleDay = cycle14Days.find(d => d.dayNumber === cycleDayToday);
   const todaySession = todayCycleDay ? getSessionForCycleDay(cycleDayToday) : null;
   const todayType = todayCycleDay?.type || 'rest';
@@ -649,7 +684,7 @@ export default function Home() {
                         )}
                         <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, padding: '0 10px' }}>
                           <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-                            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][(day.dayNumber - 1) % 7]}
+                            {getWeekdayLabel(absoluteDayNumber)}
                           </div>
                           <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: isToday ? colors.text : isCompleted ? '#22C55E' : 'rgba(255,255,255,0.55)', fontFamily: 'Syne, sans-serif' }}>J{absoluteDayNumber}</div>
                           {effectiveSessionId === 'rest' ? (

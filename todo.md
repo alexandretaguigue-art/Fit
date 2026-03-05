@@ -27,3 +27,4 @@
 - [x] Corriger swipe bloquant dans SwipeToDeleteSet : auto-reset si swipe insuffisant (< seuil)
 - [x] Bouton "Enregistrer ma séance personnalisée" : créer un preset nommé (ex. "Bras A") applicable à toutes les séances du même type
 - [x] Sélecteur de preset : plusieurs presets par type de séance, bouton "Changer de séance" avec liste + suppression individuelle, migration automatique depuis v1
+- [x] Fix calendrier accueil : afficher le vrai jour de semaine (Lun/Mar/Mer/Jeu...) basé sur la date de démarrage, et positionner automatiquement le calendrier sur le bon cycle (offset synchronisé)

@@ -616,9 +616,15 @@ export default function Home() {
                     const shouldWiggle = draggingDay !== null && !isDraggingThis;
 
                     // Calcul du numéro de jour absolu dans le programme (pour affichage)
-                    const absoluteDayNumber = data.startDate && slot.date
-                      ? Math.round((slot.date.getTime() - new Date(data.startDate).setHours(0,0,0,0)) / (24*60*60*1000)) + 1
-                      : dayNumber;
+                    // absoluteDayNumber = position dans le programme depuis J1 (1-based)
+                    // On utilise diffDays recalculé proprement depuis startDate (minuit local)
+                    const absoluteDayNumber = (() => {
+                      if (!data.startDate || !slot.date) return dayNumber;
+                      const sd = new Date(data.startDate);
+                      sd.setHours(0, 0, 0, 0);
+                      const diffMs = slot.date.getTime() - sd.getTime();
+                      return Math.round(diffMs / (24 * 60 * 60 * 1000)) + 1;
+                    })();
 
                     const handleTap = () => {
                       if (isDragging.current) return;

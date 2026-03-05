@@ -30,3 +30,4 @@
 - [x] Fix calendrier accueil : afficher le vrai jour de semaine (Lun/Mar/Mer/Jeu...) basé sur la date de démarrage, et positionner automatiquement le calendrier sur le bon cycle (offset synchronisé)
 - [x] Fix calendrier : encadrer en orange la card du jour courant
 - [x] Calendrier : semaines fixes Lun-Dim, jours avant le démarrage du programme affichés en repos, cycle aligné sur la vraie date
+- [x] Fix calendrier : J1 doit tomber sur le vrai jour de démarrage (ex. jeudi), pas sur le lundi de la semaine

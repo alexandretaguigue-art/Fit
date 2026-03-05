@@ -26,3 +26,4 @@
 - [x] Swipe gauche pour supprimer une série dans WorkoutPage + bouton ajouter série (comme les repas dans NutritionPage)
 - [x] Corriger swipe bloquant dans SwipeToDeleteSet : auto-reset si swipe insuffisant (< seuil)
 - [x] Bouton "Enregistrer ma séance personnalisée" : créer un preset nommé (ex. "Bras A") applicable à toutes les séances du même type
+- [x] Sélecteur de preset : plusieurs presets par type de séance, bouton "Changer de séance" avec liste + suppression individuelle, migration automatique depuis v1

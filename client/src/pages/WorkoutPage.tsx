@@ -78,9 +78,11 @@ function SwipeToDeleteSet({ children, onDelete }: { children: React.ReactNode; o
 
 // ============================================================
 // HOOK : gestion des presets de séance personnalisée
+// Supporte plusieurs presets par type de séance
 // ============================================================
 
 interface SessionPreset {
+  id: string;         // identifiant unique (uuid-like)
   name: string;
   sessionType: string; // ex. 'upper_a', 'lower_b'
   removed: string[];
@@ -88,64 +90,86 @@ interface SessionPreset {
   savedAt: string;
 }
 
-function useSessionPresets() {
-  const STORAGE_KEY = 'session_presets_v1';
+// Structure de stockage : { [sessionType]: SessionPreset[] }
+type PresetsStore = Record<string, SessionPreset[]>;
 
-  const [presets, setPresets] = useState<Record<string, SessionPreset>>(() => {
+function useSessionPresets() {
+  const STORAGE_KEY = 'session_presets_v2';
+
+  const [store, setStore] = useState<PresetsStore>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : {};
+      if (saved) return JSON.parse(saved);
+      // Migration depuis v1 (un seul preset par type)
+      const v1 = localStorage.getItem('session_presets_v1');
+      if (v1) {
+        const v1data: Record<string, Omit<SessionPreset, 'id'>> = JSON.parse(v1);
+        const migrated: PresetsStore = {};
+        for (const [type, p] of Object.entries(v1data)) {
+          migrated[type] = [{ ...p, id: `migrated_${type}` }];
+        }
+        return migrated;
+      }
+      return {};
     } catch { return {}; }
   });
 
-  const savePreset = (sessionType: string, name: string, removed: string[], custom: Exercise[]) => {
-    const next = {
-      ...presets,
-      [sessionType]: { name, sessionType, removed, custom, savedAt: new Date().toISOString() },
-    };
-    setPresets(next);
+  const persist = (next: PresetsStore) => {
+    setStore(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
-  const deletePreset = (sessionType: string) => {
-    const next = { ...presets };
-    delete next[sessionType];
-    setPresets(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  // Sauvegarde ou mise à jour d'un preset
+  const savePreset = (sessionType: string, name: string, removed: string[], custom: Exercise[], existingId?: string) => {
+    const list = store[sessionType] ?? [];
+    const id = existingId ?? `preset_${sessionType}_${Date.now()}`;
+    const preset: SessionPreset = { id, name, sessionType, removed, custom, savedAt: new Date().toISOString() };
+    const idx = list.findIndex(p => p.id === id);
+    const nextList = idx >= 0 ? list.map((p, i) => i === idx ? preset : p) : [...list, preset];
+    persist({ ...store, [sessionType]: nextList });
+    return id;
   };
 
-  const getPreset = (sessionType: string): SessionPreset | null => presets[sessionType] ?? null;
+  const deletePreset = (sessionType: string, id: string) => {
+    const list = (store[sessionType] ?? []).filter(p => p.id !== id);
+    const next = { ...store };
+    if (list.length === 0) delete next[sessionType];
+    else next[sessionType] = list;
+    persist(next);
+  };
 
-  return { presets, savePreset, deletePreset, getPreset };
+  const getPresets = (sessionType: string): SessionPreset[] => store[sessionType] ?? [];
+
+  return { store, savePreset, deletePreset, getPresets };
 }
 
 // ============================================================
 // MODAL : Sauvegarder un preset de séance
 // ============================================================
 
-function SavePresetModal({ sessionType, currentName, onSave, onClose }: {
+function SavePresetModal({ sessionType, defaultName, onSave, onClose }: {
   sessionType: string;
-  currentName: string;
+  defaultName: string;
   onSave: (name: string) => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState(currentName);
+  const [name, setName] = useState(defaultName);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-end' }}>
       <div style={{ width: '100%', background: '#13151c', borderRadius: '24px 24px 0 0', padding: 24, paddingBottom: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Enregistrer ma séance</h3>
+          <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Enregistrer comme nouveau preset</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 4 }}><X size={20} /></button>
         </div>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontFamily: 'Inter, sans-serif', marginBottom: 16 }}>
-          Ce preset sera appliqué à toutes tes séances de type <strong style={{ color: '#FF6B35' }}>{sessionType.replace(/_/g, ' ').toUpperCase()}</strong>.
+          Ce preset sera disponible pour toutes tes séances <strong style={{ color: '#FF6B35' }}>{sessionType.replace(/_/g, ' ').toUpperCase()}</strong>.
         </p>
         <div style={{ marginBottom: 20 }}>
           <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: 'Inter, sans-serif', display: 'block', marginBottom: 8 }}>NOM DU PRESET</label>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Ex : Bras A, Jambes Force, Push Day..."
+            placeholder="Ex : Bras A Force, Jambes Volume, Push Day..."
             style={{
               width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)',
               background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif',
@@ -172,26 +196,124 @@ function SavePresetModal({ sessionType, currentName, onSave, onClose }: {
 }
 
 // ============================================================
+// MODAL : Sélectionner un preset de séance
+// ============================================================
+
+function SelectPresetModal({ sessionType, presets, activePresetId, onSelect, onDelete, onClose }: {
+  sessionType: string;
+  presets: SessionPreset[];
+  activePresetId: string | null;
+  onSelect: (preset: SessionPreset | null) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  const sessionTypeLabel = sessionType.replace(/_/g, ' ').toUpperCase();
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'flex-end' }}>
+      <div style={{ width: '100%', background: '#13151c', borderRadius: '24px 24px 0 0', padding: 24, paddingBottom: 40, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexShrink: 0 }}>
+          <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 800, fontFamily: 'Syne, sans-serif', margin: 0 }}>Choisir une séance</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 4 }}><X size={20} /></button>
+        </div>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'Inter, sans-serif', marginBottom: 20, flexShrink: 0 }}>
+          Séances enregistrées pour <strong style={{ color: '#FF6B35' }}>{sessionTypeLabel}</strong>
+        </p>
+
+        {/* Liste des presets */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {/* Option : séance par défaut */}
+          <button
+            onClick={() => { onSelect(null); onClose(); }}
+            style={{
+              width: '100%', textAlign: 'left', padding: '14px 16px', borderRadius: 16, marginBottom: 10,
+              background: activePresetId === null ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.04)',
+              border: activePresetId === null ? '1.5px solid rgba(255,107,53,0.5)' : '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <p style={{ color: activePresetId === null ? '#FF6B35' : '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif', margin: '0 0 3px' }}>Séance par défaut</p>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>Exercices du programme original</p>
+            </div>
+            {activePresetId === null && (
+              <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FF6B35', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Check size={11} color="#fff" />
+              </div>
+            )}
+          </button>
+
+          {/* Presets enregistrés */}
+          {presets.map(preset => (
+            <div key={preset.id} style={{ position: 'relative', marginBottom: 10 }}>
+              <button
+                onClick={() => { onSelect(preset); onClose(); }}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '14px 16px', paddingRight: 52, borderRadius: 16,
+                  background: activePresetId === preset.id ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: activePresetId === preset.id ? '1.5px solid rgba(255,107,53,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: activePresetId === preset.id ? '#FF6B35' : '#fff', fontSize: 14, fontWeight: 700, fontFamily: 'Inter, sans-serif', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {preset.name}
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: 0 }}>
+                      {preset.custom.length > 0 && `+${preset.custom.length} exo(s)`}
+                      {preset.custom.length > 0 && preset.removed.length > 0 && ' · '}
+                      {preset.removed.length > 0 && `−${preset.removed.length} supprimé(s)`}
+                      {preset.custom.length === 0 && preset.removed.length === 0 && 'Séance identique au défaut'}
+                    </p>
+                  </div>
+                  {activePresetId === preset.id && (
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FF6B35', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: 8 }}>
+                      <Check size={11} color="#fff" />
+                    </div>
+                  )}
+                </div>
+              </button>
+              {/* Bouton supprimer preset */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(preset.id); }}
+                style={{
+                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  width: 28, height: 28, borderRadius: 8,
+                  background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <Trash2 size={12} color="#ef4444" />
+              </button>
+            </div>
+          ))}
+
+          {presets.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.25)', fontFamily: 'Inter, sans-serif', fontSize: 13 }}>
+              Aucun preset enregistré pour ce type de séance.
+              <br />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.15)' }}>Modifie la séance puis enregistre-la.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // HOOK : gestion des exercices custom et supprimés par session
 // ============================================================
 
 function useSessionExercises(sessionId: string, baseExercises: Exercise[]) {
   const storageKey = `session_exercises_${sessionId}`;
-  const PRESETS_KEY = 'session_presets_v1';
 
   const [state, setState] = useState<{ removed: string[]; custom: Exercise[] }>(() => {
     try {
-      // 1. Charger les modifications locales de cette session spécifique
       const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
-      // 2. Sinon, charger le preset du type de séance (sessionId = type)
-      const presetsRaw = localStorage.getItem(PRESETS_KEY);
-      if (presetsRaw) {
-        const presets = JSON.parse(presetsRaw);
-        if (presets[sessionId]) {
-          return { removed: presets[sessionId].removed, custom: presets[sessionId].custom };
-        }
-      }
       return { removed: [], custom: [] };
     } catch {
       return { removed: [], custom: [] };
@@ -216,12 +338,21 @@ function useSessionExercises(sessionId: string, baseExercises: Exercise[]) {
     localStorage.removeItem(storageKey);
   };
 
+  // Applique un preset (écrase les modifications locales)
+  const applyPreset = (preset: SessionPreset | null) => {
+    if (preset === null) {
+      resetExercises();
+    } else {
+      save({ removed: preset.removed, custom: preset.custom });
+    }
+  };
+
   const exercises = [
     ...baseExercises.filter(e => !state.removed.includes(e.id)),
     ...state.custom.filter(e => !state.removed.includes(e.id)),
   ];
 
-  return { exercises, removeExercise, addCustomExercise, resetExercises, customCount: state.custom.length, removedCount: state.removed.length };
+  return { exercises, removeExercise, addCustomExercise, resetExercises, applyPreset, customCount: state.custom.length, removedCount: state.removed.length, state };
 }
 
 // ============================================================
@@ -1928,22 +2059,40 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
   const currentWeek = getCurrentWeek();
 
   // Gestion des exercices custom et supprimés
-  const { exercises: sessionExercises, removeExercise, addCustomExercise, resetExercises, customCount, removedCount } = useSessionExercises(session.id, session.exercises);
+  const { exercises: sessionExercises, removeExercise, addCustomExercise, resetExercises, applyPreset, customCount, removedCount, state: exerciseState } = useSessionExercises(session.id, session.exercises);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [showSelectPresetModal, setShowSelectPresetModal] = useState(false);
 
-  // Gestion des presets de séance
-  const { savePreset, getPreset } = useSessionPresets();
-  const existingPreset = getPreset(session.id);
+  // Gestion des presets de séance (multi-presets)
+  const { savePreset, deletePreset, getPresets } = useSessionPresets();
+  const presets = getPresets(session.id);
+  // Preset actif : celui dont removed+custom correspond à l'état courant
+  const activePreset = presets.find(p =>
+    JSON.stringify(p.removed.slice().sort()) === JSON.stringify(exerciseState.removed.slice().sort()) &&
+    JSON.stringify(p.custom.map(e => e.id)) === JSON.stringify(exerciseState.custom.map(e => e.id))
+  ) ?? null;
   const hasModifications = customCount > 0 || removedCount > 0;
 
   const handleSavePreset = (name: string) => {
-    // Récupérer l'état actuel depuis localStorage
-    const storageKey = `session_exercises_${session.id}`;
-    const saved = localStorage.getItem(storageKey);
-    const state = saved ? JSON.parse(saved) : { removed: [], custom: [] };
-    savePreset(session.id, name, state.removed, state.custom);
-    toast.success(`Preset « ${name} » enregistré !`);
+    const id = savePreset(session.id, name, exerciseState.removed, exerciseState.custom);
+    toast.success(`Preset « ${name} » enregistré !`);
+    return id;
+  };
+
+  const handleSelectPreset = (preset: SessionPreset | null) => {
+    applyPreset(preset);
+    if (preset) {
+      toast.success(`Séance « ${preset.name} » chargée !`);
+    } else {
+      toast.success('Séance par défaut restaurée');
+    }
+  };
+
+  const handleDeletePreset = (id: string) => {
+    const p = presets.find(x => x.id === id);
+    deletePreset(session.id, id);
+    toast.success(`Preset « ${p?.name ?? ''} » supprimé`);
   };
 
   // Restaurer le draft persisté au montage
@@ -2086,46 +2235,48 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
         )}
       </div>
 
-      {/* Bouton Enregistrer ma séance personnalisée */}
-      {hasModifications && (
+      {/* Barre preset : changer de séance + enregistrer */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {/* Bouton changer de séance (toujours visible) */}
         <button
-          onClick={() => setShowSavePresetModal(true)}
+          onClick={() => setShowSelectPresetModal(true)}
           style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px', borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(255,107,53,0.15), rgba(255,51,102,0.15))',
-            border: '1px solid rgba(255,107,53,0.4)',
-            color: '#FF6B35', fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif',
-            cursor: 'pointer',
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            padding: '13px', borderRadius: 16,
+            background: activePreset ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.05)',
+            border: activePreset ? '1px solid rgba(255,107,53,0.35)' : '1px solid rgba(255,255,255,0.1)',
+            color: activePreset ? '#FF6B35' : 'rgba(255,255,255,0.5)',
+            fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif', cursor: 'pointer',
           }}
         >
-          💾 {existingPreset ? `Mettre à jour « ${existingPreset.name} »` : 'Enregistrer ma séance personnalisée'}
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M7.5 1L13 5.5H10V14H5V5.5H2L7.5 1Z" fill="currentColor" opacity="0.8"/>
+          </svg>
+          {activePreset ? activePreset.name : (presets.length > 0 ? 'Changer de séance' : 'Séance par défaut')}
+          {presets.length > 0 && (
+            <span style={{ fontSize: 10, background: 'rgba(255,107,53,0.2)', color: '#FF6B35', borderRadius: 20, padding: '1px 6px', fontWeight: 800 }}>
+              {presets.length}
+            </span>
+          )}
         </button>
-      )}
 
-      {/* Banniere preset existant */}
-      {existingPreset && !hasModifications && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px', borderRadius: 14,
-          background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.2)',
-        }}>
-          <div>
-            <p style={{ color: '#FF6B35', fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif', margin: 0 }}>
-              💾 Preset actif : {existingPreset.name}
-            </p>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Inter, sans-serif', margin: '2px 0 0' }}>
-              {existingPreset.custom.length} exo(s) ajouté(s) • {existingPreset.removed.length} supprimé(s)
-            </p>
-          </div>
+        {/* Bouton enregistrer (visible si modifications non encore sauvegardées) */}
+        {hasModifications && !activePreset && (
           <button
-            onClick={() => { resetExercises(); toast.success('Preset désactivé'); }}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
+            onClick={() => setShowSavePresetModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '13px 16px', borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,51,102,0.2))',
+              border: '1px solid rgba(255,107,53,0.4)',
+              color: '#FF6B35', fontSize: 12, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
           >
-            Désactiver
+            💾 Enregistrer
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Modal d'ajout */}
       {showAddModal && (
@@ -2139,9 +2290,21 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
       {showSavePresetModal && (
         <SavePresetModal
           sessionType={session.id}
-          currentName={existingPreset?.name ?? session.name}
+          defaultName={session.name}
           onSave={handleSavePreset}
           onClose={() => setShowSavePresetModal(false)}
+        />
+      )}
+
+      {/* Modal de sélection de preset */}
+      {showSelectPresetModal && (
+        <SelectPresetModal
+          sessionType={session.id}
+          presets={presets}
+          activePresetId={activePreset?.id ?? null}
+          onSelect={handleSelectPreset}
+          onDelete={handleDeletePreset}
+          onClose={() => setShowSelectPresetModal(false)}
         />
       )}
 

@@ -213,3 +213,145 @@ describe('scénarios intégration', () => {
     expect(result).toHaveLength(3); // retour aux 3 de base
   });
 });
+
+// ============================================================
+// Tests pour le nouveau système de presets (multi-presets v2)
+// ============================================================
+
+interface SessionPreset {
+  id: string;
+  name: string;
+  sessionType: string;
+  removed: string[];
+  custom: Exercise[];
+  savedAt: string;
+}
+
+type PresetsStore = Record<string, SessionPreset[]>;
+
+function savePreset(
+  store: PresetsStore,
+  sessionType: string,
+  name: string,
+  removed: string[],
+  custom: Exercise[],
+  existingId?: string
+): { store: PresetsStore; id: string } {
+  const list = store[sessionType] ?? [];
+  const id = existingId ?? `preset_${sessionType}_test`;
+  const preset: SessionPreset = { id, name, sessionType, removed, custom, savedAt: new Date().toISOString() };
+  const idx = list.findIndex(p => p.id === id);
+  const nextList = idx >= 0 ? list.map((p, i) => i === idx ? preset : p) : [...list, preset];
+  return { store: { ...store, [sessionType]: nextList }, id };
+}
+
+function deletePreset(store: PresetsStore, sessionType: string, id: string): PresetsStore {
+  const list = (store[sessionType] ?? []).filter(p => p.id !== id);
+  const next = { ...store };
+  if (list.length === 0) delete next[sessionType];
+  else next[sessionType] = list;
+  return next;
+}
+
+function getPresets(store: PresetsStore, sessionType: string): SessionPreset[] {
+  return store[sessionType] ?? [];
+}
+
+function applyPreset(preset: SessionPreset | null): { removed: string[]; custom: Exercise[] } {
+  if (preset === null) return { removed: [], custom: [] };
+  return { removed: preset.removed, custom: preset.custom };
+}
+
+describe('useSessionPresets — multi-presets v2', () => {
+  it('sauvegarde un premier preset pour un type de séance', () => {
+    const { store } = savePreset({}, 'upper_a', 'Bras A Force', ['squat'], [CUSTOM_EXERCISE]);
+    const presets = getPresets(store, 'upper_a');
+    expect(presets).toHaveLength(1);
+    expect(presets[0].name).toBe('Bras A Force');
+    expect(presets[0].removed).toEqual(['squat']);
+    expect(presets[0].custom).toHaveLength(1);
+  });
+
+  it('sauvegarde plusieurs presets pour le même type de séance', () => {
+    let store: PresetsStore = {};
+    const r1 = savePreset(store, 'upper_a', 'Bras A Force', ['squat'], []);
+    store = r1.store;
+    const r2 = savePreset(store, 'upper_a', 'Bras A Volume', [], [CUSTOM_EXERCISE], `preset_upper_a_2`);
+    store = r2.store;
+    const presets = getPresets(store, 'upper_a');
+    expect(presets).toHaveLength(2);
+    expect(presets.map(p => p.name)).toEqual(['Bras A Force', 'Bras A Volume']);
+  });
+
+  it('les presets de types différents sont indépendants', () => {
+    let store: PresetsStore = {};
+    store = savePreset(store, 'upper_a', 'Bras A', [], []).store;
+    store = savePreset(store, 'lower_a', 'Jambes A', ['bench_press'], []).store;
+    expect(getPresets(store, 'upper_a')).toHaveLength(1);
+    expect(getPresets(store, 'lower_a')).toHaveLength(1);
+    expect(getPresets(store, 'upper_b')).toHaveLength(0);
+  });
+
+  it('supprime un preset spécifique sans affecter les autres', () => {
+    let store: PresetsStore = {};
+    const r1 = savePreset(store, 'upper_a', 'Preset 1', [], [], 'id_1');
+    store = r1.store;
+    const r2 = savePreset(store, 'upper_a', 'Preset 2', [], [], 'id_2');
+    store = r2.store;
+    store = deletePreset(store, 'upper_a', 'id_1');
+    const presets = getPresets(store, 'upper_a');
+    expect(presets).toHaveLength(1);
+    expect(presets[0].name).toBe('Preset 2');
+  });
+
+  it('supprime la clé du store quand le dernier preset est supprimé', () => {
+    let store: PresetsStore = {};
+    store = savePreset(store, 'upper_a', 'Seul preset', [], [], 'id_1').store;
+    store = deletePreset(store, 'upper_a', 'id_1');
+    expect(store['upper_a']).toBeUndefined();
+  });
+
+  it('applique un preset : écrase l\'état courant', () => {
+    const preset: SessionPreset = {
+      id: 'id_1', name: 'Bras A Force', sessionType: 'upper_a',
+      removed: ['bench_press'], custom: [CUSTOM_EXERCISE], savedAt: '',
+    };
+    const state = applyPreset(preset);
+    expect(state.removed).toEqual(['bench_press']);
+    expect(state.custom).toHaveLength(1);
+    const result = computeExercises(BASE_EXERCISES, state);
+    expect(result.find(e => e.id === 'bench_press')).toBeUndefined();
+    expect(result.find(e => e.id === 'custom_123')).toBeDefined();
+  });
+
+  it('applique null (séance par défaut) : remet à zéro', () => {
+    const state = applyPreset(null);
+    expect(state.removed).toHaveLength(0);
+    expect(state.custom).toHaveLength(0);
+    const result = computeExercises(BASE_EXERCISES, state);
+    expect(result).toHaveLength(3);
+  });
+
+  it('met à jour un preset existant (même id)', () => {
+    let store: PresetsStore = {};
+    store = savePreset(store, 'upper_a', 'Bras A', [], [], 'id_1').store;
+    store = savePreset(store, 'upper_a', 'Bras A Modifié', ['squat'], [CUSTOM_EXERCISE], 'id_1').store;
+    const presets = getPresets(store, 'upper_a');
+    expect(presets).toHaveLength(1);
+    expect(presets[0].name).toBe('Bras A Modifié');
+    expect(presets[0].removed).toEqual(['squat']);
+  });
+
+  it('détecte le preset actif en comparant l\'état courant', () => {
+    let store: PresetsStore = {};
+    store = savePreset(store, 'upper_a', 'Bras A Force', ['bench_press'], [], 'id_1').store;
+    store = savePreset(store, 'upper_a', 'Bras A Volume', [], [CUSTOM_EXERCISE], 'id_2').store;
+    const currentState = { removed: ['bench_press'], custom: [] as Exercise[] };
+    const presets = getPresets(store, 'upper_a');
+    const activePreset = presets.find(p =>
+      JSON.stringify(p.removed.slice().sort()) === JSON.stringify(currentState.removed.slice().sort()) &&
+      JSON.stringify(p.custom.map(e => e.id)) === JSON.stringify(currentState.custom.map(e => e.id))
+    ) ?? null;
+    expect(activePreset?.id).toBe('id_1');
+  });
+});

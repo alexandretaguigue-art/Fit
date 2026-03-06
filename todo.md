@@ -45,3 +45,5 @@
 - [x] Séparation des données par utilisateur : clé localStorage unique par user (pas de mélange entre comptes Alex/test)
 - [x] WorkoutPage : afficher le sélecteur de preset dès l'ouverture de la page séance (avant de commencer)
 - [x] Fix drag & drop calendrier : le drag ne fonctionne plus après les dernières modifications
+- [x] Fix Nutrition : impossible de valider les 2 derniers repas du soir (collation soir + dîner)
+- [x] Fix Nutrition : les quantités adaptées après swap ne s'affichent pas en orange

@@ -273,6 +273,7 @@ export interface WeeklyMealPlan {
     dayName: string;
     isTrainingDay: boolean;
     sessionType: 'training' | 'running' | 'football' | 'cycling' | 'rest';
+    sessionId?: string;
     sessionName?: string;
     meals: Meal[];
     totalMacros: DayMacros;
@@ -1266,11 +1267,26 @@ export function generateWeeklyMealPlan(
       calories: weeklyTotals.calories + totalMacros.calories,
     };
 
+    // Calculer le sessionId effectif pour ce jour
+    const effectiveSessionId = (sessionOverrides && sessionOverrides[dateKey])
+      ? sessionOverrides[dateKey]
+      : (() => {
+          const defaultSession = SESSION_BY_DAY[dayOfWeek];
+          if (defaultSession === null) return 'rest';
+          // Mapper le nom SESSION_BY_DAY vers un sessionId
+          if (defaultSession.includes('Haut') && defaultSession.includes('A')) return 'upper_a';
+          if (defaultSession.includes('Haut') && defaultSession.includes('B')) return 'upper_b';
+          if (defaultSession.includes('Bas') && defaultSession.includes('A')) return 'lower_a';
+          if (defaultSession.includes('Bas') && defaultSession.includes('B')) return 'lower_b';
+          return 'rest';
+        })();
+
     days.push({
       date: dateKey,
       dayName: DAY_NAMES_FR[dayOfWeek],
       isTrainingDay,
       sessionType,
+      sessionId: effectiveSessionId,
       sessionName,
       meals,
       totalMacros,

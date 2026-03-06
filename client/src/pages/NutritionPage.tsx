@@ -744,13 +744,21 @@ function JournalTab() {
             return false;
           });
           // Détecter si ce repas a été adapté suite à un changement de séance
-          const isMealAdaptedBySwap = !isAdjusted && planMeal && basePlanMeal && (
+          // Cas 1 : le plan nutritionnel a changé (types différents, ex: musculation ↔ course)
+          const isPlanChanged = !isAdjusted && planMeal && basePlanMeal && (
             planMeal.totalCalories !== basePlanMeal.totalCalories ||
             planMeal.items.some((item, idx) => {
               const baseItem = basePlanMeal.items[idx];
               return !baseItem || item.food !== baseItem.food || item.quantity !== baseItem.quantity;
             })
           );
+          // Cas 2 : la séance a changé (même type nutritionnel, ex: Haut A ↔ Bas A)
+          const isSessionSwapped = !isAdjusted && !!(
+            dayPlan && baseDayPlan &&
+            (dayPlan as any).sessionId && (baseDayPlan as any).sessionId &&
+            (dayPlan as any).sessionId !== (baseDayPlan as any).sessionId
+          );
+          const isMealAdaptedBySwap = isPlanChanged || isSessionSwapped;
 
           // Couleur de statut
           const statusColor = mealStatus === 'validated' ? '#22c55e'
@@ -827,7 +835,7 @@ function JournalTab() {
                               className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
                               style={{ background: 'rgba(255,107,53,0.2)', color: '#FF6B35', border: '1px solid rgba(255,107,53,0.35)', fontFamily: 'Inter, sans-serif' }}
                             >
-                              Séance modifiée
+                              {isPlanChanged ? '⚡ Plan adapté' : '🔄 Séance modifiée'}
                             </span>
                           )}
                         </div>
@@ -1014,8 +1022,8 @@ function JournalTab() {
           if (activeMeal === 'breakfast') return n === 'Petit-déjeuner';
           if (activeMeal === 'morning_snack') return n === 'Collation matinale' || n === 'Collation';
           if (activeMeal === 'lunch') return n.startsWith('Déjeuner');
-          if (activeMeal === 'afternoon_snack') return n === 'Collation' || n === 'Collation pré-entraînement' || n === 'Collation après-midi';
-          if (activeMeal === 'dinner') return n === 'Dîner' || n === 'Dîner post-training';
+          if (activeMeal === 'snack') return n === 'Collation' || n === 'Collation pré-entraînement' || n === 'Collation après-midi' || n.startsWith('Collation');
+          if (activeMeal === 'dinner') return n === 'Dîner' || n === 'Dîner post-training' || n.startsWith('Dîner');
           return false;
         });
         const activeMealStatus = validatedMeals[activeMeal] || (activeDayLog.entries.some(e => e.meal === activeMeal) ? 'modified' : null);

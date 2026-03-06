@@ -2062,11 +2062,11 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
   const { exercises: sessionExercises, removeExercise, addCustomExercise, resetExercises, applyPreset, customCount, removedCount, state: exerciseState } = useSessionExercises(session.id, session.exercises);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
-  const [showSelectPresetModal, setShowSelectPresetModal] = useState(false);
-
   // Gestion des presets de séance (multi-presets)
   const { savePreset, deletePreset, getPresets } = useSessionPresets();
   const presets = getPresets(session.id);
+  // Ouvrir automatiquement le sélecteur si des presets existent pour ce type de séance
+  const [showSelectPresetModal, setShowSelectPresetModal] = useState(() => presets.length > 0);
   // Preset actif : celui dont removed+custom correspond à l'état courant
   const activePreset = presets.find(p =>
     JSON.stringify(p.removed.slice().sort()) === JSON.stringify(exerciseState.removed.slice().sort()) &&

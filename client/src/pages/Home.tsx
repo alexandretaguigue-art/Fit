@@ -639,12 +639,9 @@ export default function Home() {
                       }
                     };
 
-                    // Drag & drop uniquement sur la semaine courante
-                    const isCurrentWeek = !!(data.startDate && (() => {
-                      const startMonday = getStartMonday(data.startDate);
-                      const todayMon = getStartMonday(new Date().toISOString());
-                      return startMonday.getTime() + calendarWeekOffset * 7 * 24 * 60 * 60 * 1000 === todayMon.getTime();
-                    })());
+                    // Drag & drop disponible sur toutes les semaines du programme
+                    // (pas seulement la semaine courante)
+                    const isDragEnabled = !slot.isPreProgram;
 
                     return (
                     <button
@@ -652,7 +649,7 @@ export default function Home() {
                       ref={el => { cardRefs.current[dayNumber] = el; }}
                       onClick={handleTap}
                       onTouchStart={(e) => {
-                        if (!isCurrentWeek) return;
+                        if (!isDragEnabled) return;
                         dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
                         isDragging.current = false;
                         longPressTimer.current = setTimeout(() => {

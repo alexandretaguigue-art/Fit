@@ -58,6 +58,8 @@ interface FitnessData {
   scheduleOverrides: Record<string, string>;
   // Séance en cours (draft) — survit au rechargement
   workoutDraft: WorkoutDraft | null;
+  // Validations des repas du plan : dateKey → { mealKey → 'validated' | 'modified' | null }
+  mealValidations: Record<string, Record<string, 'validated' | 'modified' | null>>;
 }
 
 // Clé de stockage unique par utilisateur pour éviter le mélange de données entre comptes
@@ -83,6 +85,7 @@ const defaultData: FitnessData = {
   currentMealPlanWeek: null,
   scheduleOverrides: {},
   workoutDraft: null,
+  mealValidations: {},
 };
 
 // ============================================================
@@ -102,6 +105,7 @@ export function useFitnessTracker() {
           exerciseAdaptations: parsed.exerciseAdaptations ?? {},
           nutritionLogs: parsed.nutritionLogs ?? {},
           scheduleOverrides: parsed.scheduleOverrides ?? {},
+          mealValidations: parsed.mealValidations ?? {},
         };
       }
     } catch (e) {
@@ -831,6 +835,47 @@ export function useFitnessTracker() {
     });
   }, []);
 
+  // ============================================================
+  // VALIDATIONS DES REPAS — persistées dans localStorage
+  // ============================================================
+
+  /** Récupère les validations pour un jour donné (dateKey YYYY-MM-DD) */
+  const getMealValidations = useCallback((dateKey: string): Record<string, 'validated' | 'modified' | null> => {
+    return data.mealValidations[dateKey] ?? {};
+  }, [data.mealValidations]);
+
+  /** Définit l'état de validation d'un repas pour un jour donné */
+  const setMealValidation = useCallback((
+    dateKey: string,
+    mealKey: string,
+    status: 'validated' | 'modified' | null
+  ) => {
+    setData(prev => {
+      const dayValidations = { ...(prev.mealValidations[dateKey] ?? {}) };
+      if (status === null) {
+        delete dayValidations[mealKey];
+      } else {
+        dayValidations[mealKey] = status;
+      }
+      return {
+        ...prev,
+        mealValidations: {
+          ...prev.mealValidations,
+          [dateKey]: dayValidations,
+        },
+      };
+    });
+  }, []);
+
+  /** Efface toutes les validations d'un jour (utile pour réinitialiser) */
+  const clearDayMealValidations = useCallback((dateKey: string) => {
+    setData(prev => {
+      const updated = { ...prev.mealValidations };
+      delete updated[dateKey];
+      return { ...prev, mealValidations: updated };
+    });
+  }, []);
+
   return {
     data,
     startProgram,
@@ -882,5 +927,9 @@ export function useFitnessTracker() {
     updateDraftMeta,
     clearWorkoutDraft,
     getWorkoutDraft,
+    // Validations des repas (persistées)
+    getMealValidations,
+    setMealValidation,
+    clearDayMealValidations,
   };
 }

@@ -380,14 +380,12 @@ function SwipeToDelete({ children, onDelete }: { children: React.ReactNode; onDe
 // ONGLET JOURNAL — avec validation des repas du plan + compensation
 // ============================================================
 function JournalTab() {
-  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments } = useFitnessTracker();
+  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments, getMealValidations, setMealValidation } = useFitnessTracker();
   const [dateOffset, setDateOffset] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalMeal, setAddModalMeal] = useState<FoodEntry['meal']>('lunch');
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editQty, setEditQty] = useState(0);
-  // Repas validés (mangé comme prévu) ou invalidés (modifié)
-  const [validatedMeals, setValidatedMeals] = useState<Record<string, 'validated' | 'modified' | null>>({});
   // Items du plan supprimés manuellement (clé = `${meal}-${i}`)
   const [removedPlanItems, setRemovedPlanItems] = useState<Set<string>>(new Set());
   // Item en cours de swipe pour suppression (clé = `${meal}-${i}`, valeur = offsetX)
@@ -422,6 +420,9 @@ function JournalTab() {
 
   const dayLog = getDayLog(dateKey);
   const balance = getDayBalance(dateKey);
+
+  // Repas validés (mangé comme prévu) ou invalidés (modifié) — persistés dans localStorage
+  const validatedMeals = useMemo(() => getMealValidations(dateKey), [getMealValidations, dateKey]);
 
   // Plan du jour (repas suggérés) — calcul robuste basé sur la date locale
   const weekMonday = useMemo(() => {
@@ -521,13 +522,13 @@ function JournalTab() {
       }
     });
 
-    setValidatedMeals(prev => ({ ...prev, [mealKey]: 'validated' }));
+    setMealValidation(dateKey, mealKey, 'validated');
     toast.success(`${MEAL_LABELS[mealKey]} validé ✓`);
   };
 
   // Invalider un repas (marquer comme modifié — l'utilisateur saisit ce qu'il a vraiment mangé)
   const handleInvalidateMeal = (mealKey: string) => {
-    setValidatedMeals(prev => ({ ...prev, [mealKey]: 'modified' }));
+    setMealValidation(dateKey, mealKey, 'modified');
     setAddModalMeal(mealKey as FoodEntry['meal']);
     setShowAddModal(true);
     toast.info(`Saisis ce que tu as vraiment mangé pour le ${MEAL_LABELS[mealKey].toLowerCase()}`);
@@ -1045,7 +1046,7 @@ function JournalTab() {
               if (food) { const macros = computeFoodMacros(food.id, food.name, qty, food.per100g); addFoodEntry(dateKey, { ...macros, meal: activeMeal as FoodEntry['meal'], id: nanoid() }); }
               else { addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: activeMeal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories }); }
             });
-            setValidatedMeals(prev => ({ ...prev, [activeMeal]: 'validated' }));
+            setMealValidation(dateKey, activeMeal, 'validated');
             setOpenMeal(null);
             toast.success(`${MEAL_LABELS[activeMeal]} validé ✓`);
           }}

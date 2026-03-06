@@ -47,3 +47,4 @@
 - [x] Fix drag & drop calendrier : le drag ne fonctionne plus après les dernières modifications
 - [x] Fix Nutrition : impossible de valider les 2 derniers repas du soir (collation soir + dîner)
 - [x] Fix Nutrition : les quantités adaptées après swap ne s'affichent pas en orange
+- [x] Persistance des repas validés : conserver l'état validé/modifié des repas dans localStorage entre les sessions

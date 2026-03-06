@@ -60,7 +60,18 @@ interface FitnessData {
   workoutDraft: WorkoutDraft | null;
 }
 
-const STORAGE_KEY = 'fitpro_data_v2';
+// Clé de stockage unique par utilisateur pour éviter le mélange de données entre comptes
+function getStorageKey(): string {
+  try {
+    const userInfo = localStorage.getItem('manus-runtime-user-info');
+    if (userInfo) {
+      const parsed = JSON.parse(userInfo);
+      const openId = parsed?.openId ?? parsed?.id ?? null;
+      if (openId) return `fitpro_data_v2_${openId}`;
+    }
+  } catch (e) { /* ignore */ }
+  return 'fitpro_data_v2'; // fallback si non connecté
+}
 
 const defaultData: FitnessData = {
   sessionLogs: [],
@@ -81,7 +92,7 @@ const defaultData: FitnessData = {
 export function useFitnessTracker() {
   const [data, setData] = useState<FitnessData>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(getStorageKey());
       if (stored) {
         const parsed = JSON.parse(stored);
         // Migration depuis ancienne version
@@ -102,7 +113,7 @@ export function useFitnessTracker() {
   // Sauvegarde automatique dans localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(getStorageKey(), JSON.stringify(data));
     } catch (e) {
       console.error('Error saving fitness data:', e);
     }

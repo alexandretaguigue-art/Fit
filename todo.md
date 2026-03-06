@@ -40,3 +40,6 @@
 - [x] Page Progrès : courbes d'évolution de charge/performance par exercice (1RM estimé, charge max, volume total)
 - [x] Page Progrès : courbes d'évolution par groupe musculaire (volume hebdomadaire, progression globale)
 - [x] Page Progrès : connexion automatique aux séances validées (données réelles des séries/reps/poids)
+- [x] Fix calendrier : encadrement orange du jour courant a disparu
+- [x] Fix Nutrition : le déjeuner ne s'affiche pas
+- [x] Séparation des données par utilisateur : clé localStorage unique par user (pas de mélange entre comptes Alex/test)

@@ -526,8 +526,11 @@ export default function Home() {
             // Chaque slot a : date réelle, programDayNumber (1-based depuis startDate, null si avant démarrage)
             const slots = Array.from({ length: 7 }, (_, i) => {
               if (!data.startDate) {
-                // Sans programme, afficher J1-J7 par défaut
-                return { programDayNumber: i + 1, isPreProgram: false, date: null };
+                // Sans programme, afficher la semaine courante avec les vraies dates
+                const todayMon = getStartMonday(new Date().toISOString());
+                const slotDate = new Date(todayMon.getTime() + (calendarWeekOffset * 7 + i) * 24 * 60 * 60 * 1000);
+                slotDate.setHours(0, 0, 0, 0);
+                return { programDayNumber: i + 1, isPreProgram: false, date: slotDate };
               }
               const startMonday = getStartMonday(data.startDate);
               const slotDate = new Date(startMonday.getTime() + (calendarWeekOffset * 7 + i) * 24 * 60 * 60 * 1000);

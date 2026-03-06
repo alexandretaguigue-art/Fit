@@ -494,7 +494,7 @@ function JournalTab() {
       const name = m.name;
       if (mealKey === 'breakfast') return name === 'Petit-déjeuner';
       if (mealKey === 'morning_snack') return name === 'Collation matinale';
-      if (mealKey === 'lunch') return name === 'Déjeuner';
+      if (mealKey === 'lunch') return name.startsWith('Déjeuner');
       if (mealKey === 'snack') return name === 'Collation' || name.startsWith('Collation');
       if (mealKey === 'dinner') return name === 'Dîner' || name.startsWith('Dîner');
       return false;
@@ -724,10 +724,10 @@ function JournalTab() {
             const name = m.name;
             if (meal === 'breakfast') return name === 'Petit-déjeuner';
             if (meal === 'morning_snack') return name === 'Collation matinale';
-            if (meal === 'lunch') return name === 'Déjeuner';
-            if (meal === 'snack') return name === 'Collation' || name === 'Collation pré-entraînement' || name.startsWith('Collation');
-            if (meal === 'dinner') return name === 'Dîner' || name === 'Dîner post-training' || name.startsWith('Dîner');
-            return false;
+          if (meal === 'lunch') return name.startsWith('Déjeuner');
+          if (meal === 'snack') return name === 'Collation' || name === 'Collation pré-entraînement' || name.startsWith('Collation');
+          if (meal === 'dinner') return name === 'Dîner' || name === 'Dîner post-training' || name.startsWith('Dîner');
+          return false;
           });
           const displayItems = adjustedMeals[meal] ?? planMeal?.items ?? [];
           const isAdjusted = !!adjustedMeals[meal];
@@ -738,7 +738,7 @@ function JournalTab() {
             const name = m.name;
             if (meal === 'breakfast') return name === 'Petit-déjeuner';
             if (meal === 'morning_snack') return name === 'Collation matinale';
-            if (meal === 'lunch') return name === 'Déjeuner';
+            if (meal === 'lunch') return name.startsWith('Déjeuner');
             if (meal === 'snack') return name === 'Collation' || name === 'Collation pré-entraînement' || name.startsWith('Collation');
             if (meal === 'dinner') return name === 'Dîner' || name === 'Dîner post-training' || name.startsWith('Dîner');
             return false;
@@ -1013,7 +1013,7 @@ function JournalTab() {
           const n = m.name;
           if (activeMeal === 'breakfast') return n === 'Petit-déjeuner';
           if (activeMeal === 'morning_snack') return n === 'Collation matinale' || n === 'Collation';
-          if (activeMeal === 'lunch') return n === 'Déjeuner';
+          if (activeMeal === 'lunch') return n.startsWith('Déjeuner');
           if (activeMeal === 'afternoon_snack') return n === 'Collation' || n === 'Collation pré-entraînement' || n === 'Collation après-midi';
           if (activeMeal === 'dinner') return n === 'Dîner' || n === 'Dîner post-training';
           return false;

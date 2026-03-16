@@ -78,7 +78,8 @@ export const agentRouter = router({
         input.mealsPerDay === 4 ? ["b", "l", "s2", "d"] :
         ["b", "l", "d"];
 
-      // Prompt compact pour haiku — génère 3 jours seulement (lundi/mercredi/vendredi) pour rester rapide
+      // Prompt ultra-compact : génère UNIQUEMENT les targets + 1 jour modèle
+      // Le client duplique ce jour pour les 7 jours de la semaine
       const prompt = `Expert nutrition sport. JSON UNIQUEMENT sans markdown.
 PROFIL: ${input.name}, ${input.age}ans, ${input.sex}, ${input.weight}kg, ${input.height}cm
 OBJECTIF: ${input.goal} | activite: ${input.activity} | sports: ${input.sports.join("+")}
@@ -87,11 +88,12 @@ REPAS/JOUR: ${input.mealsPerDay} ids=${mealIds.join(",")}
 
 Calcul kcal: Mifflin-St Jeor + facteur(sedentaire=1.2,leger=1.375,modere=1.55,actif=1.725) + delta(lean_bulk=+250,cut=-400,recomp=0,perf=+200,sinon=0).
 Proteines: muscu=1.8g/kg, endurance=1.4g/kg, sinon=1.6g/kg.
-Genere 3 jours (Lundi, Mercredi, Vendredi). MAX 3 aliments par repas.
+Genere EXACTEMENT 1 jour avec ${input.mealsPerDay} repas. MAX 2 aliments par repas. Valeurs numeriques entiers.
 
-FORMAT: {"targets":{"kcal":0,"pro":0,"glu":0,"lip":0},"rationale":"1 phrase","week":[{"dayName":"Lundi","meals":[{"id":"b","icon":"🥣","name":"Petit-dej","time":"7h","kcal":0,"pro":0,"glu":0,"lip":0,"hypo":false,"note":null,"foods":[{"n":"Flocons avoine","g":80,"kcal":300,"p":10,"gl":54,"l":5}]}]}]}`;
+FORMAT STRICT (respecte exactement cette structure):
+{"targets":{"kcal":2800,"pro":160,"glu":320,"lip":80},"rationale":"1 phrase courte","week":[{"dayName":"Lundi","meals":[{"id":"b","icon":"🥣","name":"Petit-dejeuner","time":"7h30","kcal":600,"pro":35,"glu":70,"lip":18,"hypo":false,"note":null,"foods":[{"n":"Flocons avoine","g":80,"kcal":300,"p":10,"gl":54,"l":5},{"n":"Oeufs entiers","g":120,"kcal":180,"p":15,"gl":1,"l":12}]}]}]}`;
 
-      const raw = await callClaude(prompt, 3000);
+      const raw = await callClaude(prompt, 2000);
       const plan = parseJSON<{
         targets: { kcal: number; pro: number; glu: number; lip: number };
         rationale: string;
@@ -101,6 +103,18 @@ FORMAT: {"targets":{"kcal":0,"pro":0,"glu":0,"lip":0},"rationale":"1 phrase","we
       if (!plan.targets || !plan.week) {
         throw new Error("Structure nutrition invalide");
       }
+
+      // Dupliquer le jour modèle pour les 7 jours de la semaine
+      const dayNames = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+      const templateDay = plan.week[0] as any;
+      if (templateDay && plan.week.length === 1) {
+        plan.week = dayNames.map((dayName) => ({
+          ...templateDay,
+          dayName,
+          meals: templateDay.meals?.map((m: any) => ({ ...m })) ?? [],
+        }));
+      }
+
       return plan;
     }),
 

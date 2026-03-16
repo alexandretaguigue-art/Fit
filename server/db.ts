@@ -1,6 +1,15 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import {
+  InsertUser,
+  InsertUserProfile,
+  InsertNutritionPlan,
+  InsertSportPlan,
+  nutritionPlans,
+  sportPlans,
+  userProfiles,
+  users,
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +98,80 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============================================================
+// USER PROFILE
+// ============================================================
+
+export async function upsertUserProfile(profile: InsertUserProfile): Promise<void> {
+  const db = await getDb();
+  if (!db) { console.warn("[Database] Cannot upsert profile: database not available"); return; }
+  const existing = await db.select().from(userProfiles).where(eq(userProfiles.userId, profile.userId)).limit(1);
+  if (existing.length > 0) {
+    await db.update(userProfiles).set(profile).where(eq(userProfiles.userId, profile.userId));
+  } else {
+    await db.insert(userProfiles).values(profile);
+  }
+}
+
+export async function getUserProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ============================================================
+// NUTRITION PLANS
+// ============================================================
+
+export async function insertNutritionPlan(plan: InsertNutritionPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(nutritionPlans).values(plan);
+  return result;
+}
+
+export async function getLatestNutritionPlan(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(nutritionPlans)
+    .where(eq(nutritionPlans.userId, userId))
+    .orderBy(nutritionPlans.createdAt)
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ============================================================
+// SPORT PLANS
+// ============================================================
+
+export async function insertSportPlan(plan: InsertSportPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(sportPlans).values(plan);
+  return result;
+}
+
+export async function getLatestSportPlan(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(sportPlans)
+    .where(eq(sportPlans.userId, userId))
+    .orderBy(sportPlans.createdAt)
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ============================================================
+// ONBOARDING STATUS
+// ============================================================
+
+export async function markOnboardingCompleted(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) { console.warn("[Database] Cannot mark onboarding: database not available"); return; }
+  await db.update(users).set({ onboardingCompleted: true }).where(eq(users.id, userId));
+}

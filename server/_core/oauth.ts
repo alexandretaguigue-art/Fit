@@ -41,10 +41,15 @@ export function registerOAuthRoutes(app: Express) {
         expiresInMs: ONE_YEAR_MS,
       });
 
+      // Set cookie (for browsers that support it)
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      // Also pass token in URL fragment for Safari/iOS where SameSite=None cookies are blocked
+      // The client will read the token from the URL and store it in localStorage
+      const redirectUrl = `/?token=${encodeURIComponent(sessionToken)}`;
+      console.log("[OAuth] Redirecting with token in URL");
+      res.redirect(302, redirectUrl);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

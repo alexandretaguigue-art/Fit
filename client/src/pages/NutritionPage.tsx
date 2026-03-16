@@ -4,14 +4,17 @@
 // plan hebdomadaire, liste de courses, récap hebdomadaire réalité/objectif
 // ============================================================
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, ChevronLeft, ChevronRight, ShoppingCart, Calendar, BookOpen, AlertTriangle, TrendingUp, TrendingDown, BarChart2, CheckCircle, XCircle, RotateCcw, Sparkles, RefreshCw, User } from 'lucide-react';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import { programData } from '../lib/programData';
 import { computeFoodMacros, MACRO_TARGETS, generateWeeklyMealPlan, toLocalDateKey, computeRemainingMacros } from '../lib/nutritionEngine';
 import type { FoodEntry } from '../lib/nutritionEngine';
 import { toast } from 'sonner';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useAgent } from '../hooks/useAgent';
+import ProfileOnboarding from '../components/ProfileOnboarding';
 
 const MEAL_LABELS: Record<string, string> = {
   breakfast: 'Petit-déjeuner',
@@ -380,7 +383,8 @@ function SwipeToDelete({ children, onDelete }: { children: React.ReactNode; onDe
 // ONGLET JOURNAL — avec validation des repas du plan + compensation
 // ============================================================
 function JournalTab() {
-  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments, getMealValidations, setMealValidation } = useFitnessTracker();
+  const { getTodayKey, getDayLog, getDayBalance, addFoodEntry, deleteFoodEntry, updateFoodEntry, getWeeklyMealPlan, getBaseWeeklyMealPlan, getCurrentWeekMonday, getMealAdjustments, getMealValidations, setMealValidation, clearDayMealValidations } = useFitnessTracker();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [dateOffset, setDateOffset] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalMeal, setAddModalMeal] = useState<FoodEntry['meal']>('lunch');
@@ -388,9 +392,11 @@ function JournalTab() {
   const [editQty, setEditQty] = useState(0);
   // Items du plan supprimés manuellement (clé = `${meal}-${i}`)
   const [removedPlanItems, setRemovedPlanItems] = useState<Set<string>>(new Set());
-  // Item en cours de swipe pour suppression (clé = `${meal}-${i}`, valeur = offsetX)
+  // Item en cours de swipe (clé = `${meal}-${i}`, valeur = offsetX)
   const [swipingItem, setSwipingItem] = useState<{ key: string; offsetX: number } | null>(null);
   const swipeItemStartX = useRef<number | null>(null);
+  // Modal de modification de quantité d'un item du plan
+  const [editPlanItem, setEditPlanItem] = useState<{ key: string; meal: string; idx: number; item: { food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }; newQty: number } | null>(null);
 
   const handlePlanItemTouchStart = useCallback((key: string, clientX: number) => {
     swipeItemStartX.current = clientX;
@@ -400,13 +406,45 @@ function JournalTab() {
   const handlePlanItemTouchMove = useCallback((key: string, clientX: number) => {
     if (swipeItemStartX.current === null) return;
     const dx = clientX - swipeItemStartX.current;
+    // Swipe gauche = supprimer, swipe droite = modifier
     if (dx < 0) setSwipingItem({ key, offsetX: Math.max(dx, -80) });
+    else if (dx > 0) setSwipingItem({ key, offsetX: Math.min(dx, 80) });
   }, []);
 
-  const handlePlanItemTouchEnd = useCallback((key: string, offsetX: number) => {
+  const handlePlanItemTouchEnd = useCallback((key: string, offsetX: number, meal: string, idx: number, item: { food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }) => {
     if (offsetX < -50) {
       setRemovedPlanItems(prev => { const s = new Set(prev); s.add(key); return s; });
-      toast.success('Aliment retiré du plan');
+      toast(`${item.food} retiré du plan`, {
+        duration: 5000,
+        action: {
+          label: 'Annuler',
+          onClick: () => {
+            setRemovedPlanItems(prev => { const s = new Set(prev); s.delete(key); return s; });
+          },
+        },
+      });
+    } else if (offsetX > 50) {
+      // Détecter le format de la quantité :
+      // Format A : "3 tranches (90g)" ou "3 oeufs (180g)" ou "1 (120g)" → incrémenter le nombre d'unités
+      // Format B : "200g" ou "150ml" → incrémenter par 5
+      const unitCountMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*([^(\d][^(]*)\(/);
+      const pureGramsMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*(g|ml)$/);
+      const fruitMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*\(/);
+      let numQty: number;
+      if (unitCountMatch) {
+        // "3 tranches (90g)" → numQty = 3 (nombre de tranches)
+        numQty = parseFloat(unitCountMatch[1]);
+      } else if (fruitMatch) {
+        // "1 (120g)" → numQty = 1
+        numQty = parseFloat(fruitMatch[1]);
+      } else if (pureGramsMatch) {
+        // "200g" → numQty = 200
+        numQty = parseFloat(pureGramsMatch[1]);
+      } else {
+        const fallback = item.quantity.match(/(\d+(?:\.\d+)?)/); 
+        numQty = fallback ? parseFloat(fallback[1]) : 100;
+      }
+      setEditPlanItem({ key, meal, idx, item, newQty: numQty });
     }
     setSwipingItem(null);
     swipeItemStartX.current = null;
@@ -442,6 +480,75 @@ function JournalTab() {
   // Plan de référence (sans overrides) pour détecter les modifications en orange
   const baseWeekPlan = useMemo(() => getBaseWeeklyMealPlan(weekMonday), [weekMonday, getBaseWeeklyMealPlan]);
   const baseDayPlan = useMemo(() => baseWeekPlan.days.find(d => d.date === dateKey), [baseWeekPlan, dateKey]);
+
+  // ============================================================
+  // AUTO-RESYNC : si les entries validées sont obsolètes (calories du plan ≠ calories des entries),
+  // les mettre à jour silencieusement depuis le plan actuel.
+  // Cela se produit quand le moteur nutritionnel est amélioré après que l'utilisateur a validé ses repas.
+  // ============================================================
+  const MEAL_KEY_TO_NAME: Record<string, (name: string) => boolean> = {
+    breakfast: (n) => n === 'Petit-déjeuner',
+    morning_snack: (n) => n === 'Collation matinale' || n === 'Collation',
+    lunch: (n) => n.startsWith('Déjeuner'),
+    snack: (n) => n === 'Collation' || n.startsWith('Collation'),
+    dinner: (n) => n === 'Dîner' || n.startsWith('Dîner'),
+  };
+
+  useEffect(() => {
+    if (!dayPlan) return;
+    const currentValidations = getMealValidations(dateKey);
+    const validatedMealKeys = Object.entries(currentValidations)
+      .filter(([, v]) => v === 'validated')
+      .map(([k]) => k);
+    if (validatedMealKeys.length === 0) return;
+
+    // Pour chaque repas validé, comparer les calories du plan actuel vs les entries stockées
+    let needsUpdate = false;
+    for (const mealKey of validatedMealKeys) {
+      const planMeal = dayPlan.meals.find(m => MEAL_KEY_TO_NAME[mealKey]?.(m.name));
+      if (!planMeal) continue;
+      const planTotal = planMeal.items.reduce((s, i) => s + i.calories, 0);
+      const entriesTotal = dayLog.entries
+        .filter(e => e.meal === mealKey)
+        .reduce((s, e) => s + e.calories, 0);
+      // Si l'écart est > 50 kcal, les entries sont obsolètes
+      if (Math.abs(planTotal - entriesTotal) > 50) {
+        needsUpdate = true;
+        break;
+      }
+    }
+
+    if (!needsUpdate) return;
+
+    // Mettre à jour silencieusement toutes les entries validées depuis le plan actuel
+    for (const mealKey of validatedMealKeys) {
+      const planMeal = dayPlan.meals.find(m => MEAL_KEY_TO_NAME[mealKey]?.(m.name));
+      if (!planMeal) continue;
+      // Supprimer les entries obsolètes
+      dayLog.entries.filter(e => e.meal === mealKey).forEach(e => deleteFoodEntry(dateKey, e.id));
+      // Réajouter depuis le plan actuel
+      planMeal.items.forEach(item => {
+        const parenGrams = item.quantity.match(/\((\d+(?:\.\d+)?)g\)/);
+        const directGrams = item.quantity.match(/^(\d+(?:\.\d+)?)(g|ml)/);
+        const firstNum = item.quantity.match(/(\d+(?:\.\d+)?)/);
+        const qty = parenGrams ? parseFloat(parenGrams[1])
+          : directGrams ? parseFloat(directGrams[1])
+          : firstNum ? parseFloat(firstNum[1]) : 100;
+        addFoodEntry(dateKey, {
+          id: nanoid(),
+          foodId: item.food,
+          foodName: item.food,
+          quantity: qty,
+          meal: mealKey as FoodEntry['meal'],
+          proteins: item.proteins,
+          carbs: item.carbs,
+          fats: item.fats,
+          calories: item.calories,
+        });
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayPlan, dateKey]);
 
   // Repas complétés (validés ou modifiés)
   const completedMeals = useMemo(() =>
@@ -507,19 +614,29 @@ function JournalTab() {
 
     // Ajouter les items du plan
     planMeal.items.forEach(item => {
-      const food = programData.foodItems.find(f => f.name.toLowerCase().includes(item.food.toLowerCase().split(' ')[0]));
-      const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
-      const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
-      if (food) {
-        const macros = computeFoodMacros(food.id, food.name, qty, food.per100g);
-        addFoodEntry(dateKey, { ...macros, meal: mealKey as FoodEntry['meal'], id: nanoid() });
-      } else {
-        // Aliment non trouvé : ajouter avec les macros du plan
-        addFoodEntry(dateKey, {
-          id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty,
-          meal: mealKey as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories,
-        });
-      }
+      // Toujours utiliser les macros du plan directement — évite les erreurs de parsing de quantité
+      // (ex: '1 (120g)' → le regex extrait '1' au lieu de '120', donnant 1 kcal pour une banane)
+      addFoodEntry(dateKey, {
+        id: nanoid(),
+        foodId: item.food,
+        foodName: item.food,
+        quantity: (() => {
+          // Extraire les grammes depuis le format parenthèses : '1 (120g)' → 120, '2 tranches (60g)' → 60
+          const parenGrams = item.quantity.match(/\((\d+(?:\.\d+)?)g\)/);
+          if (parenGrams) return parseFloat(parenGrams[1]);
+          // Format direct : '150g', '200ml' → 150, 200
+          const directGrams = item.quantity.match(/^(\d+(?:\.\d+)?)(g|ml)/);
+          if (directGrams) return parseFloat(directGrams[1]);
+          // Fallback : premier nombre
+          const firstNum = item.quantity.match(/(\d+(?:\.\d+)?)/);
+          return firstNum ? parseFloat(firstNum[1]) : 100;
+        })(),
+        meal: mealKey as FoodEntry['meal'],
+        proteins: item.proteins,
+        carbs: item.carbs,
+        fats: item.fats,
+        calories: item.calories,
+      });
     });
 
     setMealValidation(dateKey, mealKey, 'validated');
@@ -638,6 +755,188 @@ function JournalTab() {
           <ChevronRight size={16} className={dateOffset === 0 ? 'text-white/20' : 'text-white/60'} />
         </button>
       </div>
+
+      {/* Bouton réinitialiser la journée */}
+      {(dayLog.entries.length > 0 || Object.keys(getMealValidations(dateKey)).length > 0) && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgba(239,68,68,0.7)', fontFamily: 'Inter, sans-serif' }}
+          >
+            <RotateCcw size={11} />
+            Réinitialiser la journée
+          </button>
+        </div>
+      )}
+
+      {/* Modal de modification de quantité d'un item du plan */}
+      {editPlanItem && (() => {
+        const { item, newQty } = editPlanItem;
+        // Détecter le format de la quantité d'origine :
+        // Format A : "3 tranches (90g)" ou "3 oeufs (180g)" → origCount=3, unitLabel="tranches", gramsPerUnit=30
+        // Format B : "1 (120g)" (fruits entiers) → origCount=1, unitLabel="", gramsPerUnit=120
+        // Format C : "200g" ou "150ml" → origCount=200, unitLabel="g"
+        const unitCountMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*([^(\d][^(]*)\((\d+(?:\.\d+)?)g\)/);
+        const fruitMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*\((\d+(?:\.\d+)?)g\)/);
+        const pureGramsMatch = item.quantity.match(/^(\d+(?:\.\d+)?)\s*(g|ml)$/);
+
+        let origCount: number;
+        let unitLabel: string;
+        let gramsPerUnit: number | null;
+        let isUnitBased: boolean;
+
+        if (unitCountMatch) {
+          origCount = parseFloat(unitCountMatch[1]);
+          unitLabel = unitCountMatch[2].trim();
+          gramsPerUnit = parseFloat(unitCountMatch[3]) / origCount;
+          isUnitBased = true;
+        } else if (fruitMatch) {
+          origCount = parseFloat(fruitMatch[1]);
+          unitLabel = '';
+          gramsPerUnit = parseFloat(fruitMatch[2]) / origCount;
+          isUnitBased = true;
+        } else if (pureGramsMatch) {
+          origCount = parseFloat(pureGramsMatch[1]);
+          unitLabel = pureGramsMatch[2];
+          gramsPerUnit = null;
+          isUnitBased = false;
+        } else {
+          const fallback = item.quantity.match(/(\d+(?:\.\d+)?)/); 
+          origCount = fallback ? parseFloat(fallback[1]) : 100;
+          unitLabel = item.quantity.replace(/[\d.]+/, '').trim();
+          gramsPerUnit = null;
+          isUnitBased = false;
+        }
+
+        const ratio = newQty / (origCount || 1);
+        const newProteins = Math.round(item.proteins * ratio * 10) / 10;
+        const newCarbs = Math.round(item.carbs * ratio * 10) / 10;
+        const newFats = Math.round(item.fats * ratio * 10) / 10;
+        const newCalories = Math.round(item.calories * ratio);
+
+        const newGrams = gramsPerUnit !== null ? Math.round(newQty * gramsPerUnit) : null;
+        const newQtyDisplay = isUnitBased
+          ? (unitLabel ? `${newQty} ${unitLabel} (${newGrams}g)` : `${newQty} (${newGrams}g)`)
+          : `${newQty}${unitLabel}`;
+
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 10001, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+            onClick={() => setEditPlanItem(null)}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background: '#1a1a24', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '24px 24px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 }}
+            >
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Edit3 size={20} style={{ color: '#22c55e' }} />
+                </div>
+                <div>
+                  <p style={{ color: '#fff', fontWeight: 700, fontSize: 15, fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>{item.food}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Inter, sans-serif', marginTop: 2 }}>Modifier la quantité</p>
+                </div>
+              </div>
+              {/* Stepper : 1 par 1 pour les unités, 5 par 5 pour les grammes */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
+                <button
+                  onClick={() => setEditPlanItem(prev => prev ? { ...prev, newQty: Math.max(1, prev.newQty - 1) } : null)}
+                  style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 300 }}
+                >−</button>
+                <div style={{ textAlign: 'center', minWidth: 120 }}>
+                  <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: '#22c55e', lineHeight: 1.2, whiteSpace: 'nowrap' }}>{newQtyDisplay}</p>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 4 }}>±1 par appui{gramsPerUnit ? ` (±${Math.round(gramsPerUnit)}g)` : ''}</p>
+                </div>
+                <button
+                  onClick={() => setEditPlanItem(prev => prev ? { ...prev, newQty: prev.newQty + 1 } : null)}
+                  style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 300 }}
+                >+</button>
+              </div>
+              {/* Macros recalculées */}
+              <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0', marginBottom: 16, borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {[{ label: 'Prot.', val: newProteins, unit: 'g', color: '#FF6B35' }, { label: 'Gluc.', val: newCarbs, unit: 'g', color: '#3b82f6' }, { label: 'Lip.', val: newFats, unit: 'g', color: '#a855f7' }, { label: 'Kcal', val: newCalories, unit: '', color: '#22c55e' }].map(m => (
+                  <div key={m.label} style={{ textAlign: 'center' }}>
+                    <p style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, color: m.color, lineHeight: 1 }}>{m.val}<span style={{ fontSize: 10, marginLeft: 1 }}>{m.unit}</span></p>
+                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{m.label}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  const mealKey = editPlanItem.meal as FoodEntry['meal'];
+                  const currentItems: Array<{ food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }> = adjustedMeals[mealKey] ?? [editPlanItem.item];
+                  const updatedItems = currentItems.map((it: { food: string; quantity: string; proteins: number; carbs: number; fats: number; calories: number }, idx: number) =>
+                    idx === editPlanItem.idx
+                      ? { ...it, quantity: newQtyDisplay, proteins: newProteins, carbs: newCarbs, fats: newFats, calories: newCalories }
+                      : it
+                  );
+                  setAdjustedMeals(prev => ({ ...prev, [mealKey]: updatedItems }));
+                  setEditPlanItem(null);
+                  toast.success(`${item.food} mis à jour : ${newQtyDisplay} — ${newCalories} kcal`);
+                }}
+                style={{ width: '100%', padding: '14px 0', borderRadius: 14, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', fontWeight: 700, fontSize: 14, fontFamily: 'Syne, sans-serif', cursor: 'pointer', marginBottom: 8 }}
+              >
+                Appliquer
+              </button>
+              <button
+                onClick={() => setEditPlanItem(null)}
+                style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.35)', fontWeight: 500, fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal de confirmation réinitialisation */}
+      {showResetConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={() => setShowResetConfirm(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#1a1a24', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '24px 24px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 20px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RotateCcw size={20} style={{ color: '#ef4444' }} />
+              </div>
+              <div>
+                <p style={{ color: '#fff', fontWeight: 700, fontSize: 16, fontFamily: 'Syne, sans-serif', lineHeight: 1.2 }}>Réinitialiser la journée</p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'Inter, sans-serif', marginTop: 2 }}>{dateLabel}</p>
+              </div>
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 20 }}>
+              Ceci va effacer tous les aliments saisis et les validations de repas pour cette journée. Le plan alimentaire par défaut sera remis en place.
+            </p>
+            <button
+              onClick={() => {
+                // Supprimer toutes les entrées alimentaires du jour
+                const entries = [...dayLog.entries];
+                entries.forEach(e => deleteFoodEntry(dateKey, e.id));
+                // Effacer les validations
+                clearDayMealValidations(dateKey);
+                setShowResetConfirm(false);
+                toast.success('Journée réinitialisée — plan alimentaire remis par défaut ✓');
+              }}
+              style={{ width: '100%', padding: '14px 0', borderRadius: 14, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 700, fontSize: 14, fontFamily: 'Syne, sans-serif', cursor: 'pointer', marginBottom: 8 }}
+            >
+              Oui, réinitialiser
+            </button>
+            <button
+              onClick={() => setShowResetConfirm(false)}
+              style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.35)', fontWeight: 500, fontSize: 13, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bilan calorique */}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${statusColors[balance.status]}30` }}>
@@ -868,9 +1167,11 @@ function JournalTab() {
                           const isItemNew = isMealAdaptedBySwap && !baseItem;
                           const isItemHighlighted = isItemFoodChanged || isItemQtyChanged || isItemNew;
 
+                          const showEdit = offsetX > 30;
+
                           return (
                             <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
-                              {/* Fond rouge poubelle */}
+                              {/* Fond rouge poubelle (droite) */}
                               <div style={{
                                 position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
                                 background: 'rgba(239,68,68,0.85)', display: 'flex', alignItems: 'center',
@@ -878,6 +1179,16 @@ function JournalTab() {
                                 opacity: showDelete ? 1 : 0, transition: 'opacity 0.15s',
                               }}>
                                 <Trash2 size={18} color="white" />
+                              </div>
+                              {/* Fond vert modifier (gauche) */}
+                              <div style={{
+                                position: 'absolute', left: 0, top: 0, bottom: 0, width: 80,
+                                background: 'rgba(34,197,94,0.85)', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', borderRadius: '12px 0 0 12px',
+                                opacity: showEdit ? 1 : 0, transition: 'opacity 0.15s', flexDirection: 'column', gap: 2,
+                              }}>
+                                <Edit3 size={16} color="white" />
+                                <span style={{ color: 'white', fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>Modifier</span>
                               </div>
                               {/* Contenu glissant */}
                               <div
@@ -893,17 +1204,22 @@ function JournalTab() {
                                 }}
                                 onTouchStart={e => { e.stopPropagation(); handlePlanItemTouchStart(itemKey, e.touches[0].clientX); }}
                                 onTouchMove={e => { e.stopPropagation(); handlePlanItemTouchMove(itemKey, e.touches[0].clientX); }}
-                                onTouchEnd={e => { e.stopPropagation(); handlePlanItemTouchEnd(itemKey, offsetX); }}
+                                onTouchEnd={e => { e.stopPropagation(); handlePlanItemTouchEnd(itemKey, offsetX, meal, i, item); }}
                               >
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-1 min-w-0" style={{ overflow: 'hidden' }}>
                                   {isItemHighlighted && (
                                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B35', flexShrink: 0 }} />
                                   )}
                                   <span
-                                    className="text-sm truncate"
+                                    className="text-sm"
                                     style={{
                                       fontFamily: 'Inter, sans-serif',
                                       color: isItemFoodChanged || isItemNew ? '#FF6B35' : 'rgba(255,255,255,0.8)',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      lineHeight: 1.3,
+                                      display: 'block',
                                     }}
                                   >
                                     {item.food}
@@ -1039,12 +1355,17 @@ function JournalTab() {
             if (!activePlanMeal) { toast.error('Aucun plan pour ce repas'); return; }
             const itemsToValidate = adjustedMeals[activeMeal] ?? activePlanMeal.items;
             activeDayLog.entries.filter(e => e.meal === activeMeal).forEach(e => deleteFoodEntry(dateKey, e.id));
+            // Toujours utiliser les macros du plan directement — évite les erreurs de parsing de quantité
             (itemsToValidate as Array<{food: string; quantity: string; calories: number; proteins: number; carbs: number; fats: number}>).forEach(item => {
-              const food = programData.foodItems.find(f => f.name.toLowerCase().includes(item.food.toLowerCase().split(' ')[0]));
-              const qtyMatch = item.quantity.match(/(\d+(?:\.\d+)?)/);
-              const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 100;
-              if (food) { const macros = computeFoodMacros(food.id, food.name, qty, food.per100g); addFoodEntry(dateKey, { ...macros, meal: activeMeal as FoodEntry['meal'], id: nanoid() }); }
-              else { addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: activeMeal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories }); }
+              const qty = (() => {
+                const parenGrams = item.quantity.match(/\((\d+(?:\.\d+)?)g\)/);
+                if (parenGrams) return parseFloat(parenGrams[1]);
+                const directGrams = item.quantity.match(/^(\d+(?:\.\d+)?)(g|ml)/);
+                if (directGrams) return parseFloat(directGrams[1]);
+                const firstNum = item.quantity.match(/(\d+(?:\.\d+)?)/);
+                return firstNum ? parseFloat(firstNum[1]) : 100;
+              })();
+              addFoodEntry(dateKey, { id: nanoid(), foodId: item.food, foodName: item.food, quantity: qty, meal: activeMeal as FoodEntry['meal'], proteins: item.proteins, carbs: item.carbs, fats: item.fats, calories: item.calories });
             });
             setMealValidation(dateKey, activeMeal, 'validated');
             setOpenMeal(null);
@@ -1484,21 +1805,30 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string
 // ============================================================
 // ONGLET LISTE DE COURSES — générée depuis le plan réel
 // ============================================================
+
+// Fallback images par catégorie quand le produit n'a pas d'image
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  'Viandes': 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400&q=80',
+  'Poissons & Fruits de mer': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&q=80',
+  'Produits laitiers & Œufs': 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80',
+  'Féculents & Légumineuses': 'https://images.unsplash.com/photo-1536304993881-ff86e0c9b3b3?w=400&q=80',
+  'Légumes': 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=400&q=80',
+  'Fruits': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80',
+  'Lipides & Oléagineux': 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80',
+  'Condiments & Divers': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&q=80',
+};
+
 function CoursesTab() {
-  const { getNextWeekMonday, getCurrentWeekMonday, getShoppingList, getWeeklyMealPlan } = useFitnessTracker();
+  const { getNextWeekMonday, getCurrentWeekMonday, getShoppingList } = useFitnessTracker();
   const [forNextWeek, setForNextWeek] = useState(true);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Lundi de la semaine cible
   const weekMonday = forNextWeek ? getNextWeekMonday() : getCurrentWeekMonday();
-  const weekLabel = weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const weekLabel = weekMonday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
-  // Générer la liste depuis le plan réel de la semaine
-  const weekPlan = getWeeklyMealPlan(weekMonday);
   const shoppingList = getShoppingList(weekMonday);
   const items = shoppingList.items;
-
-  // Regrouper par catégorie
   const categories = Array.from(new Set(items.map(i => i.category)));
   const checkedCount = checkedItems.size;
   const totalCount = items.length;
@@ -1511,141 +1841,177 @@ function CoursesTab() {
     });
   };
 
-  // Calcul du budget estimé
-  const totalBudget = shoppingList.totalEstimatedBudget;
-
-  // Rappel drive : commande samedi, récupération lundi midi → courses disponibles lundi soir
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=dim, 6=sam
-  const isSaturday = dayOfWeek === 6;
-  const isMonday = dayOfWeek === 1;
+  const isSaturday = today.getDay() === 6;
+
+  // Items filtrés par catégorie active
+  const filteredItems = activeCategory ? items.filter(i => i.category === activeCategory) : items;
+  const filteredCategories = activeCategory ? [activeCategory] : categories;
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header compact */}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Drive Intermarché Venelles</h3>
-            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Semaine du {weekLabel} · {totalBudget}
-            </p>
-            <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {totalCount} articles · générés depuis ton plan alimentaire
-            </p>
+            <h3 className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Courses de la semaine</h3>
+            <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Du {weekLabel} · {shoppingList.totalEstimatedBudget}</p>
           </div>
-          <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'rgba(255, 107, 53, 0.12)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>{checkedCount}/{totalCount}</span>
+          <span className="text-sm font-bold px-3 py-1.5 rounded-full" style={{ background: checkedCount === totalCount && totalCount > 0 ? 'rgba(34,197,94,0.2)' : 'rgba(255,107,53,0.12)', color: checkedCount === totalCount && totalCount > 0 ? '#22c55e' : '#FF6B35', fontFamily: 'Syne, sans-serif' }}>{checkedCount}/{totalCount}</span>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => { setForNextWeek(false); setCheckedItems(new Set()); }} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+
+        {/* Toggle semaine */}
+        <div className="flex gap-2 mb-3">
+          <button onClick={() => { setForNextWeek(false); setCheckedItems(new Set()); setActiveCategory(null); }}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
             style={{ background: !forNextWeek ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.06)', color: !forNextWeek ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
             Cette semaine
           </button>
-          <button onClick={() => { setForNextWeek(true); setCheckedItems(new Set()); }} className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+          <button onClick={() => { setForNextWeek(true); setCheckedItems(new Set()); setActiveCategory(null); }}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
             style={{ background: forNextWeek ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.06)', color: forNextWeek ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}>
-            Semaine prochaine 🛒
+            Semaine prochaine
           </button>
         </div>
-        <div className="mt-3">
-          <div className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${totalCount > 0 ? (checkedCount / totalCount) * 100 : 0}%`, background: 'linear-gradient(90deg, #FF6B35, #22c55e)' }} />
-          </div>
+
+        {/* Barre de progression */}
+        <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${totalCount > 0 ? (checkedCount / totalCount) * 100 : 0}%`, background: 'linear-gradient(90deg, #FF6B35, #22c55e)' }} />
         </div>
       </div>
 
-      {/* Rappel drive */}
-      <div className="rounded-2xl p-4" style={{ background: isSaturday ? 'rgba(255,107,53,0.1)' : 'rgba(255,255,255,0.04)', border: isSaturday ? '1px solid rgba(255,107,53,0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
-        <p className="font-semibold text-xs mb-2" style={{ color: isSaturday ? '#FF6B35' : 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif' }}>
-          {isSaturday ? "🛒 C'est samedi — commande ton drive maintenant !" : isMonday ? '📦 Récupération lundi midi — courses disponibles ce soir !' : '🚗 Drive Intermarché Venelles'}
-        </p>
-        <div className="space-y-1">
-          {['✔ Commande le samedi sur intermarche.com', '✔ Récupération le lundi à midi — courses disponibles lundi soir', '✔ Congèle viandes et poissons en portions de 150-180g', '✔ Surgelés = même valeur nutritive que le frais, moins chers', '✔ Prépare riz, patates douces et légumes en batch le lundi soir'].map((tip, i) => (
-            <p key={i} className="text-white/50 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
-          ))}
-        </div>
+      {/* Filtres par catégorie (chips horizontaux) */}
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <button
+          onClick={() => setActiveCategory(null)}
+          className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+          style={{ background: activeCategory === null ? 'linear-gradient(135deg, #FF6B35, #FF3366)' : 'rgba(255,255,255,0.06)', color: activeCategory === null ? 'white' : 'rgba(255,255,255,0.5)', fontFamily: 'Inter, sans-serif' }}
+        >
+          Tout ({totalCount})
+        </button>
+        {categories.map(cat => {
+          const catColors = CATEGORY_COLORS[cat] ?? { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: '#fff' };
+          const catCount = items.filter(i => i.category === cat).length;
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={{
+                background: activeCategory === cat ? catColors.text : catColors.bg,
+                color: activeCategory === cat ? '#0F0F14' : catColors.text,
+                border: `1px solid ${catColors.border}`,
+                fontFamily: 'Inter, sans-serif'
+              }}
+            >
+              {cat.split(' & ')[0]} ({catCount})
+            </button>
+          );
+        })}
       </div>
 
-      {/* Conseils supplémentaires */}
-      {shoppingList.storeTips.length > 0 && (
-        <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p className="text-white/40 text-xs font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Conseils du coach</p>
-          {shoppingList.storeTips.slice(0, 3).map((tip, i) => (
-            <p key={i} className="text-white/40 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{tip}</p>
-          ))}
-        </div>
-      )}
-
-      {/* Liste par catégorie */}
-      {categories.map(category => {
-        const catItems = items.filter(i => i.category === category);
+      {/* Grille 2 colonnes style e-commerce */}
+      {filteredCategories.map(category => {
+        const catItems = filteredItems.filter(i => i.category === category);
         const catColors = CATEGORY_COLORS[category] ?? { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', text: '#fff' };
+        const fallbackImg = CATEGORY_FALLBACK_IMAGES[category];
         return (
           <div key={category}>
+            {/* Titre de catégorie */}
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px flex-1" style={{ background: catColors.border }} />
-              <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: catColors.bg, color: catColors.text, border: `1px solid ${catColors.border}`, fontFamily: 'Inter, sans-serif' }}>{category}</span>
+              <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: catColors.bg, color: catColors.text, border: `1px solid ${catColors.border}`, fontFamily: 'Inter, sans-serif' }}>
+                {category}
+              </span>
               <div className="h-px flex-1" style={{ background: catColors.border }} />
             </div>
-            <div className="space-y-2">
+
+            {/* Grille 2 colonnes */}
+            <div className="grid grid-cols-2 gap-3">
               {catItems.map((item) => {
                 const itemKey = `${category}-${item.name}`;
                 const isChecked = checkedItems.has(itemKey);
-                const priorityColor = item.priority === 'essential' ? '#22c55e' : item.priority === 'recommended' ? '#eab308' : '#6b7280';
+                const imgSrc = item.imageUrl || fallbackImg;
+
                 return (
-                  <div key={itemKey}
-                    className="rounded-2xl overflow-hidden transition-all duration-200"
-                    style={{ background: isChecked ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.04)', border: isChecked ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)', opacity: isChecked ? 0.55 : 1 }}
+                  <div
+                    key={itemKey}
+                    className="rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 active:scale-95"
+                    style={{
+                      background: isChecked ? 'rgba(34,197,94,0.06)' : '#1A1A22',
+                      border: isChecked ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                      opacity: isChecked ? 0.6 : 1,
+                    }}
+                    onClick={() => toggleItem(itemKey)}
                   >
-                    <div className="flex items-center gap-3 p-3">
-                      {/* Checkbox */}
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer"
-                        style={{ background: isChecked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)', border: isChecked ? '2px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)' }}
-                        onClick={() => toggleItem(itemKey)}>
-                        {isChecked && <Check size={13} className="text-green-400" />}
-                      </div>
-                      {/* Photo produit */}
-                      {item.imageUrl && (
-                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => toggleItem(itemKey)}
-                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain p-1"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {/* Zone image — ratio carré comme e-commerce */}
+                    <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+                      {imgSrc ? (
+                        <img
+                          src={imgSrc}
+                          alt={item.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (fallbackImg && target.src !== fallbackImg) target.src = fallbackImg;
+                            else target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: catColors.bg }}>
+                          <span className="text-3xl">{category === 'Viandes' ? '🥩' : category === 'Poissons & Fruits de mer' ? '🐟' : category === 'Légumes' ? '🥦' : category === 'Fruits' ? '🍎' : '🫙'}</span>
                         </div>
                       )}
-                      {/* Infos produit */}
-                      <div className="flex-1 min-w-0" onClick={() => toggleItem(itemKey)} style={{ cursor: 'pointer' }}>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-white font-semibold text-sm leading-tight" style={{ fontFamily: 'Syne, sans-serif', textDecoration: isChecked ? 'line-through' : 'none', color: isChecked ? 'rgba(255,255,255,0.4)' : 'white' }}>
-                            {item.name}
-                          </p>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ background: catColors.bg, color: catColors.text, fontFamily: 'Inter, sans-serif' }}>
-                              {item.quantity} {item.unit}
-                            </span>
+                      {/* Overlay gradient en bas */}
+                      <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: 'linear-gradient(to top, rgba(26,26,34,0.95) 0%, transparent 100%)' }} />
+                      {/* Badge quantité en haut à droite */}
+                      <div
+                        className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold"
+                        style={{ background: isChecked ? 'rgba(34,197,94,0.9)' : 'rgba(255,107,53,0.9)', color: 'white', fontFamily: 'Syne, sans-serif', backdropFilter: 'blur(4px)' }}
+                      >
+                        {isChecked ? '✓' : `${item.quantity} ${item.unit}`}
+                      </div>
+                      {/* Checkmark overlay */}
+                      {isChecked && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.15)' }}>
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.9)' }}>
+                            <Check size={20} className="text-white" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.estimatedPrice}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${priorityColor}15`, color: priorityColor, fontFamily: 'Inter, sans-serif' }}>
-                            {item.priority === 'essential' ? 'Essentiel' : item.priority === 'recommended' ? 'Recommandé' : 'Optionnel'}
-                          </span>
-                        </div>
-                        {!isChecked && item.notes && (
-                          <p className="text-white/30 text-xs mt-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{item.notes}</p>
+                      )}
+                    </div>
+
+                    {/* Infos produit sous l'image */}
+                    <div className="p-2.5">
+                      <p
+                        className="font-semibold text-xs leading-tight mb-1"
+                        style={{
+                          fontFamily: 'Syne, sans-serif',
+                          color: isChecked ? 'rgba(255,255,255,0.4)' : 'white',
+                          textDecoration: isChecked ? 'line-through' : 'none',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        } as React.CSSProperties}
+                      >
+                        {item.name}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{item.estimatedPrice}</span>
+                        {item.shopUrl && (
+                          <a
+                            href={item.shopUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs px-1.5 py-0.5 rounded-full"
+                            style={{ background: 'rgba(255,107,53,0.15)', color: '#FF6B35', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            ↗
+                          </a>
                         )}
                       </div>
-                      {/* Lien Intermarché */}
-                      {item.shopUrl && (
-                        <a href={item.shopUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                          style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.2)' }}
-                          onClick={e => e.stopPropagation()}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            <polyline points="15 3 21 3 21 9" />
-                            <line x1="10" y1="14" x2="21" y2="3" />
-                          </svg>
-                        </a>
-                      )}
                     </div>
                   </div>
                 );
@@ -1655,33 +2021,52 @@ function CoursesTab() {
         );
       })}
 
-      {/* Whey — rappel commande en ligne */}
+      {/* Suppléments */}
       <div className="rounded-2xl p-4" style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
-        <p className="text-purple-400 font-semibold text-xs mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>💊 Suppléments — Commander en ligne</p>
-        <div className="space-y-2">
+        <p className="text-purple-400 font-semibold text-sm mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>💊 Suppléments — Commander en ligne</p>
+        <div className="grid grid-cols-2 gap-3">
           {[
-            { name: 'Whey Isolate', detail: '1 kg (~30 doses)', price: '~25-35€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/impact-whey-isolate/10852482.html', tip: "Myprotein ou Bulk — 2× moins cher qu'en magasin." },
-            { name: 'Créatine monohydrate', detail: '500g (~100 doses)', price: '~15-20€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/creatine-monohydrate/10852430.html', tip: '5g/jour avec eau. Meilleur supplément prouvé scientifiquement.' },
+            { name: 'Whey Isolate', detail: '1 kg (~30 doses)', price: '~25-35€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/impact-whey-isolate/10852482.html', img: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80' },
+            { name: 'Créatine monohydrate', detail: '500g (~100 doses)', price: '~15-20€', link: 'https://www.myprotein.com/fr-fr/sports-nutrition/creatine-monohydrate/10852430.html', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80' },
           ].map((supp) => (
-            <div key={supp.name} className="flex items-center justify-between gap-2">
-              <div className="flex-1">
-                <p className="text-white/80 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{supp.name} — {supp.detail}</p>
-                <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{supp.price} · {supp.tip}</p>
+            <a
+              key={supp.name}
+              href={supp.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-2xl overflow-hidden block"
+              style={{ background: '#1A1A22', border: '1px solid rgba(168,85,247,0.2)', textDecoration: 'none' }}
+            >
+              <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+                <img src={supp.img} alt={supp.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: 'linear-gradient(to top, rgba(26,26,34,0.95) 0%, transparent 100%)' }} />
+                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(168,85,247,0.9)', color: 'white', fontFamily: 'Syne, sans-serif' }}>
+                  {supp.price}
+                </div>
               </div>
-              <a href={supp.link} target="_blank" rel="noopener noreferrer"
-                className="text-xs px-2 py-1 rounded-full flex-shrink-0"
-                style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.25)', fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
-                onClick={e => e.stopPropagation()}>
-                Commander ↗
-              </a>
-            </div>
+              <div className="p-2.5">
+                <p className="text-white font-semibold text-xs leading-tight mb-0.5" style={{ fontFamily: 'Syne, sans-serif' }}>{supp.name}</p>
+                <p className="text-purple-400 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{supp.detail} ↗</p>
+              </div>
+            </a>
           ))}
         </div>
       </div>
 
+      {/* Rappel drive */}
+      {isSaturday && (
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.3)' }}>
+          <p className="font-semibold text-sm mb-2" style={{ color: '#FF6B35', fontFamily: 'Syne, sans-serif' }}>🛍 C'est samedi — commande ton drive maintenant !</p>
+          <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Commande sur intermarche.com → récupération lundi midi, courses disponibles lundi soir.</p>
+        </div>
+      )}
+
       {checkedCount > 0 && (
-        <button onClick={() => setCheckedItems(new Set())} className="w-full py-3 rounded-xl text-white/50 text-sm"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'Inter, sans-serif' }}>
+        <button
+          onClick={() => setCheckedItems(new Set())}
+          className="w-full py-3 rounded-xl text-white/50 text-sm"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'Inter, sans-serif' }}
+        >
           Tout décocher ({checkedCount} articles)
         </button>
       )}
@@ -1693,6 +2078,33 @@ function CoursesTab() {
 // ============================================================
 export default function NutritionPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('journal');
+  const { profile, aiNutritionPlan, hasProfile, setProfile, setAiNutritionPlan } = useUserProfile();
+  const { generateNutritionPlan } = useAgent();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const handleProfileComplete = async (newProfile: typeof profile extends null ? never : typeof profile) => {
+    if (!newProfile) return;
+    setProfile(newProfile);
+    setShowOnboarding(false);
+    setGenerating(true);
+    toast.loading('Claude génère ton plan nutrition 7 jours…', { id: 'gen-nutrition' });
+    try {
+      const plan = await generateNutritionPlan.mutateAsync(newProfile);
+      setAiNutritionPlan(plan);
+      toast.success('Plan nutrition généré !', { id: 'gen-nutrition' });
+      setActiveTab('plan');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      toast.error('Erreur : ' + msg, { id: 'gen-nutrition' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (showOnboarding) {
+    return <ProfileOnboarding onComplete={handleProfileComplete} />;
+  }
 
   const tabs = [
     { id: 'journal' as ActiveTab, label: 'Journal', icon: BookOpen },
@@ -1704,7 +2116,51 @@ export default function NutritionPage() {
   return (
     <div className="min-h-screen pb-24" style={{ background: '#0F0F14' }}>
       <div className="p-5">
-        <h1 className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Nutrition</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-white text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Nutrition</h1>
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}
+          >
+            <User size={12} />
+            {hasProfile ? 'Mon profil' : 'Configurer'}
+          </button>
+        </div>
+        {generating && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}>
+            <RefreshCw size={14} className="animate-spin" style={{ color: '#FF6B35' }} />
+            <span className="text-xs" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>Claude génère ton plan nutrition…</span>
+          </div>
+        )}
+        {!hasProfile && !generating && (
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl mb-4 text-left"
+            style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.25)' }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)' }}>
+              <Sparkles size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Générer mon plan IA</p>
+              <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Configure ton profil pour un plan nutrition 7 jours personnalisé par Claude</p>
+            </div>
+          </button>
+        )}
+        {aiNutritionPlan && !generating && (
+          <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-xl" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} style={{ color: '#22C55E' }} />
+              <span className="text-xs" style={{ color: '#22C55E', fontFamily: 'Inter, sans-serif' }}>Plan IA · {aiNutritionPlan.targets.kcal} kcal/j · P{aiNutritionPlan.targets.pro}g G{aiNutritionPlan.targets.glu}g L{aiNutritionPlan.targets.lip}g</span>
+            </div>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="text-xs px-2 py-1 rounded-lg"
+              style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', fontFamily: 'Inter, sans-serif' }}
+            >Recréer</button>
+          </div>
+        )}
         <p className="text-white/50 text-sm mb-5" style={{ fontFamily: 'Inter, sans-serif' }}>Journal · Plan · Récap · Courses</p>
 
         {/* Onglets */}

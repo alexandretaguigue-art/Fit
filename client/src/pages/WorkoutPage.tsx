@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import React from 'react';
-import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target, Trash2, Plus, X, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, ArrowUp, ArrowRight, ArrowDown, Dumbbell, Clock, Zap, Bike, Flame, Target, Trash2, Plus, X, Search, Sparkles, RefreshCw, ChevronRight } from 'lucide-react';
 import { programData, cycle14Days, getCycleDayForDate, getSessionForCycleDay, getSessionForPhase } from '../lib/programData';
 import { useFitnessTracker } from '../hooks/useFitnessTracker';
 import ScoreRing from '../components/ScoreRing';
@@ -12,6 +12,8 @@ import SessionTimeline from '../components/SessionTimeline';
 import type { SessionLog, WorkoutSession, Exercise, FootballDrill } from '../lib/programData';
 import { toast } from 'sonner';
 import { EXERCISE_LIBRARY, searchExercises, getExercisesByCategory, CATEGORY_LABELS, CATEGORY_ICONS, type LibraryExercise } from '../lib/exerciseLibrary';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useAgent } from '../hooks/useAgent';
 
 const ARMS_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663274447138/CvYhbg3Bxaqv7y44UZV68i/arms-workout-2RWQ6DDsWG2NyCDojBoRnV.webp";
 
@@ -1222,6 +1224,8 @@ function ExerciseCard({ exercise, onLog, lastLog, adaptation, draftSets, onDraft
 // ============================================================
 
 function FootballView({ session }: { session: WorkoutSession }) {
+  const { logSession, getCurrentWeek } = useFitnessTracker();
+  const currentWeek = getCurrentWeek();
   const [scores, setScores] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [feeling, setFeeling] = useState(7);
@@ -1238,32 +1242,53 @@ function FootballView({ session }: { session: WorkoutSession }) {
   };
 
   if (submitted) {
+    const score = Math.round((feeling / 10) * 60 + 40);
+    const verdict = score >= 85 ? 'excellent' : score >= 70 ? 'good' : score >= 50 ? 'average' : 'poor';
+    const verdictColor = { excellent: '#22c55e', good: '#84cc16', average: '#eab308', poor: '#ef4444' }[verdict];
+    const verdictLabel = { excellent: 'Excellent', good: 'Bien', average: 'Moyen', poor: 'Difficile' }[verdict];
+    const suggestions: string[] = [];
+    if (feeling <= 5) suggestions.push('Récupère bien cette nuit — sommeil et alimentation sont clés.');
+    if (feeling >= 9) suggestions.push('Séance au top ! Continue sur cette lancée.');
+    if (feeling >= 7 && feeling < 9) suggestions.push('Bonne intensité. Essaie de pousser un peu plus sur les sprints.');
     return (
       <div className="p-4 space-y-4">
-        <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)' }}>
-          <div className="text-4xl mb-2">⚽</div>
-          <div className="text-white text-xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Séance Football enregistrée !</div>
-          <p className="text-white/60 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Ressenti : {feeling}/10</p>
+        <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="text-5xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif', color: verdictColor }}>{score}/100</div>
+          <div className="text-white font-semibold text-lg mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{verdictLabel}</div>
+          <p className="text-white/50 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Ressenti : {feeling}/10</p>
           {Object.entries(scores).map(([id, val]) => {
             const field = scoreFields.find(s => s.id === id);
             if (!field || !val) return null;
             return (
               <div key={id} className="flex items-center justify-between mt-2 px-4">
                 <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{field.name}</span>
-                <span className="text-green-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{val} {field.unit}</span>
+                <span className="font-bold text-sm" style={{ color: verdictColor, fontFamily: 'Syne, sans-serif' }}>{val} {field.unit}</span>
               </div>
             );
           })}
         </div>
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
-          <p className="text-green-400 font-semibold text-sm mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Objectifs cibles</p>
-          {scoreFields.map(f => (
-            <div key={f.id} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{f.name}</span>
-              <span className="text-green-400 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>Cible : {f.target}</span>
-            </div>
-          ))}
-        </div>
+        {suggestions.length > 0 && (
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
+            <p className="text-green-400 font-semibold text-sm mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>Conseils pour la prochaine séance</p>
+            {suggestions.map((s, i) => (
+              <div key={i} className="flex items-start gap-2 mb-2">
+                <ArrowRight size={12} className="text-green-400 flex-shrink-0 mt-1" />
+                <p className="text-white/70 text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{s}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {scoreFields.length > 0 && (
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
+            <p className="text-green-400 font-semibold text-sm mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Objectifs cibles</p>
+            {scoreFields.map(f => (
+              <div key={f.id} className="flex items-center justify-between py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span className="text-white/60 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{f.name}</span>
+                <span className="text-green-400 text-xs font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>Cible : {f.target}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <button onClick={() => setSubmitted(false)} className="w-full py-3 rounded-xl text-white/60 text-sm border" style={{ borderColor: 'rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif' }}>
           Revoir les exercices
         </button>
@@ -1391,11 +1416,25 @@ function FootballView({ session }: { session: WorkoutSession }) {
       </div>
 
       <button
-        onClick={() => { setSubmitted(true); toast.success('Séance football enregistrée !'); }}
+        onClick={() => {
+          const sessionLog: SessionLog = {
+            sessionId: session.id,
+            date: new Date().toISOString(),
+            weekNumber: currentWeek,
+            exercises: [],
+            perceivedDifficulty: feeling,
+            energyLevel: feeling,
+            overallNotes: notes || undefined,
+          };
+          logSession(sessionLog);
+          setSubmitted(true);
+          const score = Math.round((feeling / 10) * 60 + 40);
+          toast.success(`⚽ Séance football terminée ! Score : ${score}/100`);
+        }}
         className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 hover:opacity-90 active:scale-95"
         style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', fontFamily: 'Syne, sans-serif', boxShadow: '0 8px 30px rgba(34,197,94,0.25)' }}
       >
-        ⚽ Terminer la séance football
+        ⚽ Terminer la séance
       </button>
     </div>
   );
@@ -1444,11 +1483,22 @@ function CardioView({ session }: { session: WorkoutSession }) {
   if (submitted) {
     const newAdaptation = getCardioAdaptation(session.id);
     const verdictColors = { progress: '#22c55e', maintain: '#eab308', recover: '#ef4444' };
+    // Score cardio basé sur durée, ressenti et adaptation
+    const cardioScore = Math.round(
+      (Math.min(duration / (session.durationMin ?? 60), 1.2) * 40) +
+      (feeling >= 7 ? 30 : feeling * 30 / 7) +
+      (newAdaptation.verdict === 'progress' ? 30 : newAdaptation.verdict === 'maintain' ? 20 : 10)
+    );
+    const cardioVerdict = cardioScore >= 85 ? 'excellent' : cardioScore >= 70 ? 'good' : cardioScore >= 50 ? 'average' : 'poor';
+    const cardioVerdictColor = { excellent: '#22c55e', good: '#84cc16', average: '#eab308', poor: '#ef4444' }[cardioVerdict];
+    const cardioVerdictLabel = { excellent: 'Excellent', good: 'Bien', average: 'Moyen', poor: 'Difficile' }[cardioVerdict];
     return (
       <div className="p-4 space-y-4">
-        <div className="rounded-2xl p-6 text-center" style={{ background: `${colors.bg}`, border: `1px solid ${colors.border}` }}>
+        <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="text-5xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif', color: cardioVerdictColor }}>{cardioScore}/100</div>
+          <div className="text-white font-semibold text-lg mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>{cardioVerdictLabel}</div>
           <div className="text-4xl mb-2">{isRunning ? '🏃' : '🚴'}</div>
-          <div className="text-white text-xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Séance enregistrée !</div>
+          <div className="text-white/60 text-sm mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>Séance enregistrée !</div>
           <div className="flex flex-wrap justify-center gap-2 mt-2">
             <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{duration} min</span>
             {distanceKm && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter, sans-serif' }}>{distanceKm} km</span>}
@@ -2104,7 +2154,16 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
   const [difficulty, setDifficulty] = useState(draft?.feeling ?? 7);
   const [energy, setEnergy] = useState(7);
   const [notes, setNotes] = useState(draft?.notes ?? '');
+  const [painAreas, setPainAreas] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  const PAIN_ZONES = [
+    { id: 'epaules', label: 'Épaules' }, { id: 'pectoraux', label: 'Pectoraux' },
+    { id: 'dos', label: 'Dos' }, { id: 'biceps', label: 'Biceps' },
+    { id: 'triceps', label: 'Triceps' }, { id: 'abdos', label: 'Abdos' },
+    { id: 'quadriceps', label: 'Quadriceps' }, { id: 'ischio', label: 'Ischio' },
+    { id: 'mollets', label: 'Mollets' }, { id: 'fessiers', label: 'Fessiers' },
+  ];
 
   // Sync difficulty/notes dans le draft
   useEffect(() => {
@@ -2128,6 +2187,7 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
     const sessionLog: SessionLog = {
       sessionId: session.id, date: new Date().toISOString(), weekNumber: currentWeek,
       exercises: exerciseLogs, perceivedDifficulty: difficulty, energyLevel: energy, overallNotes: notes,
+      painAreas: painAreas.length > 0 ? painAreas : undefined,
     };
     logSession(sessionLog);
     clearWorkoutDraft(); // Efface le draft après soumission
@@ -2326,8 +2386,31 @@ function GymSessionView({ session }: { session: WorkoutSession }) {
             <input type="range" min="1" max="10" value={energy} onChange={e => setEnergy(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none cursor-pointer" style={{ accentColor: '#FF6B35' }} />
           </div>
           <div>
+            <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Zones douloureuses (optionnel)</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {PAIN_ZONES.map(zone => {
+                const active = painAreas.includes(zone.id);
+                return (
+                  <button
+                    key={zone.id}
+                    onClick={() => setPainAreas(prev => active ? prev.filter(z => z !== zone.id) : [...prev, zone.id])}
+                    style={{
+                      padding: '5px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                      fontFamily: 'Inter, sans-serif', cursor: 'pointer', transition: 'all 0.15s',
+                      background: active ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
+                      border: active ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                      color: active ? '#ef4444' : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    {active ? '🔴' : '○'} {zone.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
             <p className="text-white/60 text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>Notes (optionnel)</p>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Douleurs, sensations, remarques..." className="w-full text-white/80 text-xs rounded-xl p-3 resize-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif', minHeight: '80px' }} />
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Sensations, remarques..." className="w-full text-white/80 text-xs rounded-xl p-3 resize-none" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'Inter, sans-serif', minHeight: '60px' }} />
           </div>
         </div>
       </div>
@@ -2346,6 +2429,34 @@ export default function WorkoutPage() {
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
   const { data, setScheduleOverride, logSession, adaptNutritionForSession } = useFitnessTracker();
   const [sessionDone, setSessionDone] = useState<'done' | 'skipped' | null>(null);
+  const { profile, aiSportPlan, setAiSportPlan } = useUserProfile();
+  const { generateSportPlan } = useAgent();
+  const [generatingSport, setGeneratingSport] = useState(false);
+  const [showAiPlan, setShowAiPlan] = useState(false);
+
+  const handleGenerateSportPlan = async () => {
+    if (!profile) {
+      toast.error('Configure ton profil dans l\'onglet Nutrition d\'abord');
+      return;
+    }
+    setGeneratingSport(true);
+    toast.loading('Claude génère ton programme sport…', { id: 'gen-sport' });
+    try {
+      const plan = await generateSportPlan.mutateAsync(profile);
+      setAiSportPlan({
+        program_name: (plan as { program_name?: string }).program_name ?? 'Mon Programme IA',
+        goal_statement: (plan as { goal_statement?: string }).goal_statement ?? '',
+        weeks: (plan as { weeks: unknown[] }).weeks,
+      });
+      toast.success('Programme sport généré !', { id: 'gen-sport' });
+      setShowAiPlan(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      toast.error('Erreur : ' + msg, { id: 'gen-sport' });
+    } finally {
+      setGeneratingSport(false);
+    }
+  };
 
   // Ouvrir automatiquement une séance si un sessionId est passé depuis le calendrier
   useEffect(() => {
@@ -2449,16 +2560,9 @@ export default function WorkoutPage() {
           </div>
         )}
 
-        {/* Boutons de fin de séance — uniquement pour les séances non-repos */}
+        {/* Bouton "Je n'ai pas fait la séance" — uniquement pour les séances non-repos */}
         {selectedSession.type !== 'rest' && (
           <div className="px-4 pb-8 pt-2 space-y-3">
-            {sessionDone === 'done' && (
-              <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
-                <div className="text-2xl mb-1">🌟</div>
-                <p className="text-green-400 font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Séance validée !</p>
-                <p className="text-white/50 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>Calendrier et nutrition mis à jour</p>
-              </div>
-            )}
             {sessionDone === 'skipped' && (
               <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <div className="text-2xl mb-1">😴</div>
@@ -2467,54 +2571,25 @@ export default function WorkoutPage() {
               </div>
             )}
             {sessionDone === null && (
-              <>
-                <button
-                  onClick={() => {
-                    // Marquer la séance comme complétée dans sessionLogs
-                    const today = new Date();
-                    const programStart = data.startDate ? new Date(data.startDate) : today;
-                    const weekNum = data.startDate
-                      ? Math.max(1, Math.ceil((today.getTime() - programStart.getTime()) / (7 * 24 * 3600 * 1000)))
-                      : 1;
-                    const sessionLog = {
-                      sessionId: selectedSession.id,
-                      date: today.toISOString(),
-                      weekNumber: weekNum,
-                      exercises: [],
-                      perceivedDifficulty: 7,
-                      energyLevel: 7,
-                    };
-                    logSession(sessionLog);
-                    setSessionDone('done');
-                    toast.success('✅ Séance validée ! Bravo !');
-                  }}
-                  className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all duration-300 active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', fontFamily: 'Syne, sans-serif', boxShadow: '0 8px 30px rgba(34,197,94,0.3)' }}
-                >
-                  ✅ Valider la séance
-                </button>
-                <button
-                  onClick={() => {
-                    // Remplacer la séance par repos dans le planning
-                    const matchingDay = cycle14Days.find(d => d.sessionId === selectedSession.id);
-                    if (matchingDay) {
-                      setScheduleOverride(`cycle_day_${matchingDay.dayNumber}`, 'rest');
-                    }
-                    // Adapter la nutrition du jour actuel à un jour de repos
-                    const todayKey = (() => {
-                      const d = new Date();
-                      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                    })();
-                    adaptNutritionForSession(todayKey, 'rest');
-                    setSessionDone('skipped');
-                    toast.success('😴 Repos enregistré — objectif calorique adapté à 2500 kcal');
-                  }}
-                  className="w-full py-3 rounded-2xl font-semibold text-red-400 text-sm transition-all duration-300 active:scale-95"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: 'Inter, sans-serif' }}
-                >
-                  ❌ Je n'ai pas fait la séance
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  const matchingDay = cycle14Days.find(d => d.sessionId === selectedSession.id);
+                  if (matchingDay) {
+                    setScheduleOverride(`cycle_day_${matchingDay.dayNumber}`, 'rest');
+                  }
+                  const todayKey = (() => {
+                    const d = new Date();
+                    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                  })();
+                  adaptNutritionForSession(todayKey, 'rest');
+                  setSessionDone('skipped');
+                  toast.success('😴 Repos enregistré — objectif calorique adapté à 2500 kcal');
+                }}
+                className="w-full py-3 rounded-2xl font-semibold text-red-400 text-sm transition-all duration-300 active:scale-95"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontFamily: 'Inter, sans-serif' }}
+              >
+                ❌ Je n'ai pas fait la séance
+              </button>
             )}
           </div>
         )}
@@ -2525,7 +2600,88 @@ export default function WorkoutPage() {
   return (
     <div className="min-h-screen pb-24" style={{ background: '#0F0F14' }}>
       <div className="p-5">
-        <h1 className="text-white text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>Séances</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-white text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>Séances</h1>
+          <button
+            onClick={handleGenerateSportPlan}
+            disabled={generatingSport}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold disabled:opacity-50"
+            style={{ background: 'rgba(255,107,53,0.12)', border: '1px solid rgba(255,107,53,0.3)', color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}
+          >
+            {generatingSport ? <RefreshCw size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            {aiSportPlan ? 'Recréer' : 'Plan IA'}
+          </button>
+        </div>
+        {generatingSport && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)' }}>
+            <RefreshCw size={14} className="animate-spin" style={{ color: '#FF6B35' }} />
+            <span className="text-xs" style={{ color: '#FF6B35', fontFamily: 'Inter, sans-serif' }}>Claude génère ton programme sport…</span>
+          </div>
+        )}
+        {aiSportPlan && !generatingSport && (
+          <button
+            onClick={() => setShowAiPlan(v => !v)}
+            className="w-full flex items-center gap-3 p-3 rounded-2xl mb-4 text-left"
+            style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}
+          >
+            <Sparkles size={14} style={{ color: '#22C55E' }} />
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{aiSportPlan.program_name}</p>
+              <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{aiSportPlan.goal_statement}</p>
+            </div>
+            <ChevronRight size={14} className="text-white/30" style={{ transform: showAiPlan ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        )}
+        {aiSportPlan && showAiPlan && (
+          <div className="mb-5 space-y-3">
+            {(aiSportPlan.weeks as Array<{ week_number: number; theme: string; days: Array<{ day: string; type: string; name: string; duration_min: number; exercises: Array<{ name: string; sets: number; reps: string; weight_kg: number; notes?: string }> }> }>).map(week => (
+              <div key={week.week_number} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Semaine {week.week_number} — {week.theme}</p>
+                </div>
+                <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                  {week.days.map((day) => (
+                    <div key={day.day} className="px-4 py-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-white font-semibold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>{day.day} — {day.name}</p>
+                          <p className="text-white/40 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>{day.type} · {day.duration_min} min</p>
+                        </div>
+                      </div>
+                      {day.exercises && day.exercises.length > 0 && (
+                        <div className="space-y-1.5">
+                          {day.exercises.map((ex, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter, sans-serif' }}>
+                              <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: '#FF6B35' }} />
+                              <span className="font-semibold text-white">{ex.name}</span>
+                              <span className="text-white/40">{ex.sets}×{ex.reps}</span>
+                              {ex.weight_kg > 0 && <span className="text-white/40">{ex.weight_kg}kg</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {!aiSportPlan && !generatingSport && (
+          <button
+            onClick={handleGenerateSportPlan}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl mb-4 text-left"
+            style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.25)' }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF3366)' }}>
+              <Sparkles size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm" style={{ fontFamily: 'Syne, sans-serif' }}>Générer mon programme IA</p>
+              <p className="text-white/50 text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>Programme personnalisé par Claude selon ton profil et tes objectifs</p>
+            </div>
+          </button>
+        )}
         <p className="text-white/50 text-sm mb-6" style={{ fontFamily: 'Inter, sans-serif' }}>
           Cycle 14 jours · 8 musculation · 2 football · 2 course · 1 vélo · 1 repos
         </p>

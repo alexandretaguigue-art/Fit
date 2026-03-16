@@ -121,21 +121,47 @@ FORMAT STRICT (respecte exactement cette structure):
   generateSportPlan: publicProcedure
     .input(ProfileSchema)
     .mutation(async ({ input }) => {
+      // Prompt ultra-compact : génère 1 seule semaine modèle (MAX 2 exercices/séance)
+      // Le serveur duplique cette semaine 12 fois avec progression des charges
+      const sportsLabel = input.sports.slice(0, 2).join("+");
+
       const prompt = `Coach sportif expert. JSON UNIQUEMENT sans markdown.
 PROFIL: ${input.name}, ${input.age}ans, ${input.sex}, ${input.weight}kg
-NIVEAU: ${input.level} | OBJECTIF: ${input.goal} | SPORTS: ${input.sports.join("+")}
+NIVEAU: ${input.level} | OBJECTIF: ${input.goal} | SPORTS: ${sportsLabel}
 SEANCES/SEMAINE: ${input.sessionsPerWeek}
 
-Genere 1 semaine avec ${input.sessionsPerWeek} seances + repos. MAX 4 exercices/seance.
-Charges realistes selon niveau. Progression: +2.5kg si toutes reps OK.
+Genere EXACTEMENT 1 semaine modele avec ${input.sessionsPerWeek} jours actifs. MAX 2 exercices par seance. Charges realistes.
 
-FORMAT: {"program_name":"Mon Programme","goal_statement":"1 phrase","weeks":[{"week_number":1,"theme":"Semaine 1","days":[{"day":"Lundi","type":"strength","name":"Push Day","duration_min":60,"exercises":[{"id":"dc","name":"Developpe couche","sets":3,"reps":"10","weight_kg":60,"rest_sec":90,"progression":"+2.5kg si OK","notes":"Dos plat"}]}]}]}`;
+FORMAT STRICT:
+{"program_name":"Mon Programme","goal_statement":"1 phrase","week_template":{"days":[{"day":"Lundi","type":"strength","name":"Push Day","duration_min":60,"exercises":[{"id":"dc","name":"Developpe couche","sets":3,"reps":"10","weight_kg":60,"rest_sec":90,"progression":"+2.5kg si OK","notes":"Dos plat"},{"id":"sq","name":"Squat","sets":4,"reps":"8","weight_kg":80,"rest_sec":120,"progression":"+2.5kg si OK","notes":"Profondeur parallele"}]},{"day":"Mardi","type":"rest","name":"Repos","duration_min":0,"exercises":[]}]}}`;
 
-      const raw = await callClaude(prompt, 2000);
-      const plan = parseJSON<{ weeks: unknown[] }>(raw);
+      const raw = await callClaude(prompt, 1800);
+      const plan = parseJSON<{
+        program_name: string;
+        goal_statement: string;
+        week_template: { days: unknown[] };
+      }>(raw);
 
-      if (!plan.weeks) throw new Error("Structure sport invalide");
-      return plan;
+      if (!plan.week_template?.days) throw new Error("Structure sport invalide");
+
+      // Dupliquer la semaine modèle pour 12 semaines avec progression des charges (+2.5kg/semaine)
+      const weeks = Array.from({ length: 12 }, (_, i) => ({
+        week_number: i + 1,
+        theme: i < 4 ? "Phase 1 — Fondation" : i < 8 ? "Phase 2 — Progression" : "Phase 3 — Intensification",
+        days: (plan.week_template.days as any[]).map((day: any) => ({
+          ...day,
+          exercises: (day.exercises ?? []).map((ex: any) => ({
+            ...ex,
+            weight_kg: ex.weight_kg ? Math.round((ex.weight_kg + i * 2.5) * 2) / 2 : ex.weight_kg,
+          })),
+        })),
+      }));
+
+      return {
+        program_name: plan.program_name,
+        goal_statement: plan.goal_statement,
+        weeks,
+      };
     }),
 
   chatNutrition: publicProcedure

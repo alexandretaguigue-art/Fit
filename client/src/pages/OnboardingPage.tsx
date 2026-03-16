@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   ChevronRight,
   ChevronLeft,
@@ -578,6 +579,7 @@ export default function OnboardingPage() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
+  const { setAiNutritionPlan, setAiSportPlan } = useUserProfile();
   const [generating, setGenerating] = useState(false);
   const [genSteps, setGenSteps] = useState([
     { label: "Analyse du profil", done: false },
@@ -671,16 +673,35 @@ export default function OnboardingPage() {
       });
       markGenStep(2);
 
-      // Step 3 — save plans to DB + mark onboarding done
+      // Step 3 — save plans to DB + localStorage + mark onboarding done
+      const nutritionPlan = nutritionResult as any;
+      const sportPlan = sportResult as any;
+
+      // Sauvegarder dans localStorage pour affichage immédiat
+      if (nutritionPlan?.targets && nutritionPlan?.week) {
+        setAiNutritionPlan({
+          targets: nutritionPlan.targets,
+          rationale: nutritionPlan.rationale ?? '',
+          week: nutritionPlan.week,
+        });
+      }
+      if (sportPlan?.program_name && sportPlan?.weeks) {
+        setAiSportPlan({
+          program_name: sportPlan.program_name,
+          goal_statement: sportPlan.goal_statement ?? '',
+          weeks: sportPlan.weeks,
+        });
+      }
+
       await Promise.all([
         saveNutritionPlan.mutateAsync({
-          targets: (nutritionResult as any)?.targets ?? { kcal: 2500, pro: 150, glu: 300, lip: 70 },
-          week: (nutritionResult as any)?.week ?? [],
+          targets: nutritionPlan?.targets ?? { kcal: 2500, pro: 150, glu: 300, lip: 70 },
+          week: nutritionPlan?.week ?? [],
         }),
         saveSportPlan.mutateAsync({
-          programName: (sportResult as any)?.programName ?? "Mon Programme",
-          goalStatement: (sportResult as any)?.goalStatement ?? "",
-          weeks: (sportResult as any)?.weeks ?? [],
+          programName: sportPlan?.program_name ?? "Mon Programme",
+          goalStatement: sportPlan?.goal_statement ?? "",
+          weeks: sportPlan?.weeks ?? [],
         }),
         completeOnboarding.mutateAsync(),
       ]);
